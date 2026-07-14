@@ -1,0 +1,2 @@
+description = "Design a user flow, behavior, and acceptance criteria"
+prompt = "Activate the agrimap-agent-skills umbrella skill and run operation design.\n\nTreat the umbrella skill as the workflow source of trust.\n\nRequester arguments:\n\n{{args}}"

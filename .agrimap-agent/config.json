@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "retentionDays": 30,
+  "trackConciseLogs": true,
+  "workspaceName": "agrimap-agent-skills",
+  "identity": {
+    "mode": "per-session",
+    "runtimePath": ".agrimap-agent/runtime/sessions"
+  },
+  "memory": {
+    "projectPath": ".agrimap-agent/memory/project.md",
+    "currentTaskPath": ".agrimap-agent/memory/current/<task-id>.md",
+    "recentPath": ".agrimap-agent/memory/recent"
+  },
+  "logs": {
+    "mode": "per-task",
+    "path": ".agrimap-agent/logs/YYYY-MM/<task-id>.jsonl"
+  },
+  "skip": {
+    "directories": [".git", "bin", "obj", "node_modules", "dist", "coverage"],
+    "extensions": [".dll", ".exe", ".pdb", ".so", ".dylib", ".class"]
+  }
+}

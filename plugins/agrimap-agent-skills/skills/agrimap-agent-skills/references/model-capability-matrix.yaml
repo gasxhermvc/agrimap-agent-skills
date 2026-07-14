@@ -1,0 +1,51 @@
+schema_version: 1
+selection_policy:
+  owner_override_file: .agrimap-agent/model-capability-matrix.yaml
+  max_active_subagents: 5
+  frontier_integrates_and_dispatches_independent_qa: true
+  rules:
+    - Use a reasoning/review profile for decomposition, high-impact design, QA, and final review.
+    - Use a hard executor only when complexity or coupling justifies the cost.
+    - Use a standard executor for bounded implementation with explicit steps.
+    - Use a lightweight executor only when files, lines, steps, tests, and output contract are fully specified.
+    - Preserve owner-provided model names as configurable labels; do not silently replace them.
+
+providers:
+  claude:
+    reasoning_review:
+      - fable
+      - opus4.8
+    execution_hard:
+      - fable
+    execution_standard:
+      - sonnet5
+      - sonnet4.6
+    execution_light:
+      - haiku4.5
+  codex:
+    reasoning_review:
+      - GPT-5.6-sol
+    execution_hard:
+      - gpt-5.6-sol
+    execution_standard:
+      - gpt-5.4
+    execution_light:
+      - gpt-5.4-mini
+
+task_profiles:
+  frontier_analysis:
+    capability: reasoning_review
+  architecture_or_logic_change:
+    capability: reasoning_review
+  qa_or_review:
+    capability: reasoning_review
+  difficult_implementation:
+    capability: execution_hard
+  bounded_implementation:
+    capability: execution_standard
+  mechanical_or_fully_specified:
+    capability: execution_light
+
+display_labels:
+  claude:
+    fable: Fable 5

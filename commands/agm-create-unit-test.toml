@@ -1,0 +1,2 @@
+description = "Create target-specific unit or regression tests"
+prompt = "Activate the agrimap-agent-skills umbrella skill and run operation create-unit-test.\n\nTreat the umbrella skill as the workflow source of trust.\n\nRequester arguments:\n\n{{args}}"

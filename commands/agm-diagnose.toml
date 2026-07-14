@@ -1,0 +1,2 @@
+description = "Diagnose a problem to a proven root cause"
+prompt = "Activate the agrimap-agent-skills umbrella skill and run operation diagnose.\n\nTreat the umbrella skill as the workflow source of trust.\n\nRequester arguments:\n\n{{args}}"

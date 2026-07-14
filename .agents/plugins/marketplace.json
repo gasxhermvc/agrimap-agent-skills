@@ -1,0 +1,20 @@
+{
+  "name": "agrimap-agent-skills",
+  "interface": {
+    "displayName": "Agrimap Agent Skills"
+  },
+  "plugins": [
+    {
+      "name": "agrimap-agent-skills",
+      "source": {
+        "source": "local",
+        "path": "./plugins/agrimap-agent-skills"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

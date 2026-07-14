@@ -1,0 +1,29 @@
+schema_version: 1
+source_of_trust: .agrimap-agent/knowledge/service-ownership.yaml
+updated_at: "ISO-8601"
+updated_by: "human-or-agent"
+services:
+  - service_id: "replace-with-stable-service-id"
+    repository: "repository-or-project-path"
+    status: "confirmed|tentative|unknown|deprecated"
+    technical_owner: "team-or-human|unknown"
+    business_owner: "team-or-human|unknown"
+    domain_boundary: "bounded responsibility or unknown"
+    in_scope: []
+    out_of_scope: []
+    upstream: []
+    downstream: []
+    contracts: []
+    data_ownership:
+      sql: []
+      mongodb: []
+      other: []
+    scheduled_jobs: []
+    forbidden_cross_service_actions: []
+    evidence:
+      - kind: "owner-decision|repository|contract|runtime"
+        source: "file:line, decision ID, or URL"
+        observed_at: "ISO-8601"
+    updated_at: "ISO-8601"
+    updated_by: "human-or-agent"
+    notes: ""

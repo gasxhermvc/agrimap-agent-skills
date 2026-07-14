@@ -1,0 +1,19 @@
+{
+  "name": "agrimap-agent-skills",
+  "owner": {
+    "name": "Billy",
+    "url": "https://github.com/gasxhermvc"
+  },
+  "metadata": {
+    "description": "Official AgriMap engineering skills for Codex, Claude Code, and Gemini CLI"
+  },
+  "plugins": [
+    {
+      "name": "agrimap-agent-skills",
+      "source": "./plugins/agrimap-agent-skills",
+      "description": "Cross-agent AgriMap workflows, patterns, memory, and QA",
+      "version": "0.1.0",
+      "homepage": "https://github.com/gasxhermvc/agrimap-agent-skills"
+    }
+  ]
+}

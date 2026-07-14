@@ -1,0 +1,8 @@
+{
+  "name": "agrimap-agent-skills",
+  "description": "Cross-agent AgriMap engineering workflows, patterns, memory, and QA",
+  "version": "0.1.0",
+  "author": {
+    "name": "Billy"
+  }
+}

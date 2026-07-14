@@ -1,0 +1,257 @@
+{
+  "schemaVersion": 1,
+  "collection": "backend-main",
+  "source": ".agm/back-end/agrimap_backend_coding_pattern_reference.instructions.md",
+  "sourceSha256": "4db2db5c4ca9babce36fd9d6ad67c74ff721ffafcc2c0b74e6f4e198fad96e18",
+  "note": "Extracted code blocks only. Legacy prose and guardrails were intentionally excluded.",
+  "examples": [
+    {
+      "fileName": "001-1-presentation-controller-examples.cs",
+      "heading": "1) Presentation - Controller Examples",
+      "language": "csharp",
+      "lineEnd": 121,
+      "lineStart": 65,
+      "sha256": "d3347d75fec50ae62461a18857a5e07f2d78e6620867a7c4153591b8ab51152e"
+    },
+    {
+      "fileName": "002-1-presentation-controller-examples.cs",
+      "heading": "1) Presentation - Controller Examples",
+      "language": "csharp",
+      "lineEnd": 164,
+      "lineStart": 123,
+      "sha256": "4efc8cce07d0d04606422ef373ae22e75924e42884672d18423a295aeb208ffd"
+    },
+    {
+      "fileName": "003-1-presentation-controller-examples.cs",
+      "heading": "1) Presentation - Controller Examples",
+      "language": "csharp",
+      "lineEnd": 199,
+      "lineStart": 168,
+      "sha256": "7afa5c1a84c7391707a825ff076da1c95e1941aca732047f6330804d3d35a24d"
+    },
+    {
+      "fileName": "004-2-1-request-dto.cs",
+      "heading": "2.1 Request DTO",
+      "language": "csharp",
+      "lineEnd": 279,
+      "lineStart": 213,
+      "sha256": "a39a6b6d4e14e4d5b82cf7f414f426362c4804770ea0bae9956697ce465a8e5a"
+    },
+    {
+      "fileName": "005-2-2-response-dto.cs",
+      "heading": "2.2 Response DTO",
+      "language": "csharp",
+      "lineEnd": 336,
+      "lineStart": 283,
+      "sha256": "f6a69e4849953b3ee7209b7e1761a153e5ea5b74de5fe5afa7d7acfaceb07639"
+    },
+    {
+      "fileName": "006-2-3-binding-reference.cs",
+      "heading": "2.3 Binding Reference",
+      "language": "csharp",
+      "lineEnd": 352,
+      "lineStart": 340,
+      "sha256": "b24f605632d51a2cee4ebce44c4c434c768a8f95d150a287f8103bf5716ff06f"
+    },
+    {
+      "fileName": "007-3-1-use-case-interface.cs",
+      "heading": "3.1 Use Case Interface",
+      "language": "csharp",
+      "lineEnd": 380,
+      "lineStart": 367,
+      "sha256": "5fe130b87c7f97fe43e410cf0be818da0de7ba7b8dca3426e64d1c9732c98888"
+    },
+    {
+      "fileName": "008-3-2-use-case-implementation.cs",
+      "heading": "3.2 Use Case Implementation",
+      "language": "csharp",
+      "lineEnd": 519,
+      "lineStart": 384,
+      "sha256": "d96d23df30e684380abea0586778b8637e269ad7231e46ca08badb8a49a145b0"
+    },
+    {
+      "fileName": "009-4-1-repository-interface.cs",
+      "heading": "4.1 Repository Interface",
+      "language": "csharp",
+      "lineEnd": 547,
+      "lineStart": 534,
+      "sha256": "02ce0352858d4566fa8ece47e99b38c6158f61d8d2d1da407a5eb4c58824f7d3"
+    },
+    {
+      "fileName": "010-4-2-repository-implementation.cs",
+      "heading": "4.2 Repository Implementation",
+      "language": "csharp",
+      "lineEnd": 731,
+      "lineStart": 551,
+      "sha256": "caf89c569fb2c8a4dd47e06d339e0c93a021156fc7e007b41d983726a1ed2745"
+    },
+    {
+      "fileName": "011-4-3-injection-pattern.cs",
+      "heading": "4.3 Injection Pattern",
+      "language": "csharp",
+      "lineEnd": 749,
+      "lineStart": 735,
+      "sha256": "d385420615fd4ff5a52e2e90ffa8ef70045e378e28517df8961272bbd6b540d6"
+    },
+    {
+      "fileName": "012-4-4-debugging-sql-stored-procedure.cs",
+      "heading": "4.4 Debugging SQL / Stored Procedure",
+      "language": "csharp",
+      "lineEnd": 796,
+      "lineStart": 755,
+      "sha256": "153fcf76098bbd6ac622fdc37b62ff1eb69d2f0d1d3802d015d0453416ffc717"
+    },
+    {
+      "fileName": "013-4-4-debugging-sql-stored-procedure.cs",
+      "heading": "4.4 Debugging SQL / Stored Procedure",
+      "language": "csharp",
+      "lineEnd": 815,
+      "lineStart": 800,
+      "sha256": "1458908a2684536d5be3106d400278ae93f6fc3dda2a2dff5fbb3108fea8f018"
+    },
+    {
+      "fileName": "014-4-5-query-parameter-and-result-handling.cs",
+      "heading": "4.5 Query Parameter and Result Handling",
+      "language": "csharp",
+      "lineEnd": 839,
+      "lineStart": 819,
+      "sha256": "c9e2c6139fd39e41ee1253c5d60544a59a3a728e70baf8beee643ffffa773b5a"
+    },
+    {
+      "fileName": "015-4-5-query-parameter-and-result-handling.cs",
+      "heading": "4.5 Query Parameter and Result Handling",
+      "language": "csharp",
+      "lineEnd": 853,
+      "lineStart": 841,
+      "sha256": "5a89e81e044cfc941a37047e243fc8be02b3f7ac075e1964c6b55b2f6ea67ede"
+    },
+    {
+      "fileName": "016-4-6-multiple-record-payload-pattern.cs",
+      "heading": "4.6 Multiple Record Payload Pattern",
+      "language": "csharp",
+      "lineEnd": 865,
+      "lineStart": 857,
+      "sha256": "0f318e9614dc859f6dc98d11a60ad3dcecefdf6b2ae099e2b0b2b2803a3c2405"
+    },
+    {
+      "fileName": "017-5-domain-example.cs",
+      "heading": "5) Domain Example",
+      "language": "csharp",
+      "lineEnd": 913,
+      "lineStart": 877,
+      "sha256": "3eea3270b6d937ae5a37b35a02e030d455de3517a8ddcdcaa40eed5c85acf872"
+    },
+    {
+      "fileName": "018-6-error-handling-examples.cs",
+      "heading": "6) Error Handling Examples",
+      "language": "csharp",
+      "lineEnd": 927,
+      "lineStart": 925,
+      "sha256": "875c6362db6ecf50fd4a664c1d465998631573d9df2b3307bad2cf6910c5b06d"
+    },
+    {
+      "fileName": "019-6-error-handling-examples.txt",
+      "heading": "6) Error Handling Examples",
+      "language": "text",
+      "lineEnd": 936,
+      "lineStart": 929,
+      "sha256": "8bc88bbf679177350827013a18f1beac1979e0fb5d8d12f78a8119a9d8247d86"
+    },
+    {
+      "fileName": "020-7-http-verb-and-route-reference.cs",
+      "heading": "7) HTTP Verb and Route Reference",
+      "language": "csharp",
+      "lineEnd": 957,
+      "lineStart": 948,
+      "sha256": "1594f49d94e825f8f0d93f3ec8595acaa8c771f2ffa3ff84d7c8eba695666006"
+    },
+    {
+      "fileName": "021-8-rest-operation-mapping.txt",
+      "heading": "8) REST Operation Mapping",
+      "language": "text",
+      "lineEnd": 996,
+      "lineStart": 990,
+      "sha256": "de9cb75bc0bfb3becbbeca707fe8cfa0327a420d212542275303d51df72f2087"
+    },
+    {
+      "fileName": "022-9-stored-procedure-naming.txt",
+      "heading": "9) Stored Procedure Naming",
+      "language": "text",
+      "lineEnd": 1012,
+      "lineStart": 1010,
+      "sha256": "d68aa09ef801d141e0e421b31730976998609c3e047263df2f602355b275e8d5"
+    },
+    {
+      "fileName": "023-9-stored-procedure-naming.txt",
+      "heading": "9) Stored Procedure Naming",
+      "language": "text",
+      "lineEnd": 1033,
+      "lineStart": 1026,
+      "sha256": "6ef6250f01d6ac7e433fdecfb7f77f279c32c4f81e58f42c948fb8bda7ca9776"
+    },
+    {
+      "fileName": "024-9-stored-procedure-naming.txt",
+      "heading": "9) Stored Procedure Naming",
+      "language": "text",
+      "lineEnd": 1044,
+      "lineStart": 1037,
+      "sha256": "cf45618c6d8e2c239e07c79dd75f2f02e1546b1364bd58117f72c0b6f6b91a93"
+    },
+    {
+      "fileName": "025-10-response-structure-reference.json",
+      "heading": "10) Response Structure Reference",
+      "language": "json",
+      "lineEnd": 1068,
+      "lineStart": 1056,
+      "sha256": "9e43910f27660c6bf4557dd1cf0eb0f19dd08422c93c0cc3328cfc8f5761f468"
+    },
+    {
+      "fileName": "026-10-response-structure-reference.json",
+      "heading": "10) Response Structure Reference",
+      "language": "json",
+      "lineEnd": 1082,
+      "lineStart": 1070,
+      "sha256": "2ad279f6100b3d2e774a2473fb93fff640baafdd0663a866e634a02bc0a5f260"
+    },
+    {
+      "fileName": "027-10-response-structure-reference.json",
+      "heading": "10) Response Structure Reference",
+      "language": "json",
+      "lineEnd": 1093,
+      "lineStart": 1084,
+      "sha256": "978fef84aeef4ecd41e3ec838164381bacffc8e7685aa91d6b1e6ef7fed21969"
+    },
+    {
+      "fileName": "028-10-response-structure-reference.json",
+      "heading": "10) Response Structure Reference",
+      "language": "json",
+      "lineEnd": 1104,
+      "lineStart": 1095,
+      "sha256": "3dca74a6025a8a05c81c60aad4d7184e72f815ccd4ec3a692b046922c078f837"
+    },
+    {
+      "fileName": "029-10-response-structure-reference.json",
+      "heading": "10) Response Structure Reference",
+      "language": "json",
+      "lineEnd": 1113,
+      "lineStart": 1106,
+      "sha256": "c00ea5cef63db88569390ba4327fe8cec159b436f18d5f5c2b4d382f357ed246"
+    },
+    {
+      "fileName": "030-12-comment-reference.cs",
+      "heading": "12) Comment Reference",
+      "language": "csharp",
+      "lineEnd": 1167,
+      "lineStart": 1148,
+      "sha256": "33288ee1ada35cf08f60b9eb805d3138f2c9b31569a746fc681bd8ac33cb08ce"
+    },
+    {
+      "fileName": "031-13-container-communication-rule.txt",
+      "heading": "13) Container Communication Rule",
+      "language": "text",
+      "lineEnd": 1203,
+      "lineStart": 1194,
+      "sha256": "6195e9c5ad249452a1f1fffcba643ceb2086ada29f240a1279d7ebe931ccf618"
+    }
+  ]
+}

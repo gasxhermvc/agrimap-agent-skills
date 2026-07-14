@@ -1,0 +1,6 @@
+---
+name: agm-diagnose
+description: Diagnose a problem to a proven root cause. Use when the requester invokes this AgriMap alias.
+---
+
+Activate and read the sibling `agrimap-agent-skills` umbrella skill. Run operation `diagnose` with the requester's current arguments. Keep the umbrella workflow authoritative; do not add or duplicate rules in this alias.

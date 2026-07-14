@@ -1,0 +1,5 @@
+UI Layer (Features / Shared)
+↓
+Facade Layer (Application Logic)
+↓
+Store Layer (State signal) || Generated API (External / Auto-gen)

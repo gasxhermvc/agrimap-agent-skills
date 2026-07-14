@@ -1,0 +1,4 @@
+interface:
+  display_name: "AgriMap Agent Skills"
+  short_description: "Cross-agent engineering workflows for AgriMap"
+  default_prompt: "Use $agrimap-agent-skills to analyze and complete this engineering task with AgriMap workflows."

@@ -1,0 +1,2 @@
+description = "Simulate scenarios, risks, and observable outcomes"
+prompt = "Activate the agrimap-agent-skills umbrella skill and run operation simulate.\n\nTreat the umbrella skill as the workflow source of trust.\n\nRequester arguments:\n\n{{args}}"

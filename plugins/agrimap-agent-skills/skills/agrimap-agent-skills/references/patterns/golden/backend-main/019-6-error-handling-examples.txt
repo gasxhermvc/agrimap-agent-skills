@@ -1,0 +1,6 @@
+400 parameter case
+401 unauthorized case
+403 forbidden case
+404 not found case
+405 method not allowed case
+500 internal error case or stored procedure error case

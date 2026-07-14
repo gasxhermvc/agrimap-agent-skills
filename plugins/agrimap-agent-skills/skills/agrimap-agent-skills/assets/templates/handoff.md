@@ -1,0 +1,38 @@
+# Subagent handoff
+
+- Status: `completed|partial|blocked`
+- Requested by: {{requested_by}}
+- Actor: {{actor}}
+- Branch/commit: {{branch_or_commit}}
+
+## Summary
+
+{{summary}}
+
+## Files and behavior
+
+{{files_changed_with_symbols}}
+
+{{behavior_changed_or_preserved}}
+
+## Decisions and reasons
+
+{{decisions_and_reasons}}
+
+## Commands and tests
+
+{{commands_tests_results}}
+
+## Remaining risks and memory facts
+
+{{remaining_risks}}
+
+{{memory_facts}}
+
+## Prompt conformance
+
+- Execution prompt: {{prompt_path_and_id}}
+- Deviation from prompt: {{none_or_structured_deviation}}
+- Integration artifact: {{shared_file_set_commit_or_portable_patch}}
+
+- Checkpoint target: `.agrimap-agent/memory/current/{{task_id}}.md`

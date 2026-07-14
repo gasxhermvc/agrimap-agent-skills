@@ -1,0 +1,8 @@
+[HttpGet("users")] // user resource -> Mapping stored procedure "um_user_all_q"
+[HttpGet("users/search")] // user resource + search action -> Mapping stored procedure "um_user_search_q"
+[HttpGet("users/{id:int}")] // user resource + id action -> Mapping stored procedure "um_user_detail_q"
+[HttpGet("templates/{template_id:int}")] // dashboard resource + template_id action -> Mapping stored procedure "dd_dashboard_template_q"
+[HttpPost("sources/{dashboard_content_id}")] // source resource + dashboard_content_id action -> Mapping stored procedure "dd_dashboard_source_i"
+[HttpPut("sources/{dashboard_content_id}/{source_id:long}")] // source resource + dashboard_content_id + source_id action -> Mapping stored procedure "dd_dashboard_source_u"
+[HttpPatch("config/{dashboard_content_id}/draft")] // config resource + dashboard_content_id + draft action -> Mapping stored procedure "dd_dashboard_draft_u"
+[HttpDelete("groups/{group_id:long}")] // group resource + group_id action -> Mapping stored procedure "um_group_d"

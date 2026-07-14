@@ -1,0 +1,11 @@
+// List response structure
+// have data
+{
+  "data": [{...}, {...}, ..., {...}],
+  "message": "string"
+}
+// empty list data
+{
+  "data": [],
+  "message": "string"
+}

@@ -1,0 +1,19 @@
+@if (condition) { 
+   <p> show </p>
+}
+
+
+@if (loading()) {
+  <app-spinner />
+} @else {
+  <app-content />
+}
+
+
+@if (status === 'loading') {
+  <p>Loading...</p>
+} @else if (status === 'error') {
+  <p>Error</p>
+} @else {
+  <p>Success</p>
+}

@@ -1,0 +1,23 @@
+{
+  "name": "agrimap-agent-skills",
+  "version": "0.1.0",
+  "description": "Cross-agent AgriMap engineering workflows, patterns, memory, and QA",
+  "author": {
+    "name": "Billy",
+    "url": "https://github.com/gasxhermvc"
+  },
+  "homepage": "https://github.com/gasxhermvc/agrimap-agent-skills",
+  "repository": "https://github.com/gasxhermvc/agrimap-agent-skills",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "AgriMap Agent Skills",
+    "shortDescription": "Engineering workflows with durable project memory.",
+    "longDescription": "Use one AgriMap workflow source of trust for analysis, delivery, QA, prompt delegation, coding patterns, and concise multi-person project memory.",
+    "developerName": "Billy",
+    "category": "Developer Tools",
+    "capabilities": ["Read", "Write"],
+    "defaultPrompt": [
+      "$agrimap-agent-skills route and execute this engineering task."
+    ]
+  }
+}

@@ -1,0 +1,8 @@
+// for insert / update / delete response structure
+// have data
+{
+  "data": {
+    "success": true
+  },
+  "message": "string"
+}

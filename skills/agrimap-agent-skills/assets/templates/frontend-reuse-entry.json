@@ -1,0 +1,15 @@
+{
+  "name": "SharedArtifactName",
+  "kind": "component|service|facade|directive|pipe|function|token|config",
+  "file": "src/app/shared/path/file.ts",
+  "symbol": "SharedArtifactName",
+  "selector": null,
+  "scope": "core|shared|library|feature|generated",
+  "capabilities": ["describe observable capability"],
+  "inputs": [],
+  "outputs": [],
+  "consumers": [],
+  "tags": [],
+  "status": "verified",
+  "updatedBy": "requester name"
+}

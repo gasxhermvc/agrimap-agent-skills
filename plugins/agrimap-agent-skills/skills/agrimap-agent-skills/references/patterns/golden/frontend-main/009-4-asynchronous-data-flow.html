@@ -1,0 +1,4 @@
+<!-- template — แสดงผลจาก signal (ไม่ใช้ async pipe) -->
+@for (item of list(); track item.id) {
+  <span>{{ item.date }}: {{ item.temperatureC }}°C</span>
+}

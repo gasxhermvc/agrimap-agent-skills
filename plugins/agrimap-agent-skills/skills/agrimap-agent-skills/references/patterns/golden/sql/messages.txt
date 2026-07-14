@@ -1,0 +1,409 @@
+-- =============================================
+-- Error Code Dictionary
+-- Table: [agrimap_app].[LUT_APP_MESSAGES]
+-- Standard:
+--   [ID]    = error_code
+--   [DESCR] = คำอธิบาย error
+-- File usage:
+--   Keep all database error codes in this file
+--   Every THROW 50001, '<error_code>', 1; must exist here
+-- =============================================
+
+-- ============================================================
+-- Shared / Global
+-- ============================================================
+
+invalid_parameter
+descr: พารามิเตอร์ไม่ถูกต้อง
+
+data_not_found
+descr: ไม่พบข้อมูลที่ต้องการ
+
+duplicate_data
+descr: พบข้อมูลซ้ำในระบบ
+
+session_user_required
+descr: กรุณาระบุผู้ทำรายการ
+
+permission_denied
+descr: คุณไม่มีสิทธิ์ทำรายการนี้
+
+sql_error
+descr: เกิดข้อผิดพลาดจากระบบ
+
+token_expired
+descr: โทเคนของผู้ใช้หมดอายุแล้ว
+
+-- ============================================================
+-- APP_USER_TOKEN
+-- ============================================================
+
+user_id_required
+descr: กรุณาระบุรหัสผู้ใช้
+
+nonce_required
+descr: กรุณาระบุ nonce
+
+refresh_token_required
+descr: กรุณาระบุ refresh token
+
+duplicate_token
+descr: พบ token นี้ในระบบแล้ว
+
+-- ============================================================
+-- UM_USER
+-- ============================================================
+
+username_required
+descr: กรุณาระบุชื่อผู้ใช้
+
+password_required
+descr: กรุณาระบุรหัสผ่าน
+
+name_required
+descr: กรุณาระบุชื่อ
+
+surname_required
+descr: กรุณาระบุนามสกุล
+
+email_required
+descr: กรุณาระบุอีเมล
+
+username_duplicate
+descr: ชื่อผู้ใช้นี้ถูกใช้งานแล้ว
+
+email_duplicate
+descr: อีเมลนี้ถูกใช้งานแล้ว
+
+tel_duplicate
+descr: เบอร์โทรนี้ถูกใช้งานแล้ว
+
+id_card_duplicate
+descr: เลขบัตรประชาชนนี้ถูกใช้งานแล้ว
+
+cannot_delete_self
+descr: ไม่สามารถลบบัญชีของตนเองได้
+
+cannot_delete_protected_role
+descr: ไม่สามารถลบผู้ใช้ที่มีบทบาทสำคัญของระบบได้
+
+user_not_found
+descr: ไม่พบผู้ใช้ที่ต้องการ
+
+role_protected_cannot_assign
+descr: ไม่สามารถกำหนดบทบาทสำคัญของระบบให้ผู้ใช้งานได้
+
+role_limitation_exceeded
+descr: จำนวนผู้ใช้งานของบทบาทนี้เกินกว่าที่กำหนด
+
+-- ============================================================
+-- NOTIFICATION_TEMPLATE
+-- ============================================================
+
+noti_template_code_required
+descr: กรุณาระบุรหัส template การแจ้งเตือน
+
+noti_channel_required
+descr: กรุณาระบุช่องทางการแจ้งเตือน
+
+noti_channel_not_found
+descr: ไม่พบช่องทางการแจ้งเตือนที่ระบุ
+
+noti_template_file_required
+descr: กรุณาระบุไฟล์ template
+
+noti_template_not_found
+descr: ไม่พบ template การแจ้งเตือนที่ต้องการ
+
+noti_template_duplicate
+descr: พบ template การแจ้งเตือนที่มีรหัสและช่องทางเดียวกันในระบบแล้ว
+
+noti_template_has_active_message
+descr: ไม่สามารถลบ template ได้ เนื่องจากยังมีข้อความที่กำลังดำเนินการอยู่
+
+-- ============================================================
+-- NOTIFICATION_MESSAGE
+-- ============================================================
+
+noti_template_required
+descr: กรุณาระบุ template การแจ้งเตือน
+
+noti_create_source_required
+descr: กรุณาระบุแหล่งที่มาของการสร้างการแจ้งเตือน
+
+noti_create_type_required
+descr: กรุณาระบุประเภทการสร้างการแจ้งเตือน
+
+noti_message_not_found
+descr: ไม่พบข้อความแจ้งเตือนที่ต้องการ
+
+noti_message_required
+descr: กรุณาระบุรหัสข้อความแจ้งเตือน
+
+noti_priority_not_found
+descr: ไม่พบระดับความสำคัญที่ระบุ
+
+noti_message_status_required
+descr: กรุณาระบุสถานะข้อความแจ้งเตือน
+
+noti_message_status_not_found
+descr: ไม่พบสถานะข้อความแจ้งเตือนที่ระบุ
+
+-- ============================================================
+-- NOTIFICATION_RECIPIENT
+-- ============================================================
+
+noti_recipient_not_found
+descr: ไม่พบรายการผู้รับแจ้งเตือนที่ต้องการ
+
+noti_recipient_required
+descr: กรุณาระบุรหัสผู้รับแจ้งเตือน
+
+noti_recipient_key_required
+descr: กรุณาระบุ ID ของผู้รับ หรือระบุ MESSAGE_ID และ USER_ID
+
+noti_user_list_required
+descr: กรุณาระบุรายการผู้ใช้
+
+-- ============================================================
+-- NOTIFICATION_DELIVERY
+-- ============================================================
+
+noti_delivery_required
+descr: กรุณาระบุรหัส delivery การแจ้งเตือน
+
+noti_delivery_target_required
+descr: กรุณาระบุประเภท delivery ของการแจ้งเตือน
+
+noti_delivery_not_found
+descr: ไม่พบรายการ delivery การแจ้งเตือนที่ต้องการ
+
+noti_delivery_status_required
+descr: กรุณาระบุสถานะ delivery การแจ้งเตือน
+
+noti_delivery_status_not_found
+descr: ไม่พบสถานะ delivery การแจ้งเตือนที่ระบุ
+
+-- ============================================================
+-- NOTIFICATION_USER_DEVICE / PLATFORM
+-- ============================================================
+
+noti_user_device_user_required
+descr: กรุณาระบุผู้ใช้สำหรับการลงทะเบียนอุปกรณ์
+
+noti_user_device_token_required
+descr: กรุณาระบุ FCM token สำหรับการลงทะเบียนอุปกรณ์
+
+noti_user_device_platform_required
+descr: กรุณาระบุแพลตฟอร์มของอุปกรณ์
+
+noti_user_device_not_found
+descr: ไม่พบข้อมูลอุปกรณ์ของผู้ใช้
+
+noti_platform_not_found
+descr: ไม่พบข้อมูลแพลตฟอร์มที่ระบุ
+
+-- ============================================================
+-- NOTIFICATION_CONTENT
+-- ============================================================
+
+noti_content_title_required
+descr: กรุณาระบุหัวข้อเนื้อหาการแจ้งเตือน
+
+noti_content_body_required
+descr: กรุณาระบุเนื้อหาการแจ้งเตือน
+
+noti_content_duplicate
+descr: พบเนื้อหาการแจ้งเตือนสำหรับข้อความและช่องทางนี้ในระบบแล้ว
+
+-- ============================================================
+-- Notification Reserved / Future
+-- ============================================================
+
+noti_status_required
+descr: กรุณาระบุสถานะการแจ้งเตือน
+
+noti_status_not_found
+descr: ไม่พบสถานะการแจ้งเตือนที่ระบุ
+
+-- ============================================================
+-- INSERT Script for [agrimap_app].[LUT_APP_MESSAGES]
+-- ============================================================
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'invalid_parameter')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('invalid_parameter', N'พารามิเตอร์ไม่ถูกต้อง');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'data_not_found')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('data_not_found', N'ไม่พบข้อมูลที่ต้องการ');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'duplicate_data')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('duplicate_data', N'พบข้อมูลซ้ำในระบบ');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'session_user_required')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('session_user_required', N'กรุณาระบุผู้ทำรายการ');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'permission_denied')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('permission_denied', N'คุณไม่มีสิทธิ์ทำรายการนี้');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'sql_error')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('sql_error', N'เกิดข้อผิดพลาดจากระบบ');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'token_expired')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('token_expired', N'โทเคนของผู้ใช้หมดอายุแล้ว');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'user_id_required')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('user_id_required', N'กรุณาระบุรหัสผู้ใช้');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'nonce_required')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('nonce_required', N'กรุณาระบุ nonce');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'refresh_token_required')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('refresh_token_required', N'กรุณาระบุ refresh token');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'duplicate_token')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('duplicate_token', N'พบ token นี้ในระบบแล้ว');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'username_required')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('username_required', N'กรุณาระบุชื่อผู้ใช้');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'password_required')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('password_required', N'กรุณาระบุรหัสผ่าน');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'name_required')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('name_required', N'กรุณาระบุชื่อ');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'surname_required')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('surname_required', N'กรุณาระบุนามสกุล');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'email_required')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('email_required', N'กรุณาระบุอีเมล');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'username_duplicate')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('username_duplicate', N'ชื่อผู้ใช้นี้ถูกใช้งานแล้ว');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'email_duplicate')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('email_duplicate', N'อีเมลนี้ถูกใช้งานแล้ว');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'tel_duplicate')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('tel_duplicate', N'เบอร์โทรนี้ถูกใช้งานแล้ว');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'id_card_duplicate')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('id_card_duplicate', N'เลขบัตรประชาชนนี้ถูกใช้งานแล้ว');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'cannot_delete_self')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('cannot_delete_self', N'ไม่สามารถลบบัญชีของตนเองได้');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'cannot_delete_protected_role')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('cannot_delete_protected_role', N'ไม่สามารถลบผู้ใช้ที่มีบทบาทสำคัญของระบบได้');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'user_not_found')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('user_not_found', N'ไม่พบผู้ใช้ที่ต้องการ');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'role_protected_cannot_assign')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('role_protected_cannot_assign', N'ไม่สามารถกำหนดบทบาทสำคัญของระบบให้ผู้ใช้งานได้');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'role_limitation_exceeded')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('role_limitation_exceeded', N'จำนวนผู้ใช้งานของบทบาทนี้เกินกว่าที่กำหนด');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'noti_template_code_required')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('noti_template_code_required', N'กรุณาระบุรหัส template การแจ้งเตือน');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'noti_channel_required')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('noti_channel_required', N'กรุณาระบุช่องทางการแจ้งเตือน');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'noti_channel_not_found')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('noti_channel_not_found', N'ไม่พบช่องทางการแจ้งเตือนที่ระบุ');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'noti_template_file_required')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('noti_template_file_required', N'กรุณาระบุไฟล์ template');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'noti_template_not_found')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('noti_template_not_found', N'ไม่พบ template การแจ้งเตือนที่ต้องการ');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'noti_template_duplicate')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('noti_template_duplicate', N'พบ template การแจ้งเตือนที่มีรหัสและช่องทางเดียวกันในระบบแล้ว');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'noti_template_has_active_message')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('noti_template_has_active_message', N'ไม่สามารถลบ template ได้ เนื่องจากยังมีข้อความที่กำลังดำเนินการอยู่');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'noti_template_required')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('noti_template_required', N'กรุณาระบุ template การแจ้งเตือน');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'noti_create_source_required')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('noti_create_source_required', N'กรุณาระบุแหล่งที่มาของการสร้างการแจ้งเตือน');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'noti_create_type_required')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('noti_create_type_required', N'กรุณาระบุประเภทการสร้างการแจ้งเตือน');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'noti_message_not_found')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('noti_message_not_found', N'ไม่พบข้อความแจ้งเตือนที่ต้องการ');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'noti_message_required')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('noti_message_required', N'กรุณาระบุรหัสข้อความแจ้งเตือน');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'noti_priority_not_found')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('noti_priority_not_found', N'ไม่พบระดับความสำคัญที่ระบุ');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'noti_message_status_required')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('noti_message_status_required', N'กรุณาระบุสถานะข้อความแจ้งเตือน');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'noti_message_status_not_found')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('noti_message_status_not_found', N'ไม่พบสถานะข้อความแจ้งเตือนที่ระบุ');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'noti_recipient_not_found')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('noti_recipient_not_found', N'ไม่พบรายการผู้รับแจ้งเตือนที่ต้องการ');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'noti_recipient_required')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('noti_recipient_required', N'กรุณาระบุรหัสผู้รับแจ้งเตือน');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'noti_recipient_key_required')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('noti_recipient_key_required', N'กรุณาระบุ ID ของผู้รับ หรือระบุ MESSAGE_ID และ USER_ID');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'noti_user_list_required')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('noti_user_list_required', N'กรุณาระบุรายการผู้ใช้');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'noti_delivery_required')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('noti_delivery_required', N'กรุณาระบุรหัส delivery การแจ้งเตือน');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'noti_delivery_target_required')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('noti_delivery_target_required', N'กรุณาระบุประเภท delivery ของการแจ้งเตือน');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'noti_delivery_not_found')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('noti_delivery_not_found', N'ไม่พบรายการ delivery การแจ้งเตือนที่ต้องการ');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'noti_delivery_status_required')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('noti_delivery_status_required', N'กรุณาระบุสถานะ delivery การแจ้งเตือน');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'noti_delivery_status_not_found')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('noti_delivery_status_not_found', N'ไม่พบสถานะ delivery การแจ้งเตือนที่ระบุ');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'noti_user_device_user_required')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('noti_user_device_user_required', N'กรุณาระบุผู้ใช้สำหรับการลงทะเบียนอุปกรณ์');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'noti_user_device_token_required')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('noti_user_device_token_required', N'กรุณาระบุ FCM token สำหรับการลงทะเบียนอุปกรณ์');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'noti_user_device_platform_required')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('noti_user_device_platform_required', N'กรุณาระบุแพลตฟอร์มของอุปกรณ์');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'noti_user_device_not_found')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('noti_user_device_not_found', N'ไม่พบข้อมูลอุปกรณ์ของผู้ใช้');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'noti_platform_not_found')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('noti_platform_not_found', N'ไม่พบข้อมูลแพลตฟอร์มที่ระบุ');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'noti_content_title_required')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('noti_content_title_required', N'กรุณาระบุหัวข้อเนื้อหาการแจ้งเตือน');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'noti_content_body_required')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('noti_content_body_required', N'กรุณาระบุเนื้อหาการแจ้งเตือน');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'noti_content_duplicate')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('noti_content_duplicate', N'พบเนื้อหาการแจ้งเตือนสำหรับข้อความและช่องทางนี้ในระบบแล้ว');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'noti_status_required')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('noti_status_required', N'กรุณาระบุสถานะการแจ้งเตือน');
+
+IF NOT EXISTS (SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES] WHERE [ID] = 'noti_status_not_found')
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR]) VALUES ('noti_status_not_found', N'ไม่พบสถานะการแจ้งเตือนที่ระบุ');
+GO

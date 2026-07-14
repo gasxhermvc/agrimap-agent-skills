@@ -1,0 +1,64 @@
+🔴 src/                        --> folder รวมสำหรับ build
+│
+├─ 🔵 app/                     --> folder หลักสำหรับ source code
+│  │
+│  ├─ 🔵 core/                 --> infrastructure + application core
+│  │  ├─ 🟠 config/            --> type enviroment, local-storage 
+│  │  ├─ 🔵 services/          --> (service + state)
+│  │  ├─ 🔵 initializers/      --> logic ตอน app start
+│  │  ├─ 🔵 interceptors/      --> http interceptor
+│  │  ├─ 🔵 middleware/        --> guard / pre-condition logic
+│  │  └─ ⚫ models/            --> interface / type กลาง
+│  │  └─ 🔵 utils/             --> function กลาง สำหรับ reuse
+│  │
+│  ├─ 🟢 domain/               --> business logic + state
+│  │  └─ example-flow/
+│  │     ├─ example-flow.facade.ts          --> logic หลักของเรื่องนั้น ๆ
+│  │     ├─ example-flow.facade.provider.ts --> provider รวม logic + state
+│  │     └─ example-flow.facade.store.ts    --> more state
+│  │
+│  ├─ 🟡 features/               --> กลุ่ม component ที่ใช้เป็น pages และ component
+│  │  └─ example-flow/           --> feature component
+│  │     ├─ example-flow.component.html
+│  │     ├─ example-flow.component.scss
+│  │     └─ example-flow.component.ts
+│  │        └─ example-flow-child/           --> feature component child
+│  │        ├─ example-flow-child.component.html
+│  │        ├─ example-flow-child.component.scss
+│  │        └─ example-flow-child.component.ts
+│  │
+│  ├─ 🟣 generated-apis/        --> auto-generated จาก /tools (เครื่องมือแยก cli)
+│  │  ├─ example-ws/
+│  │  ├─ generated-apis.provider.ts
+│  │  └─ .gitkeep
+│  │
+│  ├─ ⚫ shared/                --> reusable UI / logic ที่ไม่รู้จัก business
+│  │  ├─ components/
+│  │  ├─ directives/       
+│  │  ├─ layouts/
+│  │  ├─ messages/
+│  │  ├─ nls/                   --> service แปลภาษา
+│  │  └─ pipes/
+│  │
+│  ├─ 🔴 app.component.*       --> component หลัก
+│  ├─ 🔴 app.config.ts         --> config ตั้งต้น
+│  ├─ 🔴 app.routes.ts         --> routing ทั้งหมดของระบบ
+│  └─ 🟡 theme.preset.ts       --> UI theme หลักของระบบ
+│
+├─ 🟠 environments/            --> env config ต่อ environment
+│  ├─ environment.ts           --> default / base
+│  ├─ environment.local.ts     --> local
+│  ├─ environment.development.ts
+│  ├─ environment.staging.ts
+│  ├─ environment.inhouse.ts
+│  └─ environment.prod.ts      --> production
+│
+└─ 🟡 styles/                  --> global styles / theme
+   ├─ styles.scss               --> entry หลักของ global styles
+   ├─ tailwind.css              --> Tailwind CSS
+   └─ env/                      --> ตัวแปร/dynamic
+      ├─ local/_dynamic-var.scss
+      ├─ development/_dynamic-var.scss
+      ├─ staging/_dynamic-var.scss
+      ├─ inhouse/_dynamic-var.scss
+      └─ prod/_dynamic-var.scss

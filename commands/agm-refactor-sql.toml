@@ -1,0 +1,2 @@
+description = "Refactor SQL using an explicit behavior mode"
+prompt = "Activate the agrimap-agent-skills umbrella skill and run operation refactor-sql.\n\nTreat the umbrella skill as the workflow source of trust.\n\nRequester arguments:\n\n{{args}}"

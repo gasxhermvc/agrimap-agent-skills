@@ -1,0 +1,18 @@
+@if (loading()) {
+  <p>กำลังโหลด...</p>
+} @else if (error()) {
+  <p class="error">{{ error() }}</p>
+} @else {
+  <ul>
+    @for (item of items(); track item.id) {
+      <li>
+        {{ item.name }}
+        @if (item.active) {
+          <span> (ใช้งาน)</span>
+        } @else {
+          <button (click)="onSelectItem(item)">เลือก</button>
+        }
+      </li>
+    }
+  </ul>
+}

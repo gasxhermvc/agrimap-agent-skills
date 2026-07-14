@@ -1,0 +1,2 @@
+description = "Run independent read-only verification of requirements, changes, and regression evidence"
+prompt = "Activate the agrimap-agent-skills umbrella skill and run operation qa.\n\nTreat the umbrella skill as the workflow source of trust.\n\nRequester arguments:\n\n{{args}}"

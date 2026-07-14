@@ -1,0 +1,2 @@
+description = "Create provider-specific frontier and executor prompts"
+prompt = "Activate the agrimap-agent-skills umbrella skill and run operation create-prompt.\n\nTreat the umbrella skill as the workflow source of trust.\n\nRequester arguments:\n\n{{args}}"
