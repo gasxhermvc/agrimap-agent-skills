@@ -14,6 +14,16 @@ Record:
 - affected flows and consuming teams;
 - project/company standards and local exceptions.
 
+## Design source of trust
+
+For any visual or design-affecting work, resolve design truth in this order and record which level was used:
+
+1. `.agrimap-agent/knowledge/references/design/`: owner-provided design tokens, brand identity, and UI guidelines. Load the relevant files as `FACT`.
+2. Design tokens, themes, and style layers already present in the codebase.
+3. Neither exists: continue with observed project patterns, state `design reference missing` in the receipt, and record `missing-owner-example` per [pattern-status.md](patterns/pattern-status.md). Do not block on the gap, and do not silently invent a new visual language.
+
+Ask the owner only when the task itself depends on an absent reference, such as "apply the new brand" with no brand material supplied. Never restyle against loaded tokens or identity without an owner decision. External design/creator skills may supply craft, but this workflow's receipts, evidence, memory, and QA remain authoritative, and the project's tokens/identity stay the visual source of trust.
+
 ## Reuse-first decision
 
 Before creating reusable code:

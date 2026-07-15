@@ -34,8 +34,21 @@ History lookup is read-only: it does not require identifying the person asking t
 2. Resolve the requester for this session/task. If unknown or the 24-hour confirmation has expired, ask before substantive work and persist it under ignored session runtime. A Git user name may be offered only as an unconfirmed suggestion. Never use one shared active-owner file in a multi-person project. Copy the requester, optional requester ID, and identity source into the task brief and durable events; the created event must preserve the requested objective. Record executing `model`, `role`, `agent`, and `provider` separately.
 3. If a previous task ended and Git has uncommitted changes, remind the requester to commit before starting the next task, then continue the explicit request. Do not auto-commit; stop only for unsafe overlap with dirty changes.
 4. Normalize text, large text, images, attachments, URLs, and pointed file paths using [input-and-scope.md](references/input-and-scope.md). Never silently truncate an input.
-5. State the current scope, non-goals, assumptions, and evidence still missing.
-6. Before substantive work, return a concise activation receipt containing `AgriMap skill active`, the selected operation, requester, normalized input coverage, and the pre-work checklist. This receipt proves routing; it is not an extra permission gate. If required input is missing, name it instead of pretending the workflow is active and ready.
+5. Resolve missing parameters with [elicitation.md](references/elicitation.md): infer from evidence and declare it, apply fixed defaults, and ask remaining never-guess inputs in one batched question. Never invent `target_kind`, `backend_profile`, `refactor_mode`, a provider, or an artifact name without direct evidence.
+6. Scan `.agrimap-agent/decisions/` frontmatter (`topic`, `affected`, `service_refs`) for approved records intersecting the task scope; load matches as `FACT`. Two approved records for one topic is a workflow defect — stop and ask the owner which is current.
+7. State the current scope, non-goals, assumptions, and evidence still missing.
+8. Before substantive work, return a concise activation receipt containing `AgriMap skill active`, the selected operation, requester, normalized input coverage, declared inferences, and the pre-work checklist. This receipt proves routing; it is not an extra permission gate. If required input is missing, name it instead of pretending the workflow is active and ready.
+
+## Owner reference library
+
+`.agrimap-agent/knowledge/references/` is the persistent, owner-curated reference library; it is loaded by matching work on every task without being re-pointed, unlike per-task input manifests:
+
+- `db-schema/`: database DDL — tables, views, procedures;
+- `api-contracts/`: OpenAPI/proto/contract samples;
+- `docs/`: business and domain documents, requirements, glossaries;
+- `design/`: design tokens, brand identity, UI guidelines.
+
+For any SQL or data-touching work, read the matching files under `db-schema/` before proposing changes and treat them as `FACT`. Never infer a table, column, type, key, or constraint that is not present in a loaded reference; if the needed schema is missing, name it and ask instead of guessing. The same load-as-FACT rule applies to `api-contracts/` for integration work and `design/` for design-affecting work, with the design fallback ladder in [frontend-engineer.md](references/frontend-engineer.md). A missing reference never blocks unrelated work: declare the gap in the receipt and continue on evidence.
 
 ## Use the evidence order
 
@@ -73,7 +86,7 @@ Read [workflows.md](references/workflows.md) for task routing, [roles.md](refere
 
 - FE main or library: automatically compose [frontend-engineer.md](references/frontend-engineer.md) as a discipline with the requested analysis, design, architecture, implementation, review, refactor, test, QA, or prompt workflow. Also read [frontend.md](references/patterns/frontend.md), and [conflict-resolution.md](references/patterns/conflict-resolution.md) when golden evidence is involved.
 - BE main (`backend_profile=agmws|agmbo`) or BE library: automatically compose [backend-engineer.md](references/backend-engineer.md) as a passive phase-aware discipline. Also read [backend.md](references/patterns/backend.md) and [conflict-resolution.md](references/patterns/conflict-resolution.md) when golden evidence is involved.
-- SQL table, procedure, or combined work: read [sql.md](references/patterns/sql.md) and [conflict-resolution.md](references/patterns/conflict-resolution.md) when golden evidence is involved.
+- SQL table, procedure, or combined work: load matching `.agrimap-agent/knowledge/references/db-schema/` files as `FACT` first (see Owner reference library), then read [sql.md](references/patterns/sql.md) and [conflict-resolution.md](references/patterns/conflict-resolution.md) when golden evidence is involved.
 - Missing or unverified patterns: read [pattern-status.md](references/patterns/pattern-status.md) and [owner-example-intake.md](references/patterns/owner-example-intake.md).
 - Cross-service, cross-database, integration, or ownership-sensitive work: read [service-ownership.md](references/service-ownership.md) and use only `.agrimap-agent/knowledge/service-ownership.yaml` as the project ownership SoT.
 
@@ -85,7 +98,7 @@ Assign the Leader role to the frontier-capability model responsible for decompos
 
 Read [subagents-and-branches.md](references/subagents-and-branches.md) and [model-capability-matrix.yaml](references/model-capability-matrix.yaml). A project override at `.agrimap-agent/model-capability-matrix.yaml` wins for model names only; it cannot weaken this workflow.
 
-For prompt generation, read [create-prompt.md](references/create-prompt.md). Treat each approved generated prompt as the execution SoT for that task. Use simple language but include explicit file names, current line numbers plus stable symbol anchors, ordered steps, tests, constraints, deviation handling, and expected handoff fields so a lightweight model does not need to reinterpret the plan.
+For prompt generation, read [create-prompt.md](references/create-prompt.md) and follow its staged elicitation contract; prompt generation never starts execution — running an approved prompt is the separate `agm-exec` operation. Treat each approved generated prompt as the execution SoT for that task. Use simple language but include explicit file names, current line numbers plus stable symbol anchors, ordered steps, tests, constraints, deviation handling, and expected handoff fields so a lightweight model does not need to reinterpret the plan.
 
 ## Checkpoint every atomic task
 

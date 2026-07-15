@@ -15,9 +15,11 @@
   "type": "module",
   "scripts": {
     "sync": "node tools/sync-adapters.mjs",
-    "test": "npm run test:workspace && npm run test:usage && npm run verify:golden",
-    "test:workspace": "node tools/test-scripts.mjs",
-    "test:usage": "node tools/test-usage-examples.mjs",
+    "test": "npm run test:unit && npm run test:integration && npm run verify:golden",
+    "test:unit": "node --test tests/unit/cli-args.test.mjs tests/unit/extract-code-blocks.test.mjs",
+    "test:integration": "npm run test:workspace && npm run test:usage",
+    "test:workspace": "node --test tests/integration/workspace/workspace.test.mjs",
+    "test:usage": "node --test tests/integration/package/usage.test.mjs",
     "verify:golden": "node skills/agrimap-agent-skills/scripts/verify-golden.mjs",
     "validate": "node tools/validate-package.mjs"
   },

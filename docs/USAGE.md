@@ -104,7 +104,72 @@ Receipt นี้ไม่ใช่ permission gate เพิ่มเติม 
 
 ใน log ต้องแยก `requestedBy`, `model`, `role`, `agent`, และ `provider`. Global installation ต้องไม่มี project logs/memory. สำหรับ repository ที่ใช้พัฒนา Skill นี้เอง `.agrimap-agent/` ทั้งก้อนถูก ignore และอยู่เฉพาะเครื่องผู้พัฒนา.
 
-## 3. Minimal runnable cases — ทุก operation
+## 3. วิธีใช้หลัก — สั้นก่อน, สนทนาเมื่อจำเป็น, key=value คือทางลัด
+
+### 3.1 แบบสั้น (แนะนำให้เริ่มแบบนี้)
+
+ไม่ต้องรู้ parameter ก่อนใช้ — agent resolve ให้เองตาม discipline (อ้างอิง `references/elicitation.md`): ชี้ไฟล์ด้วย `@file` หรือเล่าเป็นภาษาคน ค่า default ที่ปลอดภัยถูกเติมให้ (เช่น review/analyze เป็น read-only เสมอ) และค่าที่ infer ได้จากหลักฐานจะถูกประกาศใน activation receipt ให้ทักท้วงได้:
+
+```text
+# ถามกว้าง ๆ ได้เลย — free text คือ objective
+$agm-analyze มีการเพิ่ม cache ที่ไหนบ้างของระบบ login
+
+# ชี้ไฟล์ + ขยายความสั้น ๆ — @file คือ target, ข้อความคือการจำกัด scope
+$agm-review @README.md ตรวจคำผิด
+
+# อาการผิดปกติ = diagnose
+$agm-diagnose กดบันทึกแล้วขึ้น 500 บางครั้ง
+```
+
+สิ่งที่ agent **ห้ามเดาเด็ดขาด** (ไม่มีหลักฐานตรง → ถาม): `target_kind`, `backend_profile`, `refactor_mode`, ชื่อ project/artifact ใหม่ และ objective ของงานสร้างของใหม่.
+
+### 3.2 แบบสนทนา — ถามครั้งเดียว ตอบบรรทัดเดียว
+
+เมื่อขาดค่าที่ห้ามเดา agent จะรวมทุกคำถามเป็นชุดเดียว เป็นตัวเลือกตัวเลข พร้อมค่าแนะนำ แล้วให้ตอบกลับบรรทัดเดียว:
+
+```text
+Owner: $agm-create-feature สร้าง project template ใหม่ให้หน่อย ขอชื่อ publisher
+
+Agent: ขอ 3 คำตอบ ตอบบรรทัดเดียวเรียงลำดับ เช่น "1 2 approve":
+  1) target: 1=main  2=library
+  2) ประเภท: 1=webservice (agmws)  2=job worker (agmbo)
+  3) ชื่อ: เสนอ agmbo-publisher-netcore (format: agmws|agmbo-<project_name>-netcore)
+     ตอบ approve หรือพิมพ์ชื่อใหม่
+
+Owner: 1 2 agmbo-job-publisher-netcore
+
+Agent: สร้างด้วย company template — ยืนยันคำสั่งก่อนรัน (ที่ workspace root):
+  dotnet new agmbo --name "agmbo-job-publisher-netcore" --project-key "AGMBO-JOB-PUBLISHER"
+    --image-name "agmbo_job_publisher_netcore" --port-number "5000" --https-port-number "5001"
+  ตอบ approve หรือแก้ค่า
+
+Owner: approve
+```
+
+งานสร้างโปรเจกต์ใหม่ทั้งก้อนใช้ company template `dotnet new agmwa|agmws|agmbo` — agent derive ค่าที่เหลือ (project-key, image-name, base-path/href, ports) จากชื่อที่ confirm แล้วตาม convention, โชว์คำสั่งเต็ม + working directory ให้เห็นก่อนเสมอ, และรันหลัง approve เท่านั้น ส่วนงานในโปรเจกต์เดิม ทุก path ที่จะสร้าง/แก้เห็นครบใน slice plan ก่อนไฟล์แรกถูกเขียน.
+
+`agm-create-unit-test` ใช้ propose-first: ตรวจ target จาก path/โครงสร้างเอง แล้วเสนอรายการจุดเสี่ยงที่ควรมีเทสพร้อม mark recommended ให้เลือกตอบ `approve` / `all` / เลขที่ต้องการ เช่น `1 2 5` — ไม่มีเทสไหนถูกสร้างโดยไม่เห็นในรายการก่อน. ส่วน refactor ที่ไม่ระบุ mode จะได้เมนูภาษาคน 4 ระดับ (ห้ามเปลี่ยน logic / ปรับแต่พฤติกรรมเดิม 100% / เปลี่ยนเฉพาะจุดที่ตกลง / แก้บั๊กเดียว) — การรื้อใหม่ทั้งหมดไม่ใช่ refactor ให้ไป `agm-plan` + `agm-create-feature`.
+
+### 3.3 เลือกคำสั่งไหน
+
+| คำสั่ง | ใช้เมื่อเสียงในหัวคือ | จบที่ |
+| --- | --- | --- |
+| `agm-analyze` | "มันคืออะไร อยู่ไหน กระทบอะไร" — ยังไม่มีอะไรพัง | evidence + options + recommendation |
+| `agm-diagnose` | "**ทำไม**มันพัง" — มีอาการอยู่จริง | root cause ที่พิสูจน์แล้ว |
+| `agm-simulate` | "**ถ้า**ทำ X จะเกิดอะไร" | scenarios + risks + observables |
+| `agm-plan` | "รู้แล้วจะทำอะไร ขอลำดับขั้น" | แผน execution ตรวจได้ |
+| `agm-design` | "หน้าตา/flow/พฤติกรรมควรเป็นยังไง" | flow + states + acceptance |
+| `agm-architect` | "ของนี้ควรอยู่ไหน ใครเป็นเจ้าของ contract" | decision record ถาวร ใช้ซ้ำได้ |
+| `agm-review` | "ช่วยตรวจของที่มีอยู่" | findings เรียง severity ไม่แก้ให้ |
+| `agm-history` | "ใครทำอะไรเมื่อไหร่" | คำตอบ audit จาก log จริง |
+| `agm-refactor-*` | "ปรับคุณภาพโค้ดเดิม แบบคุมพฤติกรรม" | โค้ด + หลักฐาน preserve ตาม mode |
+| `agm-qa` | "งานที่ว่าเสร็จ เสร็จจริงไหม" | passed/failed + evidence |
+| `agm-create-unit-test` | "อยากได้เทสกันพัง" | เทสตามรายการที่เลือก |
+| `agm-create-feature` | "สร้างของใหม่" | feature ตาม slice plan ที่ confirm |
+| `agm-create-prompt` | "งานใหญ่ เตรียมโจทย์ให้ agent อื่น" | prompt SoT + thesis (ยังไม่รัน) |
+| `agm-exec` | "รัน prompt ที่ approve แล้วแบบมี rails" | Result Package รอ QA |
+
+### 3.4 key=value minimal cases — ทุก operation (ทางลัด power user, ไม่บังคับ)
 
 เริ่มจาก Codex syntax ด้านล่าง สำหรับ Claude/Gemini ให้เปลี่ยนเฉพาะ prefix ตามหัวข้อ 1 และคง arguments เดิม.
 
@@ -125,6 +190,8 @@ Receipt นี้ไม่ใช่ permission gate เพิ่มเติม 
 | `agm-create-unit-test` | `$agm-create-unit-test requested_by=Billy target_kind=be-main backend_profile=agmws phase=active-development target_files=Application/Orders/OrderUseCase.cs objective="cover duplicate cancellation"` |
 | `agm-create-feature` | `$agm-create-feature requested_by=Billy target_kind=be-main backend_profile=agmws phase=active-development objective="Add cancel-order endpoint"` |
 | `agm-create-prompt` | `$agm-create-prompt requested_by=Billy provider=codex objective="Delegate cancel-order implementation" target_kind=be-main backend_profile=agmws phase=active-development` |
+| `agm-exec` | `$agm-exec requested_by=Billy prompt=.agrimap-agent/prompts/<task-id>/executor.prompt.md` |
+| `agm-history` | `$agm-history requested_by=Billy --requester Billy --days 7` |
 
 งาน FE/BE จะ compose discipline ให้อัตโนมัติ ไม่มี `/agm-fe-engineer` หรือ `/agm-be-engineer`. `agmws|agmbo` เป็น `backend_profile` ของ `be-main`, ไม่ใช่ `target_kind`.
 
@@ -248,7 +315,23 @@ $agm-qa requested_by=Billy task_id=<feature-task-id> artifact="integrated worksp
 
 6. ตรวจ task result, passed QA, memory checkpoint และ JSONL log ก่อนรับคำว่าเสร็จ.
 
-## 8. Prompt delegation and workspace isolation
+## 8. Prompt delegation, execution, and workspace isolation
+
+`agm-create-prompt` เดินเป็น stage: **intake sweep → เสนอแนวทางพร้อม counter-argument → ปรับ Thesis → checklist ความเข้าใจ (ต้อง approve) → generate**. มันกวาดบริบทจากบทสนทนาและ `.agrimap-agent/` (memory, decisions, knowledge) ให้เอง ไม่ต้องเล่าซ้ำ และ**จบที่การสร้างไฟล์ prompt เท่านั้น** — ไม่เริ่มรันเอง:
+
+```text
+.agrimap-agent/prompts/<task-id>/leader.prompt.md
+.agrimap-agent/prompts/<task-id>/executor.prompt.md
+.agrimap-agent/prompts/<task-id>/qa.prompt.md
+```
+
+Task ID เป็น `yyyyMMddHHmmss-<subject>` เรียงตามเวลาในตัว. เมื่อคุณ approve (`prompt_status: owner-approved`) จึงนำไปรันด้วย `agm-exec`:
+
+```text
+$agm-exec requested_by=Billy prompt=.agrimap-agent/prompts/<task-id>/executor.prompt.md
+```
+
+`agm-exec` ปฏิเสธ prompt ที่ยัง `draft`, ถูก `superseded` หรืออยู่ใต้ `prompts/complete/` (งานปิดแล้ว — ต้องออก prompt ใหม่). เมื่อ task ปิดด้วย `complete|close` สคริปต์จะย้ายโฟลเดอร์ prompt ไป `prompts/complete/<task-id>/` ให้อัตโนมัติ ห้ามย้าย/เปลี่ยนชื่อเอง.
 
 เมื่อใช้ `agm-create-prompt`, Leader ต้องใส่ `workspace_need` ครบ ไม่พึ่งให้ executor เดาว่า Codex/Claude รองรับ worktree หรือไม่:
 

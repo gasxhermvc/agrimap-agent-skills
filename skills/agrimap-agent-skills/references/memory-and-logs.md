@@ -30,7 +30,9 @@ Use `.agrimap-agent/` under the target project root as the cross-provider worksp
 │   ├── checklist.md
 │   ├── handoffs/
 │   ├── qa.md
-│   └── result.md
+│   ├── result.md
+│   └── <operation deliverable>            # analysis.md | diagnosis.md | simulation.md |
+│                                           # plan.md | design.md | review.md | refactor-brief.md
 ├── prompts/<task-id>/
 ├── logs/YYYY-MM/<task-id>.jsonl
 └── runtime/                            # local/ignored

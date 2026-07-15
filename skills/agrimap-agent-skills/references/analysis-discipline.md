@@ -38,4 +38,4 @@ Return:
 - smallest complete execution checklist;
 - verification and QA evidence required to close the task.
 
-Use [../assets/templates/analysis.md](../assets/templates/analysis.md) when writing a durable analysis artifact.
+Write the durable artifact with [../assets/templates/analysis.md](../assets/templates/analysis.md) to the task folder: `.agrimap-agent/tasks/<task-id>/analysis.md` for analyze, `diagnosis.md` for diagnose, `simulation.md` for simulate. A chat answer alone is not a closed deliverable.

@@ -1,11 +1,8 @@
-// List response structure
-// have data
+// Complex response structure
 {
-  "data": [{...}, {...}, ..., {...}],
-  "message": "string"
-}
-// empty list data
-{
-  "data": [],
+  "data": {
+    "source_info": {...},
+    "widget_list": []
+  },
   "message": "string"
 }

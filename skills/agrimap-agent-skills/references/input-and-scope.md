@@ -16,6 +16,10 @@ Record each item with:
 - `facts`
 - `uncertainties`
 
+## Host mentions and free text
+
+Normalize host-native references (`@file`, attach, drag-drop) into manifest entries with the observed `kind` and `priority: required`. When it is unclear whether a mentioned file is the primary target or supporting context, or when free-text arguments carry no key, state the chosen interpretation in the activation receipt and proceed for read-only work; confirm first when acting on the wrong interpretation would edit files or change scope. Resolve every remaining parameter with [elicitation.md](elicitation.md); never guess a never-guess input.
+
 ## Large text
 
 - Measure size before reading.

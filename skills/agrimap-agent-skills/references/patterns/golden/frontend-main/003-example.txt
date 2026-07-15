@@ -1,5 +1,0 @@
-- Component ห้ามเรียก Store หรือ API ตรง
-- Facade คือจุดเดียวที่ทำ orchestration
-- Store ไม่มี subscribe ภายใน
-- Side-effect อยู่ที่ Facade เท่านั้น
-- ถ้ามี subscribe → ต้อง auto destroy

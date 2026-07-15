@@ -1,8 +1,8 @@
-// Complex response structure
+// for insert / update / delete response structure
+// have data
 {
   "data": {
-    "source_info": {...},
-    "widget_list": []
+    "success": true
   },
   "message": "string"
 }

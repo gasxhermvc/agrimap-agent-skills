@@ -1,4 +1,0 @@
-❌ Component ห้าม subscribe
-❌ Component ห้ามเรียก API
-❌ Store ห้าม async
-❌ Store ห้าม inject API

@@ -64,6 +64,18 @@ for (const required of [
   "skills/agrimap-agent-skills/scripts/log-events.mjs",
   "skills/agrimap-agent-skills/scripts/identity.mjs",
   "skills/agrimap-agent-skills/assets/templates/service-ownership.yaml",
+  "tests/README.md",
+  "tests/helpers/harness.mjs",
+  "tests/unit/cli-args.test.mjs",
+  "tests/unit/extract-code-blocks.test.mjs",
+  "tests/integration/package/usage.test.mjs",
+  "tests/integration/workspace/workspace.test.mjs",
+  "tests/integration/workspace/cases/bootstrap-and-prune.mjs",
+  "tests/integration/workspace/cases/identity-and-checkpoint.mjs",
+  "tests/integration/workspace/cases/hooks.mjs",
+  "tests/integration/workspace/cases/completion.mjs",
+  "tests/integration/workspace/cases/history.mjs",
+  "tests/integration/workspace/cases/frontend-reuse.mjs",
   "docs/USAGE.md",
   "plugins/agrimap-agent-skills/docs/USAGE.md",
   "examples/inputs/LONG-REQUEST.md",
@@ -71,6 +83,10 @@ for (const required of [
   "plugins/agrimap-agent-skills/examples/inputs/references/checkout-flow.svg",
 ]) {
   if (!(await exists(path.join(root, required)))) errors.push(`${required}: missing`);
+}
+
+for (const legacyTestRunner of ["tools/test-scripts.mjs", "tools/test-usage-examples.mjs"]) {
+  if (await exists(path.join(root, legacyTestRunner))) errors.push(`${legacyTestRunner}: obsolete monolithic test runner found`);
 }
 
 const packageManifest = await parseJson("package.json");
@@ -84,6 +100,12 @@ const geminiHooks = await parseJson("hooks/hooks.json");
 const pluginHooks = await parseJson("plugins/agrimap-agent-skills/hooks/hooks.json");
 
 if (!packageManifest?.scripts?.test?.includes("npm run verify:golden")) errors.push("npm test must include golden verification.");
+for (const scriptName of ["test:unit", "test:integration", "test:workspace", "test:usage"]) {
+  if (!packageManifest?.scripts?.[scriptName]) errors.push(`package.json script is missing: ${scriptName}`);
+}
+if (!packageManifest?.scripts?.test?.includes("npm run test:unit") || !packageManifest?.scripts?.test?.includes("npm run test:integration")) {
+  errors.push("npm test must run the categorized unit and integration suites.");
+}
 
 const canonicalSkill = await readFile(path.join(root, "skills", "agrimap-agent-skills", "SKILL.md"), "utf8");
 if (!/^---\r?\nname: agrimap-agent-skills\r?\ndescription: .+\r?\n---/s.test(canonicalSkill)) errors.push("Canonical SKILL.md frontmatter is invalid.");
@@ -141,6 +163,12 @@ const createFeatureTargetList = createFeatureSection.split("When `target_kind=be
 if (!createFeatureSection.includes("require `backend_profile`") || !createFeatureSection.includes("- `agmws`") || !createFeatureSection.includes("- `agmbo`")) errors.push("Create-feature workflow does not require the two approved backend profiles.");
 if (!createFeatureSection.includes("Do not use `agmws` or `agmbo` as `target_kind`")) errors.push("Create-feature workflow does not reject backend profiles as target kinds.");
 if (createFeatureTargetList.includes("- `agmws`") || createFeatureTargetList.includes("- `agmbo`")) errors.push("Create-feature target_kind still contains a backend profile.");
+for (const marker of ["SQL message collection gate", "table-only", "Back-end error/message reconciliation", "idempotent deployment insert"])
+  if (!workflowReference.includes(marker)) errors.push(`Workflow message-collection contract missing marker: ${marker}`);
+
+const sqlPattern = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "patterns", "sql.md"), "utf8");
+for (const marker of ["## Message collection gate", "`messages.txt`-style artifact", "same code + same meaning", "same code + different or ambiguous meaning", "rerunnable/idempotent insert", "`no message changes`", "`readability-organization`", "`strict-preserve-logic`"])
+  if (!sqlPattern.includes(marker)) errors.push(`SQL message-collection contract missing marker: ${marker}`);
 
 const promptReference = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "create-prompt.md"), "utf8");
 if (promptReference.includes("`project_kind`")) errors.push("create-prompt still uses the superseded project_kind dimension.");
@@ -151,6 +179,8 @@ for (const marker of ["execution source of truth", "deviation_from_prompt", "ind
 const qaReference = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "qa-and-done.md"), "utf8");
 for (const marker of ["independent read-only QA", "Result Package as testimony", "There is no conditional pass", "qa-failed"])
   if (!qaReference.includes(marker)) errors.push(`QA contract missing marker: ${marker}`);
+for (const marker of ["`messages.txt`-style artifact", "duplicate handling plus idempotent inserts", "QA evidence must name the artifact path", "codes found, reused, added, and conflicted", "inspected producer files", "explicit `no message changes`"])
+  if (!qaReference.includes(marker)) errors.push(`QA message-artifact contract missing marker: ${marker}`);
 
 const frontendDiscipline = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "frontend-engineer.md"), "utf8");
 if (!frontendDiscipline.includes("discipline layer, not a standalone workflow")) errors.push("Frontend engineering is not defined as a composable discipline.");
@@ -160,6 +190,8 @@ const backendDiscipline = await readFile(path.join(root, "skills", "agrimap-agen
 for (const marker of ["passive discipline", "`be-main`", "`be-library`", "`agmws`", "`agmbo`", "`foundation`", "`active-development`", "`stabilization`", "Do not add Type A/B/C or a required `change_kind`"])
   if (!backendDiscipline.includes(marker)) errors.push(`Backend discipline missing marker: ${marker}`);
 if (backendDiscipline.includes("Require `change_kind`")) errors.push("Backend discipline incorrectly requires change_kind.");
+for (const marker of ["## Error/message reconciliation", "same code + same meaning", "same code + different or ambiguous meaning", "idempotent insert", "`no message changes`"])
+  if (!backendDiscipline.includes(marker)) errors.push(`Backend message-reconciliation contract missing marker: ${marker}`);
 
 const modelMatrix = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "model-capability-matrix.yaml"), "utf8");
 if (modelMatrix.includes("fable5")) errors.push("Fable is duplicated as fable and fable5 instead of one model label.");

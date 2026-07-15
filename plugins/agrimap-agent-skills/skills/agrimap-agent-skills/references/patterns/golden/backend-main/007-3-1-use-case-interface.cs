@@ -1,5 +1,8 @@
 namespace AgriMap.Web.Service.Application.Interfaces;
 
+using AgriMap.Web.Service.Presentation.DTOs.Requests;
+using AgriMap.Web.Service.Presentation.DTOs.Responses;
+
 public interface IUserUseCase
 {
     Task<PaginatedResultResponseDto<UserResponseDto>> SearchUser(UserSearchRequestDto request);
@@ -9,4 +12,5 @@ public interface IUserUseCase
     Task<DataMessageResponseDto<object>> InsertUser(UserCreateRequestDto request);
     Task<DataMessageResponseDto<object>> UpdateUser(UserUpdateRequestDto request);
     Task<DataMessageResponseDto<object>> DeleteUser(int id);
+    Task<DataMessageResponseDto<UserDashboardResponseDto>> QueryUserDashboardAsync();
 }

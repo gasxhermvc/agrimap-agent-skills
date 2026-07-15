@@ -9,7 +9,7 @@
 5. Independently select and rerun one or two material verification claims when available, including one primary-path check and one risk-focused check proportional to the change.
 6. Test the primary path and affected failure paths.
 7. Check nearby callers, contracts, data, build/static health, and regression surface.
-8. Verify generated files, DI/registration, README/Playground, scheduler, and message artifacts when applicable.
+8. Verify generated files, DI/registration, README/Playground, scheduler, and message artifacts when applicable. For SQL/BE error-code scope, reconcile emitted/mapped/forwarded codes against the active `messages.txt`-style artifact and verify duplicate handling plus idempotent inserts. QA evidence must name the artifact path and list codes found, reused, added, and conflicted. Accept an empty result only when the evidence lists the inspected producer files and records explicit `no message changes`.
 9. For frontend tasks, verify reuse-search evidence and that `knowledge/frontend-reuse.jsonl` reflects created, changed, moved, deprecated, or newly discovered reusable artifacts.
 10. Record reproducible evidence and unresolved limitations without editing source, tests, prompts, scope, or acceptance criteria.
 

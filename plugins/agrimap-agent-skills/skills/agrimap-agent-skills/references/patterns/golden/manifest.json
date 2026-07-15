@@ -37,7 +37,7 @@
       "files": [
         {"path":"sql/FILE_STORAGE_I.sql","sha256":"614780756ed47bd4635854355b96510828d6dbc7dd18fa864e4f48031b2e4369"},
         {"path":"sql/LUT_NOTI_CHANNEL.sql","sha256":"6a77d564ddb6d8db9fef1ac7d7e22d171c29362e3d57496f5fd9e71983b46b24"},
-        {"path":"sql/messages.txt","sha256":"be6e19a0e51643186d3b721aaf1bab4c7d6583cdbd2d75fc63f384ff32ea320b"},
+        {"path":"sql/messages.txt","sha256":"29f5943b2f4c8eab29f16a850a196baaba48128f522535bd19f585dfa9c1c77c"},
         {"path":"sql/NOTIFICATION_CONTENT.sql","sha256":"f52deec55bb153bf987b0c2c11fdcf05661a4ff1cdf1fef62d58518e7176e11d"},
         {"path":"sql/NOTIFICATION_MESSAGE.sql","sha256":"b3bab211a7af718471daeda79bede8887d560baea94a72bd4326baafde69aab6"},
         {"path":"sql/NOTIFICATION_TEMPLATE.sql","sha256":"91adf8426c2bad3f5979a518ec45ad6d3bab33c87963f3ba3e1c3900ddafc72c"},

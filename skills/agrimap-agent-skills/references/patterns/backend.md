@@ -42,6 +42,10 @@ Do not relocate existing repository interfaces or models across layers during a 
 - Register new dependencies using the current DI pattern.
 - Preserve route, DTO, response, error, and stored-procedure contracts unless change is approved.
 
+## Error-code contract
+
+BE can originate a code in Domain/Application, translate it at the response boundary, or forward it from Infrastructure/SQL. For every affected vertical slice, apply [Error/message reconciliation](../backend-engineer.md#error-message-reconciliation) and the SQL [Message collection gate](sql.md#message-collection-gate) when a procedure participates. Do not create a second entry for a code whose meaning is already identical, and do not remap a conflicting meaning silently. The output is the active project's `messages.txt`-style artifact plus duplicate/idempotency evidence, or an explicit `no message changes` result.
+
 ## `backend_profile=agmbo`
 
 There is no Presentation tier. Use `Quartz/TaskScheduler trigger -> Application/UseCase -> Domain -> Port -> Infrastructure`. Inspect `Infrastructure/TaskScheduler.cs` for scheduled tasks. Record trigger, concurrency behavior, retry/error handling, and registration impact. Do not put business logic in the scheduler or add a schedule when the feature is only an executable batch operation.

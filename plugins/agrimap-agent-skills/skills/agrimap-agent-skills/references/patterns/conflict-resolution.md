@@ -59,6 +59,8 @@ The AgriMap baseline remains `Feature UI -> Facade -> Signal Store and/or Genera
 | `FILE_STORAGE_I.sql`, `UM_USER_I.sql`, `UM_USER_U.sql`, `NOTIFICATION_USERS_Q.sql` | Custom splitter, `STRING_SPLIT`, and cursors coexist. | Choose from database version, input contract, order requirements, volume, and measured plan. Do not promote one technique globally yet. | `project-dependent` |
 | `UM_USER_U.sql` | Update deletes and recreates all roles/permissions. | Treat as explicit replace semantics. Never infer it for a generic update or refactor; owner approval and regression cases are required. | `owner-decision-required` |
 | `UM_USER_I.sql`, `UM_USER_U.sql`, `UM_USER_D.sql`, `messages.txt` | Role restrictions and message codes encode business policy. | Preserve as project behavior only; do not publish it as a universal coding convention. | `owner-decision-required` |
+| Message artifacts across active projects | Dictionary tables, columns, module fields, languages, and deployment shapes differ. | Discover and reuse the active project's `messages.txt` or equivalent contract; never select a golden dictionary profile globally. | `project-dependent` |
+| Same error code with different or ambiguous meanings | Reusing the key can show users the wrong message or overwrite another module's contract. | Stop that entry and obtain an owner decision; never silently replace the existing meaning. | `owner-decision-required` |
 
 ## Copy-readiness gate
 

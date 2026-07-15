@@ -2,6 +2,24 @@
 
 Generate prompts that a lightweight executor can run without reconstructing the Leader model's reasoning. The approved prompt is the execution source of truth for one task: use plain, direct language while keeping every material contract explicit. Create separate prompts for Leader, executor, and independent read-only QA when implementation is delegated.
 
+## Staged elicitation contract
+
+Run the stages in order. Skip B–D only when the owner explicitly requests `express`; the default is the full sequence.
+
+- **Stage A — intake and sweep.** Collect the objective and inputs, then sweep the current conversation and `.agrimap-agent/` state (memory, decisions, knowledge, prior prompts, owner reference library) without asking the owner to repeat anything already said. Summarize the evidence ledger, including what remains `UNKNOWN`. Do not write any prompt yet.
+- **Stage B — approach with mandatory counter-arguments.** Present the viable approaches with trade-offs, and argue against the leading option at least once with evidence. Agreement without challenge is a stage failure.
+- **Stage C — thesis refinement.** Reduce the discussion to a thesis: problem → reasoning → chosen approach → measurable success criteria. Iterate with the owner until the thesis is stable. The thesis is carried into the generated prompt so it stays repeatable and auditable.
+- **Stage D — understanding checklist gate.** Return the full understanding as a checklist for owner confirmation. Do not proceed to Stage E until the owner approves it; if the owner corrects an item, update and re-present only the changed items.
+- **Stage E — generation.** Produce the Leader/executor/QA prompt files below with `prompt_status: draft`. The owner reviews and flips approval to `owner-approved`. Generation is the end of this operation: **never begin executing a generated prompt.** Running it is a separate owner action through `agm-exec`.
+
+Owner gates in this contract are real stops. A completed stage output is never permission to advance past a gate without the owner's reply.
+
+## Prompt file naming and lifecycle
+
+Write prompt files as `.agrimap-agent/prompts/<task-id>/<role>.prompt.md`, for example `leader.prompt.md`, `executor.prompt.md`, `executor-fe.prompt.md`, and `qa.prompt.md`. The `.prompt.md` suffix is required so editor tooling recognizes the files; do not rename them to encode status — `prompt_status` in the manifest is the single status source.
+
+When the task closes, `agm-workspace.mjs complete|close` moves the whole task prompt folder to `.agrimap-agent/prompts/complete/<task-id>/` automatically. Never move or rename prompt files by hand, and never execute a prompt found under `complete/`.
+
 ## Required input variables
 
 Use these names in the generated prompt manifest:
@@ -55,7 +73,7 @@ Allow the owner to override `model_name` in the generated prompt file. Preserve 
 8. Verify the real workspace mode. Do not assume sandbox commits, branches, worktrees, or uncommitted parent changes are visible to the Leader.
 9. Build a file/logical-contract ownership map. One writer model owns a file or contract per integration wave; combine or sequence overlapping tasks.
 10. Assign branch/worktree names only when the selected workspace mode supports them. If required state is uncommitted and absent from the base commit, use shared/sequential work or obtain an explicit owner commit boundary; never pretend an isolated worker can see it.
-11. Write a Leader/executor prompt per task to `.agrimap-agent/prompts/<task-id>/`. For implementation work, also write a separate read-only QA prompt whose model/agent identity is independent from the writer.
+11. Write a Leader/executor prompt per task to `.agrimap-agent/prompts/<task-id>/` using the `<role>.prompt.md` naming above. For implementation work, also write a separate read-only QA prompt whose model/agent identity is independent from the writer.
 12. Add the exact skill/reference files the executor must load.
 13. For cross-service or ownership-sensitive work, point to exact `service_id` entries in `.agrimap-agent/knowledge/service-ownership.yaml`; never paste a second ownership map into the prompt.
 14. Validate that each prompt contains the fields below.

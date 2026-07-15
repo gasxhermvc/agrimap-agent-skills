@@ -1,12 +1,11 @@
-import { Observable, BehaviorSubject, Subject } from 'rxjs'
-import { map } from 'rxjs/operators'
+// T2 — Signal
+// ใช้ generic กำหนด type — ไม่ annotate ฝั่งซ้ายซ้ำ
+private readonly count = signal<number>(0)
+private readonly items = signal<Item[]>([])
 
-// กำหนด type ที่ stream emit (Observable<T>, BehaviorSubject<T>, Subject<T>)
-readonly list$ = new Observable<ExampleItem[]>(/* ... */)
-readonly loading$ = new BehaviorSubject<boolean>(false)
-readonly selectedId$ = new Subject<number>()
+// expose ออกนอกคลาสเป็น readonly Signal เสมอ — ห้าม expose WritableSignal
+readonly countView: Signal<number> = this.count.asReadonly()
 
-// ใช้กับ pipe / operator ได้ type ตามที่กำหนด
-readonly count$ = this.list$.pipe(
-  map((items: ExampleItem[]) => items.length)
-)
+// computed ปล่อยให้ infer ได้ — ถ้า type ซับซ้อนให้ใส่ generic
+readonly total = computed(() => this.items().length)
+readonly options = computed<SelectOption[]>(() => /* ... */)

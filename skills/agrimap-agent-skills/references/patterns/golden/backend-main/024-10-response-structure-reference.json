@@ -1,0 +1,11 @@
+// General response structure or one object response structure
+// have data
+{
+  "data": {...},
+  "message": "string"
+}
+// null data
+{
+  "data": null,
+  "message": "string"
+}

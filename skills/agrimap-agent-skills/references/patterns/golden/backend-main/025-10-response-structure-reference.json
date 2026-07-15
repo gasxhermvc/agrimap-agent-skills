@@ -1,11 +1,11 @@
-// General response structure or one object response structure
+// List response structure
 // have data
 {
-  "data": {...},
+  "data": [{...}, {...}, ..., {...}],
   "message": "string"
 }
-// null data
+// empty list data
 {
-  "data": null,
+  "data": [],
   "message": "string"
 }

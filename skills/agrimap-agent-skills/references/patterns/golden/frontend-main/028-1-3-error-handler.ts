@@ -1,20 +1,16 @@
 loadUsersInfo(): void {
-  const usersInfo = this.appService.getLut('usersInfo')
-  this.appService.showLoading() // แสดง loading
+  const loadKey = 'loadUsersInfo_' + Date.now()
+  this.appService.showLoading(loadKey)
   this.konectApi
     .getAppAuthenUserinfo()
     .pipe(
-      takeUntilDestroyed(this.destroyRef),
-      finalize(() => {
-        this.appService.hideLoading() // ซ่อน loading
+      tap((res: UserInfo) => this.store.setUsersInfo(res)),
+      catchError((err: HttpErrorResponse) => {
+        this.appService.showToast(err?.error?.message ?? 'เกิดข้อผิดพลาด', 'error')
+        return EMPTY                                    // กลืน error — stream จบเงียบ
       }),
+      finalize(() => this.appService.hideLoading(loadKey)),
+      takeUntilDestroyed(this.destroyRef),
     )
-    .subscribe({
-      next: (res: UserInfo) => {
-        this.store.setUsersInfo(res)
-      },
-      error: (error: HttpErrorResponse) => {
-        this.appService.showToast(error.error.message, 'error') // error show
-      },
-    })
+    .subscribe()
 }

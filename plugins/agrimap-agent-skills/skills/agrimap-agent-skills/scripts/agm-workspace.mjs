@@ -7,6 +7,7 @@ import {
   mkdir,
   readFile,
   readdir,
+  rename,
   rm,
   stat,
   writeFile,
@@ -99,8 +100,20 @@ function confirmationHours(value) {
   return Math.min(168, Math.max(1, Number(value) || DEFAULT_CONFIRMATION_HOURS));
 }
 
-function defaultTaskId(operation) {
-  return `${now().replace(/[-:TZ.]/g, "").slice(0, 14)}-${operation || "task"}`;
+function taskSubjectSlug(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .split("-")
+    .filter(Boolean)
+    .slice(0, 5)
+    .join("-")
+    .slice(0, 60);
+}
+
+function defaultTaskId(operation, subject) {
+  return `${now().replace(/[-:TZ.]/g, "").slice(0, 14)}-${taskSubjectSlug(subject) || operation || "task"}`;
 }
 
 async function ensureLayout(root) {
@@ -171,7 +184,30 @@ async function ensureLayout(root) {
       "utf8",
     );
   }
+
+  const referenceLibrary = {
+    "db-schema": "# db-schema references\n\nOwner-provided database DDL: tables, views, and procedures (for example `TABLE_ORDER.sql`, `UM_USER_Q.sql`).\n\nAgents load matching files here as `FACT` before any SQL or data-touching work and must never infer a table, column, type, key, or constraint that is not present in a loaded reference. If the needed schema is missing, the agent names it and asks instead of guessing.\n",
+    "api-contracts": "# api-contracts references\n\nOpenAPI/Swagger documents, `.proto` files, and representative request/response samples.\n\nAgents load matching contracts here as `FACT` for integration and cross-service work instead of inferring payload shapes.\n",
+    docs: "# docs references\n\nBusiness and domain documents: requirements, business rules, glossaries, and process notes.\n\nAgents treat these as owner input with `FACT` evidence pointers for scope and acceptance decisions.\n",
+    design: "# design references\n\nDesign tokens, brand identity, and UI guidelines.\n\nAgents load these as `FACT` for design-affecting work and never invent a new visual language while a loaded token or identity answers the question. When this folder is empty, agents fall back to tokens already present in the codebase and record `missing-owner-example`.\n",
+  };
+  for (const [directory, readme] of Object.entries(referenceLibrary)) {
+    const referencePath = path.join(state, "knowledge", "references", directory);
+    await mkdir(referencePath, { recursive: true });
+    const readmePath = path.join(referencePath, "README.md");
+    if (!(await exists(readmePath))) await writeFile(readmePath, readme, "utf8");
+  }
   return state;
+}
+
+async function archivePrompts(state, taskId) {
+  const source = path.join(state, "prompts", taskId);
+  if (!(await exists(source))) return { moved: false, reason: "no-prompts" };
+  const destination = path.join(state, "prompts", "complete", taskId);
+  if (await exists(destination)) return { moved: false, reason: "destination-exists", destination: `prompts/complete/${taskId}` };
+  await mkdir(path.dirname(destination), { recursive: true });
+  await rename(source, destination);
+  return { moved: true, destination: `prompts/complete/${taskId}` };
 }
 
 function sessionIdentityPath(state, sessionId) {
@@ -412,7 +448,7 @@ async function start(root, args) {
   }
 
   const operation = args.operation || "task";
-  const taskId = safeTaskId(args.task || defaultTaskId(operation));
+  const taskId = safeTaskId(args.task || defaultTaskId(operation, args.subject || objective));
   if (!taskId) return { ok: false, message: "Task ID is empty after normalization." };
   const taskPath = path.join(state, "tasks", taskId);
   if (await exists(taskPath)) {
@@ -909,6 +945,7 @@ async function complete(root, args) {
   await copyFile(path.join(taskPath, "result.md"), path.join(state, "memory", "recent", `${taskId}.md`));
   await rm(path.join(state, "memory", "current", `${taskId}.md`), { force: true });
   if (activeMatch) await rm(activeMatch.activePath, { force: true });
+  const prompts = await archivePrompts(state, taskId);
   await appendLog(state, {
     taskId,
     requestedBy,
@@ -919,9 +956,11 @@ async function complete(root, args) {
     summary: "Task passed its completion gate.",
     reason: "Checklist, QA, memory, and logs are complete.",
     files,
-    verification: ["agm-workspace validate: passed"],
+    verification: prompts.moved
+      ? ["agm-workspace validate: passed", `prompts archived: ${prompts.destination}`]
+      : ["agm-workspace validate: passed"],
   });
-  return { ok: true, taskId, requestedBy, archived: `memory/recent/${taskId}.md` };
+  return { ok: true, taskId, requestedBy, archived: `memory/recent/${taskId}.md`, prompts };
 }
 
 async function closeTask(root, args) {
@@ -967,6 +1006,7 @@ async function closeTask(root, args) {
   await copyFile(resultPath, path.join(state, "memory", "recent", `${taskId}.md`));
   await rm(path.join(state, "memory", "current", `${taskId}.md`), { force: true });
   if (activeMatch) await rm(activeMatch.activePath, { force: true });
+  const prompts = await archivePrompts(state, taskId);
   await appendLog(state, {
     taskId,
     requestedBy,
@@ -977,7 +1017,10 @@ async function closeTask(root, args) {
     summary: `Task closed as ${status}; it did not pass the completion gate.`,
     reason: String(args.reason || "Closed without claiming completion."),
     files,
-    verification: status === "qa-failed" ? [`QA failed; next prompt: ${args.nextPrompt || args["next-prompt"]}`] : [],
+    verification: [
+      ...(status === "qa-failed" ? [`QA failed; next prompt: ${args.nextPrompt || args["next-prompt"]}`] : []),
+      ...(prompts.moved ? [`prompts archived: ${prompts.destination}`] : []),
+    ],
   });
   return {
     ok: true,
@@ -986,6 +1029,7 @@ async function closeTask(root, args) {
     status,
     complete: false,
     archived: `memory/recent/${taskId}.md`,
+    prompts,
     nextPrompt: status === "qa-failed" ? args.nextPrompt || args["next-prompt"] : null,
   };
 }

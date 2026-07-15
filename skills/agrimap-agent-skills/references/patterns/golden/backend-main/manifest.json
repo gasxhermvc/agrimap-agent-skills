@@ -59,7 +59,7 @@
       "language": "csharp",
       "lineEnd": 380,
       "lineStart": 367,
-      "sha256": "5fe130b87c7f97fe43e410cf0be818da0de7ba7b8dca3426e64d1c9732c98888"
+      "sha256": "5c178d8f147e27cffbced6cd49f9f3d2a8c0d78fedb54caad4eb86e5500c2204"
     },
     {
       "fileName": "008-3-2-use-case-implementation.cs",
@@ -67,7 +67,7 @@
       "language": "csharp",
       "lineEnd": 519,
       "lineStart": 384,
-      "sha256": "d96d23df30e684380abea0586778b8637e269ad7231e46ca08badb8a49a145b0"
+      "sha256": "f85956764f28c28d655f265c3c2b3e4272ccbdd74f8076486fa1e7fe34c825a7"
     },
     {
       "fileName": "009-4-1-repository-interface.cs",

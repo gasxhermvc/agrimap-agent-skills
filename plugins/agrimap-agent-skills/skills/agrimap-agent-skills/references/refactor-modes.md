@@ -14,6 +14,8 @@ Improve clarity, naming, structure, or duplication without changing logic, contr
 
 Allow mechanical restructuring only. Preserve conditions, calculation order, transaction behavior, queries, contracts, and error mapping. Prove equivalence with tests or before/after evidence.
 
+For SQL in `readability-organization` or `strict-preserve-logic`, message collection is a companion contract-reconciliation step. It may inventory existing codes and add a missing definition/idempotent insert to the proven project message artifact, but it must not rename codes or change throw sites, conditions, execution order, queries, results, transactions, side effects, or error mapping.
+
 ## `strict-allow-logic-change`
 
 Allow intentional logic improvement. Require concern -> conversation -> owner trade-off before editing. Record old behavior, new behavior, compatibility impact, migration/rollback, and the selected unit tests/test cases.
@@ -24,7 +26,7 @@ Change only the logic required to eliminate a proven defect. Capture the failing
 
 ## Required refactor brief
 
-Record:
+Write the brief to `.agrimap-agent/tasks/<task-id>/refactor-brief.md` using [refactor-brief.md](../assets/templates/refactor-brief.md) before changing code. Record:
 
 - `mode`
 - `objective`
@@ -35,4 +37,3 @@ Record:
 - `excluded_scope`
 - `tests`
 - `rollback`
-

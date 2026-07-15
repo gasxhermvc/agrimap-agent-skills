@@ -1,8 +1,0 @@
-// upload step
-step1: upload shapefile to /api/data-management/content/upload
-step2: data-management-container call /api/file-management/file/upload
-
-// publish step
-step1: user publisher mapservice to /api/layer-management/publish/mapservice with content_id
-step2: layer-management-container call /api/file-management/file/{file_id} to download file
-step3: insert record to database and call GeoProcessing to publish mapservice
