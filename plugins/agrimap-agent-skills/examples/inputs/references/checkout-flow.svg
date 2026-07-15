@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="280" viewBox="0 0 960 280" role="img" aria-labelledby="title desc">
+  <title id="title">Checkout retry state flow</title>
+  <desc id="desc">Submit moves to waiting. A success completes. A timeout moves to verify outcome, which resolves to success or retry enabled.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#334155"/>
+    </marker>
+  </defs>
+  <rect width="960" height="280" fill="#f8fafc"/>
+  <g font-family="Arial, sans-serif" font-size="16" text-anchor="middle">
+    <g fill="#ffffff" stroke="#334155" stroke-width="2">
+      <rect x="30" y="95" width="150" height="64" rx="10"/>
+      <rect x="230" y="95" width="150" height="64" rx="10"/>
+      <rect x="430" y="30" width="180" height="64" rx="10"/>
+      <rect x="430" y="165" width="180" height="64" rx="10"/>
+      <rect x="670" y="30" width="150" height="64" rx="10"/>
+      <rect x="670" y="165" width="190" height="64" rx="10"/>
+    </g>
+    <g fill="#0f172a">
+      <text x="105" y="133">Ready</text>
+      <text x="305" y="133">Waiting</text>
+      <text x="520" y="68">Success</text>
+      <text x="520" y="203">Verify outcome</text>
+      <text x="745" y="68">Complete</text>
+      <text x="765" y="203">Retry enabled</text>
+    </g>
+  </g>
+  <g fill="none" stroke="#334155" stroke-width="2" marker-end="url(#arrow)">
+    <path d="M180 127 H230"/>
+    <path d="M380 112 C405 100 405 62 430 62"/>
+    <path d="M380 142 C405 155 405 197 430 197"/>
+    <path d="M610 62 H670"/>
+    <path d="M610 183 C635 170 645 82 670 75"/>
+    <path d="M610 207 H670"/>
+  </g>
+  <g font-family="Arial, sans-serif" font-size="13" fill="#475569" text-anchor="middle">
+    <text x="205" y="116">submit</text>
+    <text x="405" y="80">confirmed</text>
+    <text x="405" y="181">timeout</text>
+    <text x="640" y="51">finish</text>
+    <text x="642" y="132">found</text>
+    <text x="640" y="196">not found</text>
+  </g>
+</svg>

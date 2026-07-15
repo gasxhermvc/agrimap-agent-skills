@@ -1,6 +1,6 @@
 # Create-prompt workflow
 
-Generate prompts that a lightweight executor can run without reconstructing the frontier model's reasoning. The approved prompt is the execution source of truth for one task: use plain, direct language while keeping every material contract explicit. Create separate prompts for frontier, executor, and independent read-only QA when implementation is delegated.
+Generate prompts that a lightweight executor can run without reconstructing the Leader model's reasoning. The approved prompt is the execution source of truth for one task: use plain, direct language while keeping every material contract explicit. Create separate prompts for Leader, executor, and independent read-only QA when implementation is delegated.
 
 ## Required input variables
 
@@ -8,7 +8,7 @@ Use these names in the generated prompt manifest:
 
 - `requested_by`: human requester copied into task logs and handoffs
 - `prompt_id`
-- `prompt_role`: `frontier`, `executor`, or `qa`
+- `prompt_role`: `leader`, `executor`, or `qa`
 - `prompt_status`: `draft`, `owner-approved`, `superseded`, or `executed`
 - `task_id`
 - `provider`: `codex` or `claude`
@@ -21,7 +21,10 @@ Use these names in the generated prompt manifest:
 - `logic_impact`: `none`, `preserve`, or `change-approved`
 - `model_profile`
 - `model_name`
+- `role`: `leader`, `executor`, `qa`, `reviewer`, or `analyst`
+- `agent_name`: stable functional label such as `primary`, `fe`, `be`, `sql`, `designer`, or `qa`
 - `workspace_mode`: `shared-workspace`, `isolated-worktree`, `isolated-sandbox`, or `unknown`
+- `workspace_need`: required contract containing `isolation`, `requested_mode`, `base_ref`, `base_commit`, `provider_instruction`, `visibility_check`, `integration_return`, and `fallback_mode`
 - `integration_owner`
 - `branch_name`
 - `file_ownership`
@@ -38,7 +41,7 @@ Use these names in the generated prompt manifest:
 - `deviation_policy`
 - `handoff_contract`
 
-Allow the owner to override `model_name` in the generated prompt file. Preserve the capability profile so the frontier can detect an unsuitable override and discuss it rather than silently changing it.
+Allow the owner to override `model_name` in the generated prompt file. Preserve the capability profile so the Leader can detect an unsuitable override and discuss it rather than silently changing it. Keep `model_name`, `role`, `agent_name`, and `provider` separate; do not create composite names such as `frontier-codex` or `gpt-5.4-fe` as the only identity record.
 
 ## Build the prompt
 
@@ -48,21 +51,40 @@ Allow the owner to override `model_name` in the generated prompt file. Preserve 
 4. Reject `agmws` or `agmbo` as `target_kind`. Require one as `backend_profile` for every `be-main` target.
 5. Select a model profile from `model-capability-matrix.yaml`.
 6. Split work only when tasks are independent; use at most five active subagents.
-7. Determine and record the real workspace mode. Do not assume sandbox commits or branches are visible to the frontier.
-8. Build a file/logical-contract ownership map. One writer model owns a file or contract per integration wave; combine or sequence overlapping tasks.
-9. Assign branch/worktree names only when the selected workspace mode supports them.
-10. Write a frontier/executor prompt per task to `.agrimap-agent/prompts/<task-id>/`. For implementation work, also write a separate read-only QA prompt whose actor is independent from the writer.
-11. Add the exact skill/reference files the executor must load.
-12. For cross-service or ownership-sensitive work, point to exact `service_id` entries in `.agrimap-agent/knowledge/service-ownership.yaml`; never paste a second ownership map into the prompt.
-13. Validate that each prompt contains the fields below.
+7. Define `workspace_need` before delegation. State whether isolation is required/preferred/not-needed, the requested mode, base ref and exact base commit containing the required state, provider-specific instruction, visibility check, integration return, and safe fallback.
+8. Verify the real workspace mode. Do not assume sandbox commits, branches, worktrees, or uncommitted parent changes are visible to the Leader.
+9. Build a file/logical-contract ownership map. One writer model owns a file or contract per integration wave; combine or sequence overlapping tasks.
+10. Assign branch/worktree names only when the selected workspace mode supports them. If required state is uncommitted and absent from the base commit, use shared/sequential work or obtain an explicit owner commit boundary; never pretend an isolated worker can see it.
+11. Write a Leader/executor prompt per task to `.agrimap-agent/prompts/<task-id>/`. For implementation work, also write a separate read-only QA prompt whose model/agent identity is independent from the writer.
+12. Add the exact skill/reference files the executor must load.
+13. For cross-service or ownership-sensitive work, point to exact `service_id` entries in `.agrimap-agent/knowledge/service-ownership.yaml`; never paste a second ownership map into the prompt.
+14. Validate that each prompt contains the fields below.
 
 ## Delegation overlap contract
 
 Before rendering prompts, compare each executor's target files, generators, shared registries, exports, routes, DI files, schemas, callers, and contracts. A file may appear in only one writer's `file_ownership` for the wave. Put every other writer's set in `forbidden_files`.
 
-QA/review prompts may inspect all files but must be read-only and return findings rather than edit any file. A failed finding closes the current implementation attempt as `qa-failed`; the frontier prepares a new correction prompt for owner discussion instead of routing an edit inside the task under verification. When overlap cannot be removed, use one executor for that scope or execute the prompts sequentially.
+QA/review prompts may inspect all files but must be read-only and return findings rather than edit any file. A failed finding closes the current implementation attempt as `qa-failed`; the Leader prepares a new correction prompt for owner discussion instead of routing an edit inside the task under verification. When overlap cannot be removed, use one executor for that scope or execute the prompts sequentially.
 
-The frontier must name the integration artifact expected for the chosen workspace mode: shared-workspace file set, visible commit SHA, or portable patch/changed artifacts. Integration, QA dispatch, and evidence synthesis remain frontier responsibilities, never owner cleanup; detailed final verification belongs to the independent QA actor.
+The Leader must name the integration artifact expected for the chosen workspace mode: shared-workspace file set, visible commit SHA, or portable patch/changed artifacts. Integration, QA dispatch, and evidence synthesis remain Leader responsibilities, never owner cleanup; detailed final verification belongs to the independent QA model.
+
+## Workspace-need contract
+
+Treat workspace isolation as task scope, not a suggestion. Render all fields explicitly:
+
+```yaml
+workspace_need:
+  isolation: required|preferred|not-needed
+  requested_mode: isolated-worktree|isolated-sandbox|shared-workspace|sequential
+  base_ref: branch-or-ref
+  base_commit: exact-sha-containing-required-state
+  provider_instruction: exact instruction/configuration for this provider
+  visibility_check: how the worker proves cwd, ref, and Leader-visible return path
+  integration_return: shared-file-set|commit-sha|portable-patch|changed-artifacts
+  fallback_mode: sequential|shared-workspace|stop-and-report
+```
+
+For Claude Code, use `isolation: worktree` in the custom subagent configuration when that installed version supports it; a prose mention alone is not proof. For Codex, select a managed task worktree only on a surface that exposes it. If the provider/version cannot perform the requested mode, the executor reports it and uses only `fallback_mode`; it must not invent a branch or claim isolation.
 
 ## File and line contract
 
@@ -108,13 +130,13 @@ Carry the normalized input manifest into the prompt. For large text, list read c
 
 ## Generated prompt sections
 
-1. Requester identity, actor, and model assignment
+1. Requester plus separate model, role, agent, and provider assignment
 2. Prompt identity, role, status, and task identity
 3. Problem, required end state, and definition of done
 4. Owner decisions and trade-offs
 5. Inputs, evidence ledger, and source of trust
 6. Scope and non-goals
-7. Workspace mode, integration owner, branch/worktree when applicable
+7. Workspace need, verified mode, base commit, integration owner, and branch/worktree when applicable
 8. File/logical-contract ownership and forbidden overlap
 9. Target files, lines, and anchors
 10. Ordered execution steps

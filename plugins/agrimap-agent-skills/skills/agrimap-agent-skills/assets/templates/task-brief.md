@@ -2,7 +2,10 @@
 
 - Task ID: `{{task_id}}`
 - Requested by: {{requested_by}}
-- Actor: {{actor}}
+- Model: `{{actual_model_or_unknown}}`
+- Role: `{{role}}`
+- Agent: `{{agent_name}}`
+- Provider: `{{provider}}`
 - Operation: `{{operation}}`
 - Objective: {{objective}}
 - Scope: {{scope}}

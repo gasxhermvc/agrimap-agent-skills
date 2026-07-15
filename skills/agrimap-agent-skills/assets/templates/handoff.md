@@ -2,7 +2,10 @@
 
 - Status: `completed|partial|blocked`
 - Requested by: {{requested_by}}
-- Actor: {{actor}}
+- Model: {{actual_model_or_unknown}}
+- Role: {{role}}
+- Agent: {{agent_name}}
+- Provider: {{provider}}
 - Branch/commit: {{branch_or_commit}}
 
 ## Summary

@@ -8,13 +8,12 @@
     {"name":"agm-design","operation":"design","description":"Design a user flow, behavior, and acceptance criteria"},
     {"name":"agm-architect","operation":"architect","description":"Design boundaries, contracts, and migration trade-offs"},
     {"name":"agm-review","operation":"review","description":"Review code or artifacts with evidence-backed findings"},
-    {"name":"agm-fe-engineer","operation":"fe-engineer","description":"Apply the phase-aware frontend discipline with reuse discovery and indexing"},
     {"name":"agm-refactor-fe","operation":"refactor-fe","description":"Refactor frontend code using an explicit behavior mode"},
     {"name":"agm-refactor-be","operation":"refactor-be","description":"Refactor backend code using an explicit behavior mode"},
     {"name":"agm-refactor-sql","operation":"refactor-sql","description":"Refactor SQL using an explicit behavior mode"},
     {"name":"agm-qa","operation":"qa","description":"Run independent read-only verification of requirements, changes, and regression evidence"},
     {"name":"agm-create-unit-test","operation":"create-unit-test","description":"Create target-specific unit or regression tests"},
     {"name":"agm-create-feature","operation":"create-feature","description":"Create a target-specific FE, BE, batch, library, or SQL feature"},
-    {"name":"agm-create-prompt","operation":"create-prompt","description":"Create provider-specific frontier and executor prompts"}
+    {"name":"agm-create-prompt","operation":"create-prompt","description":"Create provider-specific Leader, executor, and QA prompts"}
   ]
 }

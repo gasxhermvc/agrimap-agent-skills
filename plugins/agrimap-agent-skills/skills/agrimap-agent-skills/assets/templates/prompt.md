@@ -5,7 +5,7 @@
 ## Prompt identity
 
 - `prompt_id`: {{prompt_id}}
-- `prompt_role`: `{{frontier_executor_or_qa}}`
+- `prompt_role`: `{{leader_executor_or_qa}}`
 - `prompt_status`: `draft|owner-approved|superseded|executed`
 - `task_id`: {{task_id}}
 - Supersedes / superseded by: {{prompt_version_pointer_or_none}}
@@ -13,10 +13,11 @@
 ## Requester and assignment
 
 - `requested_by`: {{requested_by}}
-- `actor`: {{actor}}
 - `provider`: {{provider}}
 - `model_profile`: {{model_profile}}
 - `model_name`: {{model_name_owner_editable}}
+- `role`: {{leader_executor_qa_reviewer_or_analyst}}
+- `agent_name`: {{primary_fe_be_sql_designer_qa_or_custom}}
 - `target_kind`: {{target_kind}}
 - `backend_profile`: {{backend_profile_if_be_main}}
 - `required_skills`: {{required_skills}}
@@ -41,7 +42,12 @@
 
 ## Workspace and ownership
 
-- Workspace mode: `{{workspace_mode}}`
+- Workspace need: {{workspace_need}}
+- Verified workspace mode: `{{workspace_mode}}`
+- Base ref/commit containing required state: {{base_ref_and_commit}}
+- Provider instruction: {{provider_workspace_instruction}}
+- Visibility check: {{workspace_visibility_check}}
+- Unsupported-mode fallback: {{workspace_fallback}}
 - Integration owner: {{integration_owner}}
 - Branch/worktree: {{branch_or_not_applicable}}
 - File/logical-contract ownership: {{file_ownership}}
@@ -73,7 +79,7 @@ Continue through routine choices that preserve this contract and record them. If
 
 {{constraints_tests}}
 
-- QA is a separate read-only actor: {{qa_actor_and_prompt}}
+- QA is a separate read-only model/agent: {{qa_execution_identity_and_prompt}}
 - Claims QA should independently sample: {{qa_claims_to_rerun}}
 
 ## Memory checkpoint and Result Package

@@ -2,7 +2,10 @@
 
 - Outcome: `completed|qa-failed|blocked|cancelled`
 - Requested by: {{requested_by}}
-- Frontier actor: {{actor}}
+- Leader model: {{actual_model_or_unknown}}
+- Leader role: `leader`
+- Leader agent: {{agent_name}}
+- Leader provider: {{provider}}
 - QA status: `{{qa_status}}`
 
 ## Decisions

@@ -2,7 +2,7 @@ schema_version: 1
 selection_policy:
   owner_override_file: .agrimap-agent/model-capability-matrix.yaml
   max_active_subagents: 5
-  frontier_integrates_and_dispatches_independent_qa: true
+  leader_integrates_and_dispatches_independent_qa: true
   rules:
     - Use a reasoning/review profile for decomposition, high-impact design, QA, and final review.
     - Use a hard executor only when complexity or coupling justifies the cost.

@@ -12,6 +12,10 @@ const operations = JSON.parse(await readFile(path.join(root, "config", "operatio
 await rm(pluginSkills, { recursive: true, force: true });
 await mkdir(pluginSkills, { recursive: true });
 await cp(canonicalSkill, path.join(pluginSkills, "agrimap-agent-skills"), { recursive: true });
+for (const directory of ["docs", "examples"]) {
+  await rm(path.join(pluginRoot, directory), { recursive: true, force: true });
+  await cp(path.join(root, directory), path.join(pluginRoot, directory), { recursive: true });
+}
 
 for (const item of operations.operations) {
   const aliasDirectory = path.join(pluginSkills, item.name);
@@ -76,6 +80,7 @@ const pluginHooks = {
 await mkdir(path.join(pluginRoot, "hooks"), { recursive: true });
 await writeFile(path.join(pluginRoot, "hooks", "hooks.json"), `${JSON.stringify(pluginHooks, null, 2)}\n`, "utf8");
 
+await rm(path.join(root, "commands"), { recursive: true, force: true });
 await mkdir(path.join(root, "commands"), { recursive: true });
 for (const item of operations.operations) {
   const prompt = [

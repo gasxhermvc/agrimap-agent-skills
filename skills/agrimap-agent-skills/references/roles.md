@@ -1,14 +1,15 @@
 # Role contracts
 
-Select the smallest set of roles that covers the task. The frontier may perform a technical role directly or delegate it, but an implementation writer must not act as its own final QA actor.
+Select the smallest set of roles that covers the task. The Leader may perform a technical role directly or delegate it, but an implementation writer must not act as its own final QA model.
 
-## Frontier / Integrator
+## Leader / Integrator
 
+- Use a frontier-capability model for this role when available. `leader` is the role; `frontier_analysis` is a capability profile, not an execution name.
 - Own intake, scope, decomposition, model selection, owner trade-offs, task graph, final integration, QA dispatch, evidence synthesis, and memory closure.
 - Keep the complete requirement ledger so owner ideas are not dropped during delegation.
 - Reject handoffs that lack evidence, affected files, verification, or unresolved concerns.
 - Never declare completion from subagent status alone.
-- Do not perform detailed QA on an implementation the frontier wrote or integrated. Dispatch an independent read-only QA subagent/context and reconcile its evidence.
+- Do not perform detailed QA on an implementation the Leader wrote or integrated. Dispatch an independent read-only QA subagent/context and reconcile its evidence.
 - If QA reports a defect, do not edit the implementation inside the task under verification. Close it honestly as `qa-failed`, summarize the finding, and propose/discuss a prompt for a new correction task.
 
 ## Analyst / Problem Solver
@@ -34,7 +35,9 @@ Select the smallest set of roles that covers the task. The frontier may perform 
 
 ## Backend Engineer
 
+- Apply this role passively to every BE analysis, architecture, feature, refactor, review, test, QA, or prompt task; do not expose a separate Back-end Engineer command.
 - Classify `target_kind` as `be-main` or `be-library`. For `be-main`, require `backend_profile=agmws|agmbo`; never treat the profile as a target kind.
+- Classify `phase` as `foundation`, `active-development`, or `stabilization` and apply [backend-engineer.md](backend-engineer.md). Do not require a Type or `change_kind` enum.
 - Keep controllers thin, use cases responsible for orchestration, domain objects responsible for business meaning, and infrastructure responsible for external/data details.
 - Classify each model as contract DTO, domain model/entity/value object, or persistence projection before placing it.
 - For libraries, update README and Playground in the same task.
@@ -42,7 +45,7 @@ Select the smallest set of roles that covers the task. The frontier may perform 
 
 ## Frontend Engineer
 
-- Apply this role as a discipline to every FE analysis, design, architecture, feature, refactor, review, test, QA, or prompt task; `/agm-fe-engineer` is only a direct entry point.
+- Apply this role passively to every FE analysis, design, architecture, feature, refactor, review, test, QA, or prompt task; do not expose a separate FE Engineer command.
 - Classify `fe-main` or `fe-library`.
 - Classify the project phase as `foundation`, `active-development`, or `stabilization` and apply the matching quality gate.
 - Search the reuse index and codebase before creating any reusable function, component, service, directive, pipe, token, or config.
@@ -58,7 +61,7 @@ Select the smallest set of roles that covers the task. The frontier may perform 
 - Translate the approved checklist into the smallest complete code change using the target project's established pattern.
 - Keep naming, file placement, comments, error handling, generated-code boundaries, and test style consistent with neighboring code.
 - Do not invent business behavior or move architectural ownership during a feature/bug task.
-- Return exact files/symbols, behavior changed or preserved, commands/results, and unresolved concerns for independent QA and frontier synthesis.
+- Return exact files/symbols, behavior changed or preserved, commands/results, and unresolved concerns for independent QA and Leader synthesis.
 
 ## Designer
 

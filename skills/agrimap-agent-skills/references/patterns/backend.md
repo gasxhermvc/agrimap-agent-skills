@@ -1,19 +1,20 @@
 # Backend patterns
 
-Classify the target before designing files:
+Classify the target and delivery phase before designing files. Apply [backend-engineer.md](../backend-engineer.md):
 
 - `target_kind=be-main` with required `backend_profile=agmws`: web service/application.
 - `target_kind=be-main` with required `backend_profile=agmbo`: batch application using the same main structure plus `Infrastructure/TaskScheduler.cs` when scheduling applies.
 - `be-library`: reusable codebase with a stable public surface; update `README.md` and Playground in every feature task.
 
 `agmws` and `agmbo` are backend-main profiles, not target kinds. No fallback profile exists.
+Do not add Type A/B/C or require `change_kind`; derive concrete work from the objective and current code.
 
 ## Main flow
 
 Use the local Clean Architecture implementation. The baseline request flow is:
 
 ```text
-Controller -> UseCase -> Domain -> Repository port -> Infrastructure implementation
+Presentation/Controller -> Application/UseCase -> Domain -> Repository port -> Infrastructure implementation -> response mapping
 ```
 
 Create only responsibilities required by the feature. Do not generate the entire chain for a library, SQL-only task, simple endpoint reuse, or feature that has no new persistence dependency.
@@ -43,7 +44,7 @@ Do not relocate existing repository interfaces or models across layers during a 
 
 ## `backend_profile=agmbo`
 
-Inspect `Infrastructure/TaskScheduler.cs` for scheduled tasks. Record trigger, concurrency behavior, retry/error handling, and registration impact. Do not add a schedule when the feature is only an executable batch operation.
+There is no Presentation tier. Use `Quartz/TaskScheduler trigger -> Application/UseCase -> Domain -> Port -> Infrastructure`. Inspect `Infrastructure/TaskScheduler.cs` for scheduled tasks. Record trigger, concurrency behavior, retry/error handling, and registration impact. Do not put business logic in the scheduler or add a schedule when the feature is only an executable batch operation.
 
 ## BE libraries
 

@@ -27,6 +27,8 @@ The package does not import legacy `.agm` governance and does not create an extr
 
 Repository: [gasxhermvc/agrimap-agent-skills](https://github.com/gasxhermvc/agrimap-agent-skills)
 
+Usage guide: [docs/USAGE.md](docs/USAGE.md) — provider syntax, activation proof, all operation examples, large text, images, attachments, and pointed files/lines.
+
 ## Install for Codex
 
 ```powershell
@@ -34,7 +36,7 @@ codex plugin marketplace add gasxhermvc/agrimap-agent-skills
 codex plugin add agrimap-agent-skills@agrimap-agent-skills
 ```
 
-Start a new Codex session after installation. In Codex CLI, `/plugins` can also browse and install the plugin after the marketplace is added. Invoke the umbrella as `$agrimap-agent-skills` or an alias such as `$agm-fe-engineer`.
+Start a new Codex session after installation. In Codex CLI, `/plugins` can also browse and install the plugin after the marketplace is added. Invoke the umbrella as `$agrimap-agent-skills` or an active alias such as `$agm-create-feature`.
 
 Local repository testing:
 
@@ -56,7 +58,7 @@ Or run the equivalent `/plugin marketplace add` and `/plugin install` commands i
 
 ```text
 /agrimap-agent-skills:agrimap-agent-skills
-/agrimap-agent-skills:agm-fe-engineer
+/agrimap-agent-skills:agm-create-feature
 /agrimap-agent-skills:agm-create-prompt
 ```
 
@@ -76,7 +78,7 @@ Run from the terminal, not from Gemini's interactive prompt:
 gemini extensions install https://github.com/gasxhermvc/agrimap-agent-skills
 ```
 
-Restart Gemini CLI after installation. Invoke `/agm-fe-engineer`, `/agm-plan`, or another generated command. For local development:
+Restart Gemini CLI after installation. Invoke `/agm-create-feature`, `/agm-plan`, or another generated command. For local development:
 
 ```powershell
 gemini extensions link .
@@ -86,12 +88,12 @@ Gemini may show its native consent prompt when activating a skill or fingerprint
 
 ## First use in a project
 
-At the first chat/session interaction, the frontier agent must resolve who is requesting the work. In a multi-person project there is no shared `owner.json`.
+At the first chat/session interaction, the Leader must resolve who is requesting the work. In a multi-person project there is no shared `owner.json`.
 
 - ignored live identity: `.agrimap-agent/runtime/sessions/<session-id>.json`
 - ignored active task: `.agrimap-agent/runtime/active/<session-id>.json`
 - tracked attribution: `Requested by` in the task brief and `requestedBy` in every task-scoped JSONL log event
-- executor attribution: `actor` identifies the frontier/subagent/model that performed the action
+- execution attribution: `model`, `role`, `agent`, and `provider` are separate; `requestedBy` remains the human
 
 If the hook cannot identify the current human, it instructs the agent to ask before substantive work. It must never copy the requester from the latest shared log.
 
@@ -99,8 +101,8 @@ Manual bootstrap or diagnostics:
 
 ```powershell
 node <installed-package>\skills\agrimap-agent-skills\scripts\agm-workspace.mjs init --cwd .
-node <installed-package>\skills\agrimap-agent-skills\scripts\agm-workspace.mjs identify --cwd . --session <session-id> --owner "Billy" --provider codex
-node <installed-package>\skills\agrimap-agent-skills\scripts\agm-workspace.mjs start --cwd . --session <session-id> --operation fe-engineer --title "Build shared table"
+node <installed-package>\skills\agrimap-agent-skills\scripts\agm-workspace.mjs identify --cwd . --session <session-id> --owner "Billy" --model "gpt-5.6-sol" --role leader --agent primary --provider codex
+node <installed-package>\skills\agrimap-agent-skills\scripts\agm-workspace.mjs start --cwd . --session <session-id> --operation create-feature --title "Build shared table"
 node <installed-package>\skills\agrimap-agent-skills\scripts\agm-workspace.mjs checkpoint --cwd . --session <session-id> --task <task-id> --summary "Reuse scan completed" --files "src/a.ts,src/b.ts" --verification "typecheck passed"
 ```
 
@@ -117,7 +119,6 @@ Commit `.agrimap-agent/tasks`, `memory/project.md`, task-scoped `memory/current|
 | `agm-design` | flow, behavior, states, acceptance |
 | `agm-architect` | boundaries, contracts, migration |
 | `agm-review` | evidence-backed findings |
-| `agm-fe-engineer` | direct entry to the phase-aware FE discipline and reuse index |
 | `agm-refactor-fe/be/sql` | explicit refactor behavior mode |
 | `agm-qa` | independent read-only requirements-to-evidence verification |
 | `agm-create-unit-test` | target-specific tests |
@@ -128,7 +129,7 @@ For backend creation/testing, use `target_kind=be-main` with required `backend_p
 
 ## Front-end Engineer discipline
 
-The discipline is automatically composed with every FE analysis, design, architecture, feature, refactor, review, test, QA, and prompt task. `/agm-fe-engineer` is a direct entry point, not a separate pipeline. Every FE task classifies `fe-main` or `fe-library` and one phase:
+The passive discipline is automatically composed with every FE analysis, design, architecture, feature, refactor, review, test, QA, and prompt task. It has no separate command. Every FE task classifies `fe-main` or `fe-library` and one phase:
 
 - `foundation`: structure, tokens, config, development infrastructure, Core/CodeBase/SharedComponent;
 - `active-development`: reuse discovery, consistency, consumer impact, technical-debt containment for multi-developer delivery;
@@ -143,7 +144,19 @@ node <installed-package>\skills\agrimap-agent-skills\scripts\frontend-reuse-inde
 node <installed-package>\skills\agrimap-agent-skills\scripts\frontend-reuse-index.mjs validate --cwd .
 ```
 
-Scanner results start as `discovered`. The frontier inspects suitability and promotes an entry to `verified` with `upsert`; no embedding/vector service is required in v1.
+Scanner results start as `discovered`. The Leader inspects suitability and promotes an entry to `verified` with `upsert`; no embedding/vector service is required in v1.
+
+## Back-end Engineer discipline
+
+The passive discipline is automatically composed with every BE task and has no separate command. It requires:
+
+- `target_kind=be-main|be-library`;
+- `backend_profile=agmws|agmbo` only for `be-main`;
+- `phase=foundation|active-development|stabilization`.
+
+There is no Type A/B/C and no required `change_kind`. `agmws` is the web host flow `Presentation -> Application/UseCase -> Domain -> Port -> Infrastructure -> response`. `agmbo` has no Presentation tier and starts from `Quartz/TaskScheduler -> Application/UseCase -> Domain -> Port -> Infrastructure`; `Infrastructure/TaskScheduler.cs` contains scheduling concerns, never business logic.
+
+Foundation reuses `agrimap.platform` before creating Core infrastructure. Active development analyzes the existing Domain first and completes the smallest vertical slice. Stabilization emphasizes regression safety, production configuration, deployment, existing vulnerability checks, and bounded refactor.
 
 ## Model labels and prompt generation
 
@@ -155,15 +168,23 @@ An owner-approved generated prompt is the execution SoT for exactly one task. It
 
 ## QA separation and task closure
 
-Implementation and final QA are separate responsibilities. The Frontier integrates executor handoffs, then dispatches an independent read-only QA subagent/context. QA reopens the actual artifact and reruns selected claims; it never fixes findings and never returns a conditional pass.
+Implementation and final QA are separate responsibilities. The Leader integrates executor handoffs, then dispatches an independent read-only QA subagent/context. QA reopens the actual artifact and reruns selected claims; it never fixes findings and never returns a conditional pass.
 
-If QA fails, Frontier records `qa-failed`, summarizes the evidence, and prepares a correction prompt for a new task. It does not edit the failed implementation inside the task under verification:
+If QA fails, the Leader records `qa-failed`, summarizes the evidence, and prepares a correction prompt for a new task. It does not edit the failed implementation inside the task under verification:
 
 ```powershell
 node <installed-package>\skills\agrimap-agent-skills\scripts\agm-workspace.mjs close --cwd . --session <session-id> --task <failed-task-id> --status qa-failed --next-prompt .agrimap-agent/prompts/<new-task-id>/executor.md
 ```
 
 `complete` remains reserved for a checked checklist plus passed or justified not-applicable QA.
+
+## State and log location
+
+The global installation is stateless. On real work, both logs and memory are written to the project currently being changed: `<target-project>/.agrimap-agent/`. The Skill/plugin installation directory is never a state destination.
+
+This repository is the Skill's development source, so its entire `.agrimap-agent/` is local-only and ignored by Git. It will not be published to GitHub. In an ordinary target project, the generated `.agrimap-agent/.gitignore` ignores only `runtime/` and `cache/`; project memory, knowledge, task results, prompts, and concise logs remain available to the project team.
+
+AI Gateway storage is not part of v1.
 
 ## Service ownership source of trust
 
@@ -173,15 +194,15 @@ The package initializes an empty canonical file and intentionally does not promo
 
 ## Delegation and sandbox integration
 
-Frontier must verify whether executors share a workspace, use visible worktrees, or run in isolated sandboxes. A branch name alone is never accepted as proof that another agent's work can be integrated.
+The Leader must define `workspace_need` and verify whether executors share a workspace, use visible worktrees, or run in isolated sandboxes. A branch name alone is never accepted as proof that another agent's work can be integrated.
 
 - one file and one logical contract have one writer model per integration wave;
-- shared registration/export/route/DI/schema files belong to one executor or Frontier;
+- shared registration/export/route/DI/schema files belong to one executor or the Leader;
 - overlapping work is combined or executed sequentially;
 - isolated work returns a visible commit SHA, portable patch, or complete changed artifacts;
-- Frontier integrates, dispatches independent QA, and synthesizes evidence, so the human owner is not left to collect agent fragments.
+- the Leader integrates, dispatches independent QA, and synthesizes evidence, so the human owner is not left to collect agent fragments.
 
-Claude Code supports `--worktree` and custom subagent `isolation: worktree`; without isolation a normal subagent starts from the current working directory. Codex managed worktrees are surface-dependent, so a Codex subagent is not assumed isolated. Unsupported or unknown modes degrade to sequential writers rather than failing the workflow.
+Every delegation prompt states isolation need, requested mode, base ref/commit, provider instruction, visibility check, integration return, and fallback. Claude Code can use custom subagent `isolation: worktree` when the installed version supports it; Codex managed worktrees are surface-dependent. Unsupported or unknown modes use only the named shared/sequential fallback. Uncommitted parent changes are never assumed visible in an isolated worktree.
 
 ## License status
 

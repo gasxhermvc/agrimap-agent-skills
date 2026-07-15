@@ -82,6 +82,7 @@ const activeTask = sessionId
   ? await readJson(path.join(stateRoot, "runtime", "active", `${sessionId}.json`))
   : null;
 const requestedBy = identity?.requestedBy || activeTask?.requestedBy || null;
+const execution = activeTask || identity || {};
 const projectMemory = await readText(path.join(stateRoot, "memory", "project.md"));
 const currentTaskMemory = activeTask?.taskId
   ? await readText(path.join(stateRoot, "memory", "current", `${activeTask.taskId}.md`))
@@ -95,8 +96,9 @@ const context = [
   requestedBy
     ? `- Requested by: ${requestedBy}`
     : "- Requester is unknown for this session/task. Ask the human before substantive work; never infer from the latest shared log.",
+  `- Execution identity: model=${execution.model || "unknown"}, role=${execution.role || "leader"}, agent=${execution.agent || "primary"}, provider=${execution.provider || provider}.`,
   "- Persist session identity with agm-workspace.mjs identify --session <id> --owner <name>; runtime identity is ignored by Git.",
-  "- Copy requestedBy into the tracked task brief and every durable log event; record the executing model/agent separately as actor.",
+  "- Copy requestedBy into the tracked task brief and every durable log event; record model, role, agent, and provider as separate fields. Never combine them into actor names such as frontier-codex.",
   "- Read the umbrella skill before using an agm workflow.",
   "- Do not add permission gates. Discuss only material logic/contract/data/architecture trade-offs.",
   "- Update memory and concise logs after every atomic task; do not claim completion with unchecked items.",
@@ -108,10 +110,11 @@ if (activeTask?.taskId) {
 
 if (args.mode === "subagent") {
   context.push(
-    "- Inherit requestedBy from the frontier handoff/session and identify yourself as actor.",
-    "- Write only the files and logical contract assigned to you. One writer owns them per integration wave; stop and report any overlap not resolved by the frontier.",
-    "- Do not assume your sandbox branch or commit is visible. Return the requested integration artifact for the recorded workspace mode.",
-    "- Return a structured handoff: status, requestedBy, actor, summary, files_changed, behavior_changed, decisions_and_reasons, commands_and_tests, remaining_risks, memory_facts, integration_artifact, and branch/commit when applicable.",
+    "- Inherit requestedBy from the Leader handoff/session and identify model, role, agent, and provider separately.",
+    "- Read workspace_need before any write. Verify the required mode, base commit, visibility, ownership, and integration-return method; report unsupported isolation and use only the named fallback.",
+    "- Write only the files and logical contract assigned to you. One writer owns them per integration wave; stop and report overlap not resolved by the Leader.",
+    "- Do not assume a sandbox branch or commit is visible. Return the requested integration artifact for the verified workspace mode.",
+    "- Return a structured handoff: status, requestedBy, model, role, agent, provider, summary, files_changed, behavior_changed, decisions_and_reasons, commands_and_tests, remaining_risks, memory_facts, integration_artifact, and branch/commit when applicable.",
   );
 }
 

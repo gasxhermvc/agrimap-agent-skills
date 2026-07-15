@@ -1,6 +1,6 @@
 # Workflows
 
-Use this router after intake and impact analysis. Combine a workflow with the relevant technical role; do not treat command names as permission gates. Whenever a target is `fe-main` or `fe-library`, automatically compose the [Front-end Engineer discipline](frontend-engineer.md) with that workflow.
+Use this router after intake and impact analysis. Combine a workflow with the relevant technical role; do not treat command names as permission gates. Automatically compose the passive [Front-end Engineer discipline](frontend-engineer.md) for FE targets and [Back-end Engineer discipline](backend-engineer.md) for BE targets.
 
 ## `/agm-analyze`
 
@@ -29,10 +29,6 @@ Map boundaries, ownership, contracts, data flow, deployment/runtime effects, alt
 ## `/agm-review`
 
 Review correctness first, then behavior regressions, contracts/data, maintainability, performance when relevant, and tests. Report findings by severity with file, line, evidence, impact, and actionable fix. Do not refactor during a review-only request.
-
-## `/agm-fe-engineer`
-
-Use this alias to enter or inspect the Front-end Engineer discipline directly; it is not a separate delivery pipeline. Require `phase=foundation`, `active-development`, or `stabilization`. Search the frontend reuse index and repository before creating functions, components, services, directives, pipes, tokens, or config. Prefer exact reuse, safe extension, or composition before new code. Update the reuse index and run the phase quality gate after every FE task. Read [frontend-engineer.md](frontend-engineer.md).
 
 ## `/agm-refactor-fe`, `/agm-refactor-be`, `/agm-refactor-sql`
 
@@ -69,4 +65,4 @@ Derive only the files required for that target. Do not assume the old controller
 
 ## `/agm-create-prompt`
 
-Create provider-specific, execution-ready frontier, executor, and independent QA prompts using [create-prompt.md](create-prompt.md). Treat the approved prompt as the task execution SoT. Include model assignment, skills to load, verified workspace mode, non-overlapping file ownership, branch name only when supported, file/line targets, steps, tests, deviation handling, integration artifact, and the handoff contract.
+Create provider-specific, execution-ready Leader, executor, and independent QA prompts using [create-prompt.md](create-prompt.md). Treat the approved prompt as the task execution SoT. Include separate model/role/agent/provider assignment, required skills, complete `workspace_need`, verified workspace mode, non-overlapping file ownership, branch name only when supported, file/line targets, steps, tests, deviation handling, integration artifact, and the handoff contract.

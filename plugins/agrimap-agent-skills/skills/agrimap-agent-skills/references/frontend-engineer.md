@@ -2,7 +2,7 @@
 
 Frontend code is usually broad rather than algorithmically difficult. Control technical debt by making reuse visible, keeping project patterns searchable, and changing the quality emphasis by delivery phase.
 
-This is a discipline layer, not a standalone workflow. Apply it automatically whenever `target_kind` is `fe-main` or `fe-library`, including analysis, design, architecture, feature work, refactor, review, unit tests, QA, and prompt generation. `/agm-fe-engineer` is the direct entry point when the owner wants this discipline inspected or applied explicitly.
+This is a passive discipline layer, not a standalone workflow or alias. Apply it automatically whenever `target_kind` is `fe-main` or `fe-library`, including analysis, design, architecture, feature work, refactor, review, unit tests, QA, and prompt generation.
 
 ## Required classification
 
@@ -56,7 +56,7 @@ Maintain `.agrimap-agent/knowledge/frontend-reuse.jsonl` as the deterministic so
 }
 ```
 
-Use `scripts/frontend-reuse-index.mjs` to scan, search, upsert, deprecate, and validate. Scanner entries use `status=discovered`; a human or frontier must inspect them before promotion to `verified`. Deprecate moved/retired entries with an optional replacement ID; ordinary search excludes them while history remains auditable. Do not add an embedding service in v1. `vectorReadyText` keeps the catalog ready for a future company vector store without making that dependency mandatory.
+Use `scripts/frontend-reuse-index.mjs` to scan, search, upsert, deprecate, and validate. Scanner entries use `status=discovered`; a human or Leader must inspect them before promotion to `verified`. Deprecate moved/retired entries with an optional replacement ID; ordinary search excludes them while history remains auditable. Do not add an embedding service in v1. `vectorReadyText` keeps the catalog ready for a future company vector store without making that dependency mandatory.
 
 ## Phase 1: `foundation`
 

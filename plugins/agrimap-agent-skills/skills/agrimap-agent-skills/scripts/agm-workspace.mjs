@@ -53,6 +53,24 @@ function safeTaskId(value) {
     .slice(0, 160);
 }
 
+function firstValue(...values) {
+  for (const value of values) {
+    const normalized = String(value || "").trim();
+    if (normalized) return normalized;
+  }
+  return "";
+}
+
+function executionIdentity(args = {}, fallback = {}) {
+  const role = firstValue(args.role, fallback.role, "leader");
+  return {
+    model: firstValue(args.model, args.modelName, args["model-name"], fallback.model, "unknown"),
+    role,
+    agent: firstValue(args.agent, args.agentName, args["agent-name"], fallback.agent, role === "leader" ? "primary" : role),
+    provider: firstValue(args.provider, fallback.provider, "unknown"),
+  };
+}
+
 async function exists(filePath) {
   try {
     await stat(filePath);
@@ -94,10 +112,18 @@ async function ensureLayout(root) {
   ];
   await Promise.all(directories.map((directory) => mkdir(path.join(state, directory), { recursive: true })));
 
+  const stateIgnorePath = path.join(state, ".gitignore");
+  if (!(await exists(stateIgnorePath))) {
+    await writeFile(stateIgnorePath, "runtime/\ncache/\n", "utf8");
+  }
+
   const configPath = path.join(state, "config.json");
   if (!(await exists(configPath))) {
     await writeJson(configPath, {
       schemaVersion: 1,
+      stateScope: "target-project",
+      installDirectoryWrites: false,
+      aiGateway: "disabled",
       retentionDays: 30,
       trackConciseLogs: true,
       identity: {
@@ -157,8 +183,7 @@ async function identify(state, args) {
   const identity = {
     sessionId,
     requestedBy,
-    actor: String(args.actor || "frontier"),
-    provider: String(args.provider || "unknown"),
+    ...executionIdentity(args),
     updatedAt: now(),
   };
   await writeJson(sessionIdentityPath(state, sessionId), identity);
@@ -233,6 +258,8 @@ async function start(root, args) {
   if (!requestedBy) {
     return { ok: false, needsRequester: true, message: "Requester is required before substantive task work." };
   }
+  const sessionIdentity = await readJson(sessionIdentityPath(state, sessionId)).catch(() => null);
+  const execution = executionIdentity(args, sessionIdentity || {});
 
   const activePath = activeTaskPath(state, sessionId);
   if (await exists(activePath)) {
@@ -248,7 +275,7 @@ async function start(root, args) {
   if (!(await exists(path.join(taskPath, "brief.md")))) {
     await writeFile(
       path.join(taskPath, "brief.md"),
-      `# Task brief\n\n- Task ID: \`${taskId}\`\n- Requested by: ${requestedBy}\n- Session: \`${sessionId}\`\n- Operation: \`${operation}\`\n- Objective: ${args.title || "Define before implementation."}\n- Scope: Define before implementation.\n- Non-goals: Define before implementation.\n`,
+      `# Task brief\n\n- Task ID: \`${taskId}\`\n- Requested by: ${requestedBy}\n- Session: \`${sessionId}\`\n- Model: \`${execution.model}\`\n- Role: \`${execution.role}\`\n- Agent: \`${execution.agent}\`\n- Provider: \`${execution.provider}\`\n- Operation: \`${operation}\`\n- Objective: ${args.title || "Define before implementation."}\n- Scope: Define before implementation.\n- Non-goals: Define before implementation.\n`,
       "utf8",
     );
   }
@@ -260,18 +287,17 @@ async function start(root, args) {
     );
   }
 
-  const actor = String(args.actor || "frontier");
-  const active = { taskId, operation, sessionId, requestedBy, actor, startedAt: now() };
+  const active = { taskId, operation, sessionId, requestedBy, ...execution, startedAt: now() };
   await writeJson(activePath, active);
   await writeFile(
     path.join(state, "memory", "current", `${taskId}.md`),
-    `# Current task memory\n\n- Task: \`${taskId}\`\n- Requested by: ${requestedBy}\n- Actor: ${actor}\n- Status: started\n- Operation: \`${operation}\`\n- Last checkpoint: ${now()}\n- Summary: ${args.title || "Task started; scope must be completed in the task brief."}\n`,
+    `# Current task memory\n\n- Task: \`${taskId}\`\n- Requested by: ${requestedBy}\n- Model: \`${execution.model}\`\n- Role: \`${execution.role}\`\n- Agent: \`${execution.agent}\`\n- Provider: \`${execution.provider}\`\n- Status: started\n- Operation: \`${operation}\`\n- Last checkpoint: ${now()}\n- Summary: ${args.title || "Task started; scope must be completed in the task brief."}\n`,
     "utf8",
   );
   await appendLog(state, {
     taskId,
     requestedBy,
-    actor,
+    ...execution,
     event: "created",
     summary: `Started ${operation} task.`,
     reason: args.title || "Requester request",
@@ -302,26 +328,26 @@ async function checkpoint(root, args) {
   const requestedBy = activeMatch?.active?.requestedBy || await taskRequester(taskPath) || await resolveRequester(state, args);
   if (!requestedBy) return { ok: false, needsRequester: true, message: "Requester is missing from the session and task brief." };
 
-  const actor = String(args.actor || activeMatch?.active?.actor || "frontier");
+  const execution = executionIdentity(args, activeMatch?.active || {});
   const files = listValue(args.files);
   const verification = listValue(args.verification);
   const concerns = String(args.concerns || "None recorded.");
   await writeFile(
     path.join(state, "memory", "current", `${taskId}.md`),
-    `# Current task memory\n\n- Task: \`${taskId}\`\n- Requested by: ${requestedBy}\n- Actor: ${actor}\n- Status: ${args.status || "in-progress"}\n- Last checkpoint: ${now()}\n- Summary: ${summary}\n- Reason: ${args.reason || "Atomic task checkpoint."}\n- Files: ${files.length ? files.map((file) => `\`${file}\``).join(", ") : "None"}\n- Verification: ${verification.length ? verification.join("; ") : "Not yet run"}\n- Concerns: ${concerns}\n`,
+    `# Current task memory\n\n- Task: \`${taskId}\`\n- Requested by: ${requestedBy}\n- Model: \`${execution.model}\`\n- Role: \`${execution.role}\`\n- Agent: \`${execution.agent}\`\n- Provider: \`${execution.provider}\`\n- Status: ${args.status || "in-progress"}\n- Last checkpoint: ${now()}\n- Summary: ${summary}\n- Reason: ${args.reason || "Atomic task checkpoint."}\n- Files: ${files.length ? files.map((file) => `\`${file}\``).join(", ") : "None"}\n- Verification: ${verification.length ? verification.join("; ") : "Not yet run"}\n- Concerns: ${concerns}\n`,
     "utf8",
   );
   await appendLog(state, {
     taskId,
     requestedBy,
-    actor,
+    ...execution,
     event: String(args.event || "changed"),
     summary,
     reason: String(args.reason || "Atomic task checkpoint."),
     files,
     verification,
   });
-  return { ok: true, taskId, requestedBy, actor, memory: `memory/current/${taskId}.md` };
+  return { ok: true, taskId, requestedBy, ...execution, memory: `memory/current/${taskId}.md` };
 }
 
 async function filesUnder(directory) {
@@ -411,7 +437,7 @@ async function complete(root, args) {
   const taskPath = path.join(state, "tasks", taskId);
   const activeMatch = await findActiveForTask(state, taskId, safeSessionId(args.session));
   const requestedBy = activeMatch?.active?.requestedBy || await taskRequester(taskPath);
-  const actor = String(args.actor || activeMatch?.active?.actor || "frontier");
+  const execution = executionIdentity(args, activeMatch?.active || {});
 
   await copyFile(path.join(taskPath, "result.md"), path.join(state, "memory", "recent", `${taskId}.md`));
   await rm(path.join(state, "memory", "current", `${taskId}.md`), { force: true });
@@ -419,7 +445,7 @@ async function complete(root, args) {
   await appendLog(state, {
     taskId,
     requestedBy,
-    actor,
+    ...execution,
     event: "completed",
     summary: "Task passed its completion gate.",
     reason: "Checklist, QA, memory, and logs are complete.",
@@ -464,7 +490,7 @@ async function closeTask(root, args) {
   const activeMatch = await findActiveForTask(state, taskId, safeSessionId(args.session));
   const requestedBy = activeMatch?.active?.requestedBy || await taskRequester(taskPath);
   if (!requestedBy) return { ok: false, needsRequester: true, message: "Requester is missing from the task brief." };
-  const actor = String(args.actor || activeMatch?.active?.actor || "frontier");
+  const execution = executionIdentity(args, activeMatch?.active || {});
 
   await copyFile(resultPath, path.join(state, "memory", "recent", `${taskId}.md`));
   await rm(path.join(state, "memory", "current", `${taskId}.md`), { force: true });
@@ -472,7 +498,7 @@ async function closeTask(root, args) {
   await appendLog(state, {
     taskId,
     requestedBy,
-    actor,
+    ...execution,
     event: status === "qa-failed" ? "failed" : status,
     summary: `Task closed as ${status}; it did not pass the completion gate.`,
     reason: String(args.reason || "Closed without claiming completion."),

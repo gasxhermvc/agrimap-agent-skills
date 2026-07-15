@@ -2,9 +2,12 @@
 
 - Status: `passed|failed|blocked|not-applicable`
 - Requested by: {{requested_by}}
-- QA actor: {{actor}}
+- QA model: {{model}}
+- QA role: `qa`
+- QA agent: {{agent_name}}
+- QA provider: {{provider}}
 - Read-only: `true`
-- Implementation actor: {{implementation_actor}}
+- Implementation identity: {{implementation_model_role_agent_provider}}
 - Execution prompt SoT: {{prompt_path}}
 
 ## Requirement evidence

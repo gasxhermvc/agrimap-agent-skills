@@ -262,7 +262,7 @@ async function upsert(root, indexPath, args) {
     status: input.status || "verified",
     hash: content === null ? input.hash : sha256(content),
     updatedAt: new Date().toISOString(),
-    updatedBy: String(args.by || input.updatedBy || "frontier"),
+    updatedBy: String(args.by || input.updatedBy || "unknown"),
   };
   entry.vectorReadyText = input.vectorReadyText || vectorText(entry);
   const missing = validateEntry(entry);
@@ -286,9 +286,9 @@ async function deprecate(indexPath, args) {
     ...entries[index],
     status: "deprecated",
     replacementId: args.replacement || entries[index].replacementId || null,
-    deprecationReason: args.reason || entries[index].deprecationReason || "Deprecated by frontier review.",
+    deprecationReason: args.reason || entries[index].deprecationReason || "Deprecated by Leader review.",
     updatedAt: new Date().toISOString(),
-    updatedBy: String(args.by || "frontier"),
+    updatedBy: String(args.by || "unknown"),
   };
   await writeIndex(indexPath, entries);
   return { ok: true, entry: entries[index] };

@@ -26,20 +26,6 @@ async function parseJson(relativePath) {
   }
 }
 
-async function validateJsonl(relativePath, requiredFields = []) {
-  const content = await readFile(path.join(root, relativePath), "utf8").catch(() => "");
-  for (const [index, line] of content.split(/\r?\n/).entries()) {
-    if (!line.trim()) continue;
-    try {
-      const value = JSON.parse(line);
-      const missing = requiredFields.filter((field) => !value[field]);
-      if (missing.length) errors.push(`${relativePath}:${index + 1}: missing ${missing.join(", ")}`);
-    } catch (error) {
-      errors.push(`${relativePath}:${index + 1}: ${error.message}`);
-    }
-  }
-}
-
 async function filesUnder(directory) {
   const result = [];
   if (!(await exists(directory))) return result;
@@ -61,8 +47,14 @@ for (const required of [
   "hooks/hooks.json",
   "skills/agrimap-agent-skills/references/patterns/conflict-resolution.md",
   "skills/agrimap-agent-skills/references/analysis-discipline.md",
+  "skills/agrimap-agent-skills/references/backend-engineer.md",
   "skills/agrimap-agent-skills/references/service-ownership.md",
   "skills/agrimap-agent-skills/assets/templates/service-ownership.yaml",
+  "docs/USAGE.md",
+  "plugins/agrimap-agent-skills/docs/USAGE.md",
+  "examples/inputs/LONG-REQUEST.md",
+  "examples/inputs/references/checkout-flow.svg",
+  "plugins/agrimap-agent-skills/examples/inputs/references/checkout-flow.svg",
 ]) {
   if (!(await exists(path.join(root, required)))) errors.push(`${required}: missing`);
 }
@@ -76,11 +68,6 @@ const claudeMarketplace = await parseJson(".claude-plugin/marketplace.json");
 const geminiExtension = await parseJson("gemini-extension.json");
 const geminiHooks = await parseJson("hooks/hooks.json");
 const pluginHooks = await parseJson("plugins/agrimap-agent-skills/hooks/hooks.json");
-for (const logFile of (await filesUnder(path.join(root, ".agrimap-agent", "logs"))).filter((file) => file.endsWith(".jsonl"))) {
-  await validateJsonl(path.relative(root, logFile), ["timestamp", "taskId", "requestedBy", "actor", "event"]);
-}
-await validateJsonl(".agrimap-agent/knowledge/index.jsonl");
-await validateJsonl(".agrimap-agent/knowledge/frontend-reuse.jsonl");
 
 const canonicalSkill = await readFile(path.join(root, "skills", "agrimap-agent-skills", "SKILL.md"), "utf8");
 if (!/^---\r?\nname: agrimap-agent-skills\r?\ndescription: .+\r?\n---/s.test(canonicalSkill)) errors.push("Canonical SKILL.md frontmatter is invalid.");
@@ -98,7 +85,7 @@ for (const relativePath of [
 }
 
 const delegationReference = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "subagents-and-branches.md"), "utf8");
-for (const marker of ["one writer model per wave", "isolated-sandbox", "portable patch", "The owner must not be asked"])
+for (const marker of ["one writer model per wave", "workspace_need", "base commit", "isolated-sandbox", "portable patch", "The owner must not be asked"])
   if (!delegationReference.includes(marker)) errors.push(`Delegation contract missing marker: ${marker}`);
 for (const marker of ["QA is a read-only subagent/context", "isolation: worktree", "normal subagent starts in the current working directory"])
   if (!delegationReference.includes(marker)) errors.push(`Delegation/QA isolation contract missing marker: ${marker}`);
@@ -113,7 +100,7 @@ if (createFeatureTargetList.includes("- `agmws`") || createFeatureTargetList.inc
 const promptReference = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "create-prompt.md"), "utf8");
 if (promptReference.includes("`project_kind`")) errors.push("create-prompt still uses the superseded project_kind dimension.");
 if (!promptReference.includes("exactly `agmws` or `agmbo`")) errors.push("create-prompt backend_profile enum is missing.");
-for (const marker of ["execution source of truth", "deviation_from_prompt", "independent read-only QA", "service-ownership.yaml"])
+for (const marker of ["execution source of truth", "deviation_from_prompt", "independent read-only QA", "service-ownership.yaml", "workspace_need", "base_commit", "fallback_mode"])
   if (!promptReference.includes(marker)) errors.push(`create-prompt contract missing marker: ${marker}`);
 
 const qaReference = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "qa-and-done.md"), "utf8");
@@ -122,13 +109,19 @@ for (const marker of ["independent read-only QA", "Result Package as testimony",
 
 const frontendDiscipline = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "frontend-engineer.md"), "utf8");
 if (!frontendDiscipline.includes("discipline layer, not a standalone workflow")) errors.push("Frontend engineering is not defined as a composable discipline.");
+if (frontendDiscipline.includes("`/agm-fe-engineer`")) errors.push("Frontend engineering still declares a standalone alias.");
+
+const backendDiscipline = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "backend-engineer.md"), "utf8");
+for (const marker of ["passive discipline", "`be-main`", "`be-library`", "`agmws`", "`agmbo`", "`foundation`", "`active-development`", "`stabilization`", "Do not add Type A/B/C or a required `change_kind`"])
+  if (!backendDiscipline.includes(marker)) errors.push(`Backend discipline missing marker: ${marker}`);
+if (backendDiscipline.includes("Require `change_kind`")) errors.push("Backend discipline incorrectly requires change_kind.");
 
 const modelMatrix = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "model-capability-matrix.yaml"), "utf8");
 if (modelMatrix.includes("fable5")) errors.push("Fable is duplicated as fable and fable5 instead of one model label.");
 if (!modelMatrix.includes("fable: Fable 5")) errors.push("Fable 5 display label is missing.");
 
-const serviceOwnership = await readFile(path.join(root, ".agrimap-agent", "knowledge", "service-ownership.yaml"), "utf8").catch(() => "");
-if (!serviceOwnership.includes("source_of_trust: .agrimap-agent/knowledge/service-ownership.yaml")) errors.push("Project service ownership SoT is missing or points elsewhere.");
+const rootIgnore = await readFile(path.join(root, ".gitignore"), "utf8").catch(() => "");
+if (!rootIgnore.split(/\r?\n/).includes(".agrimap-agent/")) errors.push("Development repository must ignore its entire local .agrimap-agent state.");
 
 const goldenManifest = await parseJson("skills/agrimap-agent-skills/references/patterns/golden/manifest.json");
 if (goldenManifest?.annotation !== "../conflict-resolution.md") errors.push("Golden manifest does not point to the canonical conflict annotation.");
@@ -151,6 +144,7 @@ if (!pluginHooks?.hooks?.SessionStart || !pluginHooks?.hooks?.UserPromptSubmit |
 if (operations) {
   const names = operations.operations.map((item) => item.name);
   if (new Set(names).size !== names.length) errors.push("Operation aliases are not unique.");
+  if (names.includes("agm-fe-engineer")) errors.push("Passive frontend discipline must not expose agm-fe-engineer.");
   for (const name of names) {
     for (const target of [
       path.join(root, "commands", `${name}.toml`),
@@ -195,5 +189,5 @@ if (errors.length) {
   process.stdout.write(`${JSON.stringify({ ok: false, errors }, null, 2)}\n`);
   process.exitCode = 1;
 } else {
-  process.stdout.write(`${JSON.stringify({ ok: true, aliases: operations.operations.length, checks: "manifests, adapters, identity, JSONL, skill, pattern conflicts, delegation ownership, golden sources" }, null, 2)}\n`);
+  process.stdout.write(`${JSON.stringify({ ok: true, aliases: operations.operations.length, checks: "manifests, adapters, skill, passive disciplines, dev-state isolation, delegation ownership, usage examples, golden sources" }, null, 2)}\n`);
 }

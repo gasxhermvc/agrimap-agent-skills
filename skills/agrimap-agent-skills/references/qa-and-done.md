@@ -22,9 +22,9 @@
 
 There is no conditional pass. A limitation that prevents required evidence is `blocked`; a reproducible defect or missing requirement is `failed`.
 
-## Frontier after QA
+## Leader after QA
 
-- Synthesize the QA evidence and reconcile it with the requirement ledger; do not replace QA with frontier self-review.
+- Synthesize the QA evidence and reconcile it with the requirement ledger; do not replace QA with Leader self-review.
 - On `passed`, run the completion gate.
 - On `failed`, do not modify the implementation in the same task. Record the task outcome as `qa-failed`, close the attempt without claiming completion, and prepare a proposed prompt for a new correction task.
 - Present or discuss that new prompt with the owner, including why the defect exists, exact files/symbols, acceptance criteria, and regression evidence. Start the correction only as a new task.
@@ -37,7 +37,7 @@ Do not say complete unless:
 - scope and checklist are fully reconciled;
 - changed points and impact were inspected;
 - proportional verification passed;
-- frontier reviewed all handoffs and an independent QA actor verified the integrated artifact;
+- Leader reviewed all handoffs and an independent QA model verified the integrated artifact;
 - QA status is `passed` or justified `not-applicable`;
 - result, memory, knowledge/decision updates, and concise logs are written;
 - remaining concerns are explicitly separated as follow-up work;

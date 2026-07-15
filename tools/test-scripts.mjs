@@ -28,30 +28,48 @@ try {
     await readFile(path.join(temp, ".agrimap-agent", "knowledge", "service-ownership.yaml"), "utf8"),
     /source_of_trust: \.agrimap-agent\/knowledge\/service-ownership\.yaml/,
   );
+  assert.equal(await readFile(path.join(temp, ".agrimap-agent", ".gitignore"), "utf8"), "runtime/\ncache/\n");
+  const stateConfig = JSON.parse(await readFile(path.join(temp, ".agrimap-agent", "config.json"), "utf8"));
+  assert.equal(stateConfig.stateScope, "target-project");
+  assert.equal(stateConfig.installDirectoryWrites, false);
+  assert.equal(stateConfig.aiGateway, "disabled");
 
   const missingRequester = spawnSync(process.execPath, [workspaceScript, "start", "--cwd", temp, "--session", "unknown", "--task", "should-not-start"], { encoding: "utf8" });
   assert.notEqual(missingRequester.status, 0);
   assert.equal(JSON.parse(missingRequester.stdout).needsRequester, true);
 
-  run(workspaceScript, ["identify", "--cwd", temp, "--session", "session-a", "--owner", "Alice", "--actor", "frontier-a", "--provider", "codex"]);
-  run(workspaceScript, ["identify", "--cwd", temp, "--session", "session-b", "--owner", "Bob", "--actor", "frontier-b", "--provider", "claude"]);
+  run(workspaceScript, ["identify", "--cwd", temp, "--session", "session-a", "--owner", "Alice", "--model", "gpt-5.6-sol", "--role", "leader", "--agent", "primary", "--provider", "codex"]);
+  run(workspaceScript, ["identify", "--cwd", temp, "--session", "session-b", "--owner", "Bob", "--model", "fable", "--role", "leader", "--agent", "primary", "--provider", "claude"]);
   const taskA = run(workspaceScript, ["start", "--cwd", temp, "--session", "session-a", "--task", "task-a", "--operation", "analyze"]);
-  const taskB = run(workspaceScript, ["start", "--cwd", temp, "--session", "session-b", "--task", "task-b", "--operation", "fe-engineer"]);
+  const taskB = run(workspaceScript, ["start", "--cwd", temp, "--session", "session-b", "--task", "task-b", "--operation", "create-feature"]);
   assert.equal(taskA.activeTask.requestedBy, "Alice");
   assert.equal(taskB.activeTask.requestedBy, "Bob");
+  assert.deepEqual(
+    { model: taskA.activeTask.model, role: taskA.activeTask.role, agent: taskA.activeTask.agent, provider: taskA.activeTask.provider },
+    { model: "gpt-5.6-sol", role: "leader", agent: "primary", provider: "codex" },
+  );
+  assert.deepEqual(
+    { model: taskB.activeTask.model, role: taskB.activeTask.role, agent: taskB.activeTask.agent, provider: taskB.activeTask.provider },
+    { model: "fable", role: "leader", agent: "primary", provider: "claude" },
+  );
 
   const activeA = JSON.parse(await readFile(path.join(temp, ".agrimap-agent", "runtime", "active", "session-a.json"), "utf8"));
   const activeB = JSON.parse(await readFile(path.join(temp, ".agrimap-agent", "runtime", "active", "session-b.json"), "utf8"));
   assert.equal(activeA.taskId, "task-a");
   assert.equal(activeB.taskId, "task-b");
 
-  const checkpointA = run(workspaceScript, ["checkpoint", "--cwd", temp, "--session", "session-a", "--task", "task-a", "--summary", "Analyzed task A", "--files", "src/a.ts", "--verification", "inspection passed"]);
+  const checkpointA = run(workspaceScript, ["checkpoint", "--cwd", temp, "--session", "session-a", "--task", "task-a", "--summary", "Analyzed task A", "--files", "src/a.ts", "--verification", "inspection passed", "--model", "gpt-5.4", "--role", "executor", "--agent", "be", "--provider", "codex"]);
   const checkpointB = run(workspaceScript, ["checkpoint", "--cwd", temp, "--session", "session-b", "--task", "task-b", "--summary", "Analyzed task B", "--files", "src/b.ts"]);
   assert.equal(checkpointA.requestedBy, "Alice");
   assert.equal(checkpointB.requestedBy, "Bob");
   assert.match(await readFile(path.join(temp, ".agrimap-agent", "memory", "current", "task-a.md"), "utf8"), /Requested by: Alice/);
   assert.match(await readFile(path.join(temp, ".agrimap-agent", "memory", "current", "task-b.md"), "utf8"), /Requested by: Bob/);
-  assert.equal(await readFile(path.join(temp, ".agrimap-agent", "logs", new Date().toISOString().slice(0, 7), "task-a.jsonl"), "utf8").then((value) => value.includes('"requestedBy":"Alice"')), true);
+  const taskALog = await readFile(path.join(temp, ".agrimap-agent", "logs", new Date().toISOString().slice(0, 7), "task-a.jsonl"), "utf8");
+  assert.equal(taskALog.includes('"requestedBy":"Alice"'), true);
+  assert.equal(taskALog.includes('"model":"gpt-5.4"'), true);
+  assert.equal(taskALog.includes('"role":"executor"'), true);
+  assert.equal(taskALog.includes('"agent":"be"'), true);
+  assert.equal(taskALog.includes('"actor"'), false);
 
   const hookA = run(hookScript, ["--provider", "gemini", "--mode", "task"], {
     cwd: temp,
@@ -60,6 +78,7 @@ try {
   });
   assert.match(hookA.hookSpecificOutput.additionalContext, /Requested by: Alice/);
   assert.match(hookA.hookSpecificOutput.additionalContext, /Active task: task-a/);
+  assert.match(hookA.hookSpecificOutput.additionalContext, /model=gpt-5.6-sol, role=leader, agent=primary, provider=codex/);
 
   const hookUnknown = run(hookScript, ["--provider", "claude", "--mode", "session"], {
     cwd: temp,
@@ -76,6 +95,8 @@ try {
   });
   assert.match(subagentHook.hookSpecificOutput.additionalContext, /One writer owns them per integration wave/);
   assert.match(subagentHook.hookSpecificOutput.additionalContext, /integration artifact/);
+  assert.match(subagentHook.hookSpecificOutput.additionalContext, /Read workspace_need before any write/);
+  assert.match(subagentHook.hookSpecificOutput.additionalContext, /base commit/);
 
   const taskADirectory = path.join(temp, ".agrimap-agent", "tasks", "task-a");
   await writeFile(path.join(taskADirectory, "checklist.md"), "# Checklist\n\n- [x] Scope inspected.\n- [x] Work verified.\n- [x] Memory and logs updated.\n", "utf8");
@@ -131,7 +152,9 @@ try {
     ok: true,
     cases: [
       "missing requester blocks substantive task start",
-      "two sessions retain different requesters, active tasks, checkpoints, and logs",
+      "target project initializes tracked state while ignoring only runtime and cache",
+      "two sessions retain different requester and structured model-role-agent-provider identity",
+      "checkpoint logs use structured execution identity without actor composites",
       "completion gate archives only its own session task",
       "QA failure closes without completion and requires a separate next-task prompt",
       "workspace initializes the canonical service ownership source of trust",

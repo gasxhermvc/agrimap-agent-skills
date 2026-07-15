@@ -1,6 +1,6 @@
 ---
 name: agrimap-agent-skills
-description: Cross-agent AgriMap engineering workflow for analysis, deep diagnosis, simulation, planning, design, architecture, phase-aware frontend engineering, code review, FE/BE/SQL refactoring, QA, unit tests, feature creation, and execution-ready prompt generation. Use for `/agm-*` or equivalent Codex, Claude, and Gemini tasks; for AgriMap main or library work; and whenever owner trade-offs, code-impact analysis, reuse discovery/indexing, task memory, delegation, or frontier integration are required.
+description: Cross-agent AgriMap engineering workflow for analysis, deep diagnosis, simulation, planning, design, architecture, phase-aware frontend and backend engineering, code review, FE/BE/SQL refactoring, QA, unit tests, feature creation, and execution-ready prompt generation. Use for `/agm-*` or equivalent Codex, Claude, and Gemini tasks; for AgriMap main or library work; and whenever owner trade-offs, code-impact analysis, reuse discovery/indexing, task memory, delegation, or Leader integration are required.
 ---
 
 # AgriMap Agent Skills
@@ -11,16 +11,17 @@ Treat this skill as the workflow source of trust across models and providers. Do
 
 ## Start every task / เริ่มงาน
 
-1. Resolve the workspace root and read, when present:
+1. Resolve the target project root. Never use the global Skill/plugin installation directory as a state root. Read, when present:
    - `.agrimap-agent/runtime/sessions/<session-id>.json` when the provider supplies a session ID
    - `.agrimap-agent/config.json`
    - `.agrimap-agent/memory/project.md`
    - `.agrimap-agent/memory/current/<active-task-id>.md` when a task is active
    - the active task under `.agrimap-agent/tasks/`
-2. Resolve the requester for this session/task. If unknown, ask before substantive work and persist it under ignored session runtime. Never use one shared active-owner file in a multi-person project. Copy the requester into every task brief and log event.
+2. Resolve the requester for this session/task. If unknown, ask before substantive work and persist it under ignored session runtime. Never use one shared active-owner file in a multi-person project. Copy the requester into every task brief and log event; record executing `model`, `role`, `agent`, and `provider` separately.
 3. If a previous task ended and Git has uncommitted changes, remind the requester to commit before starting the next task, then continue the explicit request. Do not auto-commit; stop only for unsafe overlap with dirty changes.
 4. Normalize text, large text, images, attachments, URLs, and pointed file paths using [input-and-scope.md](references/input-and-scope.md). Never silently truncate an input.
 5. State the current scope, non-goals, assumptions, and evidence still missing.
+6. Before substantive work, return a concise activation receipt containing `AgriMap skill active`, the selected operation, requester, normalized input coverage, and the pre-work checklist. This receipt proves routing; it is not an extra permission gate. If required input is missing, name it instead of pretending the workflow is active and ready.
 
 ## Use the evidence order
 
@@ -43,7 +44,7 @@ Stop and discuss only when an unresolved choice can change business logic, publi
 5. For logic-affecting or complex work, ask whether to add unit tests or test cases before implementation unless the owner already decided.
 6. Produce a pre-work checklist and explain why each planned change is necessary.
 
-Read [workflows.md](references/workflows.md) for task routing and [roles.md](references/roles.md) for role-specific responsibilities.
+Read [workflows.md](references/workflows.md) for task routing, [roles.md](references/roles.md) for role-specific responsibilities, and [../../docs/USAGE.md](../../docs/USAGE.md) for provider invocation and runnable input examples.
 
 ## Execute to close the original problem / แก้ปัญหาเดิมให้จบ
 
@@ -57,7 +58,7 @@ Read [workflows.md](references/workflows.md) for task routing and [roles.md](ref
 ## Route technical patterns
 
 - FE main or library: automatically compose [frontend-engineer.md](references/frontend-engineer.md) as a discipline with the requested analysis, design, architecture, implementation, review, refactor, test, QA, or prompt workflow. Also read [frontend.md](references/patterns/frontend.md), and [conflict-resolution.md](references/patterns/conflict-resolution.md) when golden evidence is involved.
-- BE main (`backend_profile=agmws|agmbo`) or BE library: read [backend.md](references/patterns/backend.md) and [conflict-resolution.md](references/patterns/conflict-resolution.md) when golden evidence is involved.
+- BE main (`backend_profile=agmws|agmbo`) or BE library: automatically compose [backend-engineer.md](references/backend-engineer.md) as a passive phase-aware discipline. Also read [backend.md](references/patterns/backend.md) and [conflict-resolution.md](references/patterns/conflict-resolution.md) when golden evidence is involved.
 - SQL table, procedure, or combined work: read [sql.md](references/patterns/sql.md) and [conflict-resolution.md](references/patterns/conflict-resolution.md) when golden evidence is involved.
 - Missing or unverified patterns: read [pattern-status.md](references/patterns/pattern-status.md) and [owner-example-intake.md](references/patterns/owner-example-intake.md).
 - Cross-service, cross-database, integration, or ownership-sensitive work: read [service-ownership.md](references/service-ownership.md) and use only `.agrimap-agent/knowledge/service-ownership.yaml` as the project ownership SoT.
@@ -66,7 +67,7 @@ Never import a golden example blindly. Compare it with the current project and i
 
 ## Delegate deliberately
 
-Keep the frontier model responsible for decomposition, final integration, QA dispatch, evidence synthesis, and memory closure. For implementation tasks, assign final verification to an independent read-only QA subagent/context; the frontier must not QA its own implementation or edit a QA finding inside the task being verified. Use no more than five active subagents. Before delegation, choose the verified workspace mode and create a file-ownership map. In one integration wave, one file and one logical contract have one writer model; QA agents may read but never edit. Assign each subagent a bounded task, model profile, workspace/branch instruction, required skill references, file/line targets, forbidden files, verification steps, and structured result contract.
+Assign the Leader role to the frontier-capability model responsible for decomposition, final integration, QA dispatch, evidence synthesis, and memory closure. For implementation tasks, assign final verification to an independent read-only QA subagent/context; the Leader must not QA its own implementation or edit a QA finding inside the task being verified. Use no more than five active subagents. Before delegation, specify and verify `workspace_need` and create a file-ownership map. In one integration wave, one file and one logical contract have one writer model; QA agents may read but never edit. Assign each subagent a bounded task, model profile, execution identity, workspace need, required skill references, file/line targets, forbidden files, verification steps, and structured result contract.
 
 Read [subagents-and-branches.md](references/subagents-and-branches.md) and [model-capability-matrix.yaml](references/model-capability-matrix.yaml). A project override at `.agrimap-agent/model-capability-matrix.yaml` wins for model names only; it cannot weaken this workflow.
 
@@ -74,7 +75,7 @@ For prompt generation, read [create-prompt.md](references/create-prompt.md). Tre
 
 ## Checkpoint every atomic task
 
-After each frontier task or delegated subtask:
+After each Leader task or delegated subtask:
 
 1. Write a concise result or handoff.
 2. Update `.agrimap-agent/memory/current/<task-id>.md` immediately; update `memory/project.md` only for project-wide facts.
@@ -88,10 +89,10 @@ Read [memory-and-logs.md](references/memory-and-logs.md) for schemas and retenti
 
 1. Inspect every changed point and its nearby impact surface.
 2. Run proportional tests, static checks, builds, SQL validation, or targeted manual checks.
-3. Have the frontier review all executor handoffs, then dispatch the QA workflow to an independent read-only QA subagent/context. QA must reopen the artifacts and rerun selected claims rather than trust the handoff.
+3. Have the Leader review all executor handoffs, then dispatch the QA workflow to an independent read-only QA subagent/context. QA must reopen the artifacts and rerun selected claims rather than trust the handoff.
 4. Check every pre-work checklist item.
 5. Do not claim completion while any required checklist item is incomplete.
-6. If QA fails, close the implementation attempt as `qa-failed`, do not fix it in the same task, and have the frontier summarize the evidence plus prepare a proposed prompt for a new owner-approved correction task.
+6. If QA fails, close the implementation attempt as `qa-failed`, do not fix it in the same task, and have the Leader summarize the evidence plus prepare a proposed prompt for a new owner-approved correction task.
 7. Report completed scope, verification evidence, remaining concerns, memory/log updates, and the recommended commit boundary.
 
 Read [qa-and-done.md](references/qa-and-done.md) for the result and done contracts.

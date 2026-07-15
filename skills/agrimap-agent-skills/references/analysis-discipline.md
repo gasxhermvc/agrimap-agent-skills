@@ -4,7 +4,7 @@ Use this discipline for analysis, diagnosis, planning, architecture, review, and
 
 ## Evidence labels
 
-Label important statements so an executor and QA actor can tell what is known:
+Label important statements so an executor and QA model can tell what is known:
 
 - `FACT`: directly observed in owner input, current code, tests, runtime output, contracts, or verified project knowledge. Include the source pointer.
 - `INFERENCE`: a conclusion supported by named facts. State the reasoning and confidence.

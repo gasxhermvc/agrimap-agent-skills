@@ -1,11 +1,19 @@
 # Memory and logs
 
-Use `.agrimap-agent/` as the cross-provider workspace state. Keep prose concise and factual.
+Use `.agrimap-agent/` under the target project root as the cross-provider workspace state. Keep prose concise and factual. A globally installed Skill/plugin is stateless: never write memory, logs, identity, prompts, or task artifacts into its installation directory.
+
+## State location
+
+- Installed use: resolve the project currently being worked on and write both durable memory and concise logs to `<target-project>/.agrimap-agent/`.
+- Skill/plugin development repository: keep that repository's entire `.agrimap-agent/` local-only with a root `.gitignore` entry. Do not publish developer logs or memory with the package.
+- Runtime identity/cache inside an ordinary target project remains ignored through `.agrimap-agent/.gitignore`; project memory, task artifacts, decisions, knowledge, prompts, and logs remain visible for the project to track.
+- Do not use an AI Gateway in v1. It is neither a sink, mirror, fallback, nor completion dependency.
 
 ## Layout
 
 ```text
 .agrimap-agent/
+├── .gitignore                         # ignores runtime/ and cache/ in target projects
 ├── config.json
 ├── model-capability-matrix.yaml        # optional project override
 ├── memory/
@@ -35,9 +43,17 @@ Use `.agrimap-agent/` as the cross-provider workspace state. Keep prose concise 
 - Resolve the human requester at the first chat/session interaction. If the provider does not expose a stable session ID, create a local conversation ID before task work.
 - Store live identity only in ignored `runtime/sessions/<session-id>.json`; never use one shared current-owner file.
 - Copy the requester into the tracked task brief and every durable event as `requestedBy`.
-- A subagent inherits `requestedBy` from its frontier handoff or session, but records its own model/agent name as `actor`.
+- A subagent inherits `requestedBy` from its Leader handoff or session, then records `model`, `role`, `agent`, and `provider` separately.
 - Never infer the current requester from the most recent project log. Ask when session identity and task identity are both missing.
-- Multiple requesters may append to the same monthly log. `taskId`, `requestedBy`, `actor`, and `timestamp` keep events attributable.
+- Multiple requesters may append to the same monthly log. `taskId`, `requestedBy`, `model`, `role`, `agent`, `provider`, and `timestamp` keep events attributable.
+
+Use `role=leader` for orchestration/integration. `frontier_analysis` remains a capability profile, not a person/agent name. Examples:
+
+- `model=gpt-5.6-sol`, `role=leader`, `agent=primary`, `provider=codex`;
+- `model=gpt-5.4`, `role=executor`, `agent=fe`, `provider=codex`;
+- `model=fable`, `role=qa`, `agent=qa`, `provider=claude`.
+
+Record the actual model exposed by the running surface. If it is unavailable, use `model=unknown`; never present a configured/default model label as observed fact.
 
 ## Memory tiers
 
@@ -51,11 +67,11 @@ Use `.agrimap-agent/` as the cross-provider workspace state. Keep prose concise 
 
 Do not use generated provider memory as the only copy of a required rule or project decision.
 
-Write durable knowledge as JSONL with `id`, `type`, `status`, `summary`, `keywords`, `source`, `updatedAt`, `updatedBy`, and normalized `vectorReadyText`. Keep source pointers so the frontier can re-verify a fact before using it. A vector database is optional; `knowledge/index.jsonl` remains the deterministic source when no vector service exists.
+Write durable knowledge as JSONL with `id`, `type`, `status`, `summary`, `keywords`, `source`, `updatedAt`, `updatedBy`, and normalized `vectorReadyText`. Keep source pointers so the Leader can re-verify a fact before using it. A vector database is optional; `knowledge/index.jsonl` remains the deterministic source when no vector service exists.
 
 ## Atomic checkpoint
 
-After a frontier task or delegated subtask, record:
+After a Leader task or delegated subtask, record:
 
 - objective and status;
 - files/symbols affected;
@@ -74,7 +90,10 @@ Append one JSON object per line:
   "timestamp": "ISO-8601",
   "taskId": "task-id",
   "requestedBy": "human name",
-  "actor": "frontier-or-agent",
+  "model": "actual-model-or-unknown",
+  "role": "leader|executor|qa|reviewer|analyst",
+  "agent": "primary|fe|be|sql|designer|qa|custom-label",
+  "provider": "codex|claude|gemini|unknown",
   "event": "created|changed|verified|decision|blocked|completed",
   "summary": "concise action",
   "reason": "problem addressed",
