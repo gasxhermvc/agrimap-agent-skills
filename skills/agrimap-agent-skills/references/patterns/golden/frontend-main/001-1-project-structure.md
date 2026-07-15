@@ -1,3 +1,5 @@
+## Project Structure
+```
 🔴 src/                        --> folder รวมสำหรับ build
 │
 ├─ 🔵 app/                     --> folder หลักสำหรับ source code
@@ -98,3 +100,4 @@
       ├─ inhouse/_dynamic-var.scss
       ├─ k8s.dev/_dynamic-var.scss   --> ✨ เพิ่มใหม่
       └─ prod/_dynamic-var.scss
+```

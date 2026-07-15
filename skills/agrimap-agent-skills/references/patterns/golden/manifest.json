@@ -4,15 +4,10 @@
   "annotation": "../conflict-resolution.md",
   "collections": {
     "frontend-main": {
-      "status": "legacy-compatible",
+      "status": "current",
       "manifest": "frontend-main/manifest.json",
-      "knownIssues": [
-        "list/items state naming mismatch",
-        "API/provider variable mismatch",
-        "child component naming typos",
-        "mixed Signal/template value access",
-        "legacy prose is not a universal permission rule"
-      ]
+      "note": "Renumbered and de-duplicated 2026-07-16; content aligned to apps/web/agmwa-platform-ng/docs/CODING-STANDARD.md sections 1-10. Legacy known issues (list/items mismatch, konectApi, naming typos, mixed Signal access) were removed with the defective files.",
+      "knownIssues": []
     },
     "backend-main": {
       "status": "legacy-compatible",

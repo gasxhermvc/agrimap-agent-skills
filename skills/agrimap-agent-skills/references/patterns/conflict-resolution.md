@@ -24,15 +24,14 @@ These resolution statuses apply to individual conflict-matrix rows. For catalog 
 
 ## Frontend main conflict matrix
 
+The frontend-main collection was renumbered and de-duplicated on 2026-07-16 (see `golden/frontend-main/manifest.json`). Files carrying the old defects (`list` vs `items` mismatch, undeclared `konectApi`, placeholder symbols in `013-example.ts`/`026-1-2-rule.txt`, `items` vs `items()` mixing) were removed or superseded by content regenerated from `CODING-STANDARD.md`; those `resolved-defect` rows are retired. Remaining rows:
+
 | Evidence | Conflict | Resolution | Status |
 | --- | --- | --- | --- |
-| `006-4-asynchronous-data-flow.ts` | State declares and mutates `list`, but selector reads `items`. | Use one state property name end-to-end. Derive selectors and template access from the actual type. | `resolved-defect` |
-| `007-4-asynchronous-data-flow.ts` | Injects `provider`, calls undeclared `konectApi`, and exposes a store member not shown by the store. | One injected dependency name per object; expose only members that exist on the store/facade. | `resolved-defect` |
-| `010-5-component.ts`, `013-example.ts` | Missing/mismatched provider and child-component symbols; snippets contain placeholders. | Treat as structural sketches only. Imports, providers, selectors, and class names must resolve in the target build. | `resolved-defect` |
-| `016-1-0-view-html.html` and signal examples | `items` versus `items()` is mixed. | Preserve value kind: call a Signal, use `async` for an Observable when locally required, and iterate a plain collection directly. | `canonical-v1` |
-| `019-*`, `021-*` | Signal `input()`/`output()` may compete with decorator-based project code. | Follow the Angular version and neighboring component convention. Do not migrate syntax inside an unrelated task. | `project-dependent` |
-| `024-*`, `025-*` | Static image path depends on asset/build configuration. | Resolve through the active workspace asset and base-path convention. | `project-dependent` |
-| `026-1-2-rule.txt` | Old prose universally forbids component subscriptions/API access and store async work. | Keep stores synchronous and pure. Put feature orchestration in the facade when shared state/flow warrants it. A trivial local view may use the local service pattern with lifecycle safety when a facade/store adds no value. | `canonical-v1` |
+| `010-5-component-layout.md`, `014-9-domain-file-template.ts` | Snippets use example symbols (`ExampleFlowFacade`, `XxxStore`). | Treat as structural sketches only. Imports, providers, selectors, and class names must resolve in the target build. | `canonical-v1` |
+| `010-5-component-layout.md`, `013-8-naming-patterns.md` | Signal `input()`/`output()` may compete with decorator-based project code. | Follow the Angular version and neighboring component convention. Do not migrate syntax inside an unrelated task. | `project-dependent` |
+| `017-10-assets-management.md` | Static image path depends on asset/build configuration (`baseHref`/`$base-path` per env). | Resolve through the active workspace asset and base-path convention. | `project-dependent` |
+| `002-2-architecture-rules.md` (R1–R5) | Prose forbids component subscriptions/API access and store async work. | Keep stores synchronous and pure. Put feature orchestration in the facade when shared state/flow warrants it. A trivial local view may use the local service pattern with lifecycle safety when a facade/store adds no value. | `canonical-v1` |
 
 The AgriMap baseline remains `Feature UI -> Facade -> Signal Store and/or Generated API`, but it is a complexity-shaped pattern, not a requirement to create every layer for every component.
 
