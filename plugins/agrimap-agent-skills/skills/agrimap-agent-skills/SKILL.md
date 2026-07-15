@@ -1,6 +1,6 @@
 ---
 name: agrimap-agent-skills
-description: Cross-agent AgriMap engineering workflow for analysis, deep diagnosis, simulation, planning, design, architecture, phase-aware frontend and backend engineering, code review, FE/BE/SQL refactoring, QA, unit tests, feature creation, and execution-ready prompt generation. Use for `/agm-*` or equivalent Codex, Claude, and Gemini tasks; for AgriMap main or library work; and whenever owner trade-offs, code-impact analysis, reuse discovery/indexing, task memory, delegation, or Leader integration are required.
+description: Cross-agent AgriMap engineering workflow for analysis, deep diagnosis, simulation, planning, design, architecture, phase-aware frontend and backend engineering, code review, auditable requester/task history, FE/BE/SQL refactoring, QA, unit tests, feature creation, and execution-ready prompt generation. Use for `/agm-*` or equivalent Codex, Claude, and Gemini tasks; for AgriMap main or library work; and whenever owner trade-offs, code-impact analysis, reuse discovery/indexing, task memory, delegation, or Leader integration are required.
 ---
 
 # AgriMap Agent Skills
@@ -15,6 +15,12 @@ When the requester arguments contain a standalone `-h` or `--help` token, return
 
 Return concise help containing the provider-specific command, operation and purpose, required and conditional inputs, and one minimal example. Read [platform-syntax.md](references/platform-syntax.md) for invocation syntax and [workflows.md](references/workflows.md) for operation-specific inputs. If the umbrella skill is invoked without an operation, list the available `agm-*` aliases and show how to request help for one operation.
 
+## Answer audit/history questions / ตอบว่าใครทำอะไรเมื่อไร
+
+Treat `.agrimap-agent/logs/**/*.jsonl` as the chronological source of truth for who requested what and when work happened. For requests such as “who did what between these dates?” or “show A's work in the last five days,” run the read-only `agm-workspace.mjs history` query described in [workflows.md](references/workflows.md), then open the returned task brief and current/recent memory artifacts for the required detail. Report the exact logged UTC timestamps and state the time basis; convert to a requested timezone only when you label the conversion. Do not answer from conversational recall alone, infer identity from Git/OS/machine data, or silently omit malformed log lines reported by the query.
+
+History lookup is read-only: it does not require identifying the person asking the question, create an active task, or append another audit event unless the requester separately asks to change the project.
+
 ## Start every task / เริ่มงาน
 
 1. Resolve the target project root. Never use the global Skill/plugin installation directory as a state root. Read, when present:
@@ -23,7 +29,7 @@ Return concise help containing the provider-specific command, operation and purp
    - `.agrimap-agent/memory/project.md`
    - `.agrimap-agent/memory/current/<active-task-id>.md` when a task is active
    - the active task under `.agrimap-agent/tasks/`
-2. Resolve the requester for this session/task. If unknown, ask before substantive work and persist it under ignored session runtime. Never use one shared active-owner file in a multi-person project. Copy the requester into every task brief and log event; record executing `model`, `role`, `agent`, and `provider` separately.
+2. Resolve the requester for this session/task. If unknown or the 24-hour confirmation has expired, ask before substantive work and persist it under ignored session runtime. A Git user name may be offered only as an unconfirmed suggestion. Never use one shared active-owner file in a multi-person project. Copy the requester, optional requester ID, and identity source into the task brief and durable events; the created event must preserve the requested objective. Record executing `model`, `role`, `agent`, and `provider` separately.
 3. If a previous task ended and Git has uncommitted changes, remind the requester to commit before starting the next task, then continue the explicit request. Do not auto-commit; stop only for unsafe overlap with dirty changes.
 4. Normalize text, large text, images, attachments, URLs, and pointed file paths using [input-and-scope.md](references/input-and-scope.md). Never silently truncate an input.
 5. State the current scope, non-goals, assumptions, and evidence still missing.
@@ -86,7 +92,7 @@ After each Leader task or delegated subtask:
 1. Write a concise result or handoff.
 2. Update `.agrimap-agent/memory/current/<task-id>.md` immediately; update `memory/project.md` only for project-wide facts.
 3. Append durable knowledge or decisions only when they remain useful beyond the task.
-4. Append a concise event to `.agrimap-agent/logs/YYYY-MM/<task-id>.jsonl` containing who, what, why, affected files, and verification.
+4. Append a concise event to `.agrimap-agent/logs/YYYY-MM/<task-id>.jsonl` containing schema version, exact UTC time, requester attribution, execution identity, what, why, affected files, and verification. Never rewrite or prune durable logs.
 5. Store recent task memory for the configured 10-30 day retention window; never delete durable logs during memory pruning.
 
 Read [memory-and-logs.md](references/memory-and-logs.md) for schemas and retention.

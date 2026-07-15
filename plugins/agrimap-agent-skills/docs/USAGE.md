@@ -117,6 +117,7 @@ Receipt นี้ไม่ใช่ permission gate เพิ่มเติม 
 | `agm-design` | `$agm-design requested_by=Billy target_kind=fe-main phase=foundation objective="Design empty/loading/error states for order list"` |
 | `agm-architect` | `$agm-architect requested_by=Billy objective="Choose ownership boundary for order status" non_goals="implementation"` |
 | `agm-review` | `$agm-review requested_by=Billy target_files=src/orders.ts review_scope="correctness,regression,tests" read_only=true` |
+| `agm-history` | `$agm-history requester=Billy days=5` |
 | `agm-refactor-fe` | `$agm-refactor-fe requested_by=Billy target_kind=fe-main phase=stabilization refactor_mode=strict-preserve-logic target_files=src/order-table.component.ts` |
 | `agm-refactor-be` | `$agm-refactor-be requested_by=Billy target_kind=be-main backend_profile=agmws phase=stabilization refactor_mode=performance-preserve-behavior target_files=Application/Orders/OrderUseCase.cs` |
 | `agm-refactor-sql` | `$agm-refactor-sql requested_by=Billy target_kind=sql-procedure refactor_mode=performance-preserve-behavior target_files=sql/usp_Order_Search.sql` |

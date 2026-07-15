@@ -30,6 +30,17 @@ Map boundaries, ownership, contracts, data flow, deployment/runtime effects, alt
 
 Review correctness first, then behavior regressions, contracts/data, maintainability, performance when relevant, and tests. Report findings by severity with file, line, evidence, impact, and actionable fix. Do not refactor during a review-only request.
 
+## `/agm-history`
+
+Answer requester/task audit questions from tracked evidence without creating a task or changing project state. Run `node <skill>/scripts/agm-workspace.mjs history --cwd <target-project>` with any applicable filters:
+
+- `--requester <confirmed-human-name>` or `--requester-id <stable-id>`;
+- `--from YYYY-MM-DD|ISO-8601` and `--to YYYY-MM-DD|ISO-8601`;
+- `--days <1..3650>` for a rolling 24-hour window;
+- `--task <task-id>` or `--event <canonical-event>`.
+
+Bare dates are UTC and inclusive by calendar date (`--to 2026-07-15` includes that whole UTC day). Timestamp filters must include `Z` or an explicit UTC offset so the range cannot depend on the machine timezone. Read the returned `tasks[].artifacts.brief`, `currentMemory`, or `recentMemory` for details, and use `events[]` for exact dates, times, actions, models, and verification. Summarize by requester and task while retaining exact timestamps. Report `invalidLines` as an audit limitation; never fill gaps from guesswork or infer the requester from Git/OS/machine identity.
+
 ## `/agm-refactor-fe`, `/agm-refactor-be`, `/agm-refactor-sql`
 
 Require a selected mode from [refactor-modes.md](refactor-modes.md). Establish a behavioral baseline, inspect consumers, constrain scope, implement, and prove the selected preservation/change contract.

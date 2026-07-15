@@ -137,14 +137,31 @@ try {
   await rm(upperBoundRecentPath);
   await writeFile(configPath, `${JSON.stringify(stateConfig, null, 2)}\n`, "utf8");
 
-  const missingRequester = spawnSync(process.execPath, [workspaceScript, "start", "--cwd", temp, "--session", "unknown", "--task", "should-not-start"], { encoding: "utf8" });
+  const missingRequester = spawnSync(process.execPath, [workspaceScript, "start", "--cwd", temp, "--session", "unknown", "--task", "should-not-start", "--title", "Must not start without attribution"], { encoding: "utf8" });
   assert.notEqual(missingRequester.status, 0);
   assert.equal(JSON.parse(missingRequester.stdout).needsRequester, true);
 
   run(workspaceScript, ["identify", "--cwd", temp, "--session", "session-a", "--owner", "Alice", "--model", "gpt-5.6-sol", "--role", "leader", "--agent", "primary", "--provider", "codex"]);
   run(workspaceScript, ["identify", "--cwd", temp, "--session", "session-b", "--owner", "Bob", "--model", "fable", "--role", "leader", "--agent", "primary", "--provider", "claude"]);
-  const taskA = run(workspaceScript, ["start", "--cwd", temp, "--session", "session-a", "--task", "task-a", "--operation", "analyze"]);
-  const taskB = run(workspaceScript, ["start", "--cwd", temp, "--session", "session-b", "--task", "task-b", "--operation", "create-feature"]);
+  const missingObjective = spawnSync(process.execPath, [workspaceScript, "start", "--cwd", temp, "--session", "session-a", "--task", "missing-objective"], { encoding: "utf8" });
+  assert.equal(missingObjective.status, 1);
+  assert.equal(JSON.parse(missingObjective.stdout).code, "REQUEST_OBJECTIVE_REQUIRED");
+  const identityA = JSON.parse(await readFile(path.join(temp, ".agrimap-agent", "runtime", "sessions", "session-a.json"), "utf8"));
+  assert.equal(identityA.schemaVersion, 1);
+  assert.equal(identityA.identitySource, "manual-confirmed");
+  assert.equal(Number.isFinite(Date.parse(identityA.confirmedAt)), true);
+  assert.equal(Date.parse(identityA.expiresAt) > Date.parse(identityA.confirmedAt), true);
+  assert.equal(typeof identityA.machine, "string");
+  assert.equal(typeof identityA.osUser, "string");
+
+  const taskA = run(workspaceScript, ["start", "--cwd", temp, "--session", "session-a", "--task", "task-a", "--operation", "analyze", "--title", "Analyze task A audit behavior"]);
+  const taskB = run(workspaceScript, ["start", "--cwd", temp, "--session", "session-b", "--task", "task-b", "--operation", "create-feature", "--title", "Build task B feature"]);
+  run(workspaceScript, ["identify", "--cwd", temp, "--session", "collision-session", "--owner", "Mallory"]);
+  const taskIdCollision = spawnSync(process.execPath, [
+    workspaceScript, "start", "--cwd", temp, "--session", "collision-session", "--task", "task-a", "--title", "Must not mix attribution",
+  ], { encoding: "utf8" });
+  assert.equal(taskIdCollision.status, 1);
+  assert.equal(JSON.parse(taskIdCollision.stdout).code, "TASK_ID_EXISTS");
   assert.equal(taskA.activeTask.requestedBy, "Alice");
   assert.equal(taskB.activeTask.requestedBy, "Bob");
   assert.deepEqual(
@@ -173,6 +190,10 @@ try {
   assert.equal(taskALog.includes('"role":"executor"'), true);
   assert.equal(taskALog.includes('"agent":"be"'), true);
   assert.equal(taskALog.includes('"actor"'), false);
+  assert.equal(taskALog.includes('"machine"'), false);
+  assert.equal(taskALog.includes('"osUser"'), false);
+  assert.equal((await readTaskLog("task-a"))[0].request, "Analyze task A audit behavior");
+  assert.equal((await readTaskLog("task-a")).every((entry) => entry.schemaVersion === 1 && new Date(entry.timestamp).toISOString() === entry.timestamp), true);
   assert.equal((await readTaskLog("task-a")).every((entry) => logEventSet.has(entry.event)), true);
 
   const taskBMemoryPath = path.join(temp, ".agrimap-agent", "memory", "current", "task-b.md");
@@ -195,7 +216,7 @@ try {
     session_id: "session-a",
     hook_event_name: "BeforeAgent",
   });
-  assert.match(hookA.hookSpecificOutput.additionalContext, /Requested by: Alice/);
+  assert.match(hookA.hookSpecificOutput.additionalContext, /Confirmed session requester: Alice/);
   assert.match(hookA.hookSpecificOutput.additionalContext, /Active task: task-a/);
   assert.match(hookA.hookSpecificOutput.additionalContext, /model=gpt-5.6-sol, role=leader, agent=primary, provider=codex/);
   assert.doesNotMatch(hookA.hookSpecificOutput.additionalContext, /Current project memory:/);
@@ -220,7 +241,16 @@ try {
     session_id: "session-a",
     hook_event_name: "BeforeAgent",
   });
-  assert.equal(repeatedHookA.hookSpecificOutput, undefined);
+  assert.match(repeatedHookA.hookSpecificOutput.additionalContext, /Confirmed session requester: Alice/);
+  assert.doesNotMatch(repeatedHookA.hookSpecificOutput.additionalContext, /Current task memory/);
+  await writeFile(path.join(temp, ".agrimap-agent", "memory", "project.md"), "# Project memory\n\n- Audit history must remain queryable.\n", "utf8");
+  const changedProjectMemoryHook = run(hookScript, ["--provider", "gemini", "--mode", "task"], {
+    cwd: temp,
+    session_id: "session-a",
+    hook_event_name: "BeforeAgent",
+  });
+  assert.match(changedProjectMemoryHook.hookSpecificOutput.additionalContext, /Project memory \(changed since the last hook refresh\)/);
+  assert.match(changedProjectMemoryHook.hookSpecificOutput.additionalContext, /Audit history must remain queryable/);
 
   const claudeSessionB = run(hookScript, ["--provider", "claude", "--mode", "session"], {
     cwd: temp,
@@ -235,7 +265,8 @@ try {
     hook_event_name: "UserPromptSubmit",
     prompt: "Continue the task",
   });
-  assert.equal(unchangedClaudePrompt.hookSpecificOutput, undefined);
+  assert.match(unchangedClaudePrompt.hookSpecificOutput.additionalContext, /Confirmed session requester: Bob/);
+  assert.doesNotMatch(unchangedClaudePrompt.hookSpecificOutput.additionalContext, /Current task memory/);
 
   run(workspaceScript, ["checkpoint", "--cwd", temp, "--session", "session-b", "--task", "task-b", "--summary", "Task B context changed", "--event", "verified"]);
   const refreshedClaudePrompt = run(hookScript, ["--provider", "claude", "--mode", "task"], {
@@ -252,15 +283,50 @@ try {
     hook_event_name: "UserPromptSubmit",
     prompt: "Continue again",
   });
-  assert.equal(repeatedClaudePrompt.hookSpecificOutput, undefined);
+  assert.match(repeatedClaudePrompt.hookSpecificOutput.additionalContext, /Confirmed session requester: Bob/);
+  assert.doesNotMatch(repeatedClaudePrompt.hookSpecificOutput.additionalContext, /Current task memory/);
 
   const hookUnknown = run(hookScript, ["--provider", "claude", "--mode", "session"], {
     cwd: temp,
     session_id: "new-session",
     hook_event_name: "SessionStart",
   });
-  assert.match(hookUnknown.hookSpecificOutput.additionalContext, /Requester is unknown/);
-  assert.doesNotMatch(hookUnknown.hookSpecificOutput.additionalContext, /Requested by: Bob/);
+  assert.match(hookUnknown.hookSpecificOutput.additionalContext, /Session requester is unknown/);
+  assert.doesNotMatch(hookUnknown.hookSpecificOutput.additionalContext, /Confirmed session requester: Bob/);
+
+  run(workspaceScript, ["identify", "--cwd", temp, "--session", "transcript-fallback.jsonl", "--owner", "Carol", "--provider", "gemini"]);
+  const transcriptFallbackHook = run(hookScript, ["--provider", "gemini", "--mode", "task"], {
+    cwd: temp,
+    transcript_path: path.join(temp, "transcript-fallback.jsonl"),
+    hook_event_name: "BeforeAgent",
+  });
+  assert.match(transcriptFallbackHook.hookSpecificOutput.additionalContext, /Session: transcript-fallback\.jsonl \(derived from transcript path\)/);
+  assert.match(transcriptFallbackHook.hookSpecificOutput.additionalContext, /Confirmed session requester: Carol/);
+
+  const expiredIdentityResult = run(workspaceScript, ["identify", "--cwd", temp, "--session", "expired-session", "--owner", "Dana"]);
+  await writeFile(
+    path.join(temp, ".agrimap-agent", "runtime", "sessions", "expired-session.json"),
+    `${JSON.stringify({ ...expiredIdentityResult.identity, confirmedAt: "2026-01-01T00:00:00.000Z", expiresAt: "2026-01-02T00:00:00.000Z" }, null, 2)}\n`,
+    "utf8",
+  );
+  const expiredStart = spawnSync(process.execPath, [
+    workspaceScript, "start", "--cwd", temp, "--session", "expired-session", "--task", "expired-task", "--title", "Must reconfirm requester",
+  ], { encoding: "utf8" });
+  assert.equal(expiredStart.status, 1);
+  assert.equal(JSON.parse(expiredStart.stdout).identityExpired, true);
+
+  await writeFile(
+    path.join(temp, ".agrimap-agent", "runtime", "sessions", "legacy-session.json"),
+    `${JSON.stringify({ requestedBy: "Eve", actor: "legacy-model", role: "leader", provider: "claude", updatedAt: new Date().toISOString() }, null, 2)}\n`,
+    "utf8",
+  );
+  const legacyHook = run(hookScript, ["--provider", "claude", "--mode", "task"], {
+    cwd: temp,
+    session_id: "legacy-session",
+    hook_event_name: "UserPromptSubmit",
+  });
+  assert.match(legacyHook.hookSpecificOutput.additionalContext, /Confirmed session requester: Eve/);
+  assert.match(legacyHook.hookSpecificOutput.additionalContext, /model=legacy-model/);
 
   const subagentHook = run(hookScript, ["--provider", "claude", "--mode", "subagent"], {
     cwd: temp,
@@ -329,7 +395,7 @@ try {
   assert.equal(JSON.parse(await readFile(path.join(temp, ".agrimap-agent", "runtime", "active", "session-b.json"), "utf8")).taskId, "task-b");
   assert.match(await readFile(taskARecentPath, "utf8"), /Task A passed targeted inspection/);
 
-  const taskC = run(workspaceScript, ["start", "--cwd", temp, "--session", "session-a", "--task", "task-c", "--operation", "create-feature"]);
+  const taskC = run(workspaceScript, ["start", "--cwd", temp, "--session", "session-a", "--task", "task-c", "--operation", "create-feature", "--title", "Implement task C and send it to QA"]);
   assert.equal(taskC.activeTask.requestedBy, "Alice");
   run(workspaceScript, ["checkpoint", "--cwd", temp, "--session", "session-a", "--task", "task-c", "--summary", "Implementation returned for QA"]);
   const taskCDirectory = path.join(temp, ".agrimap-agent", "tasks", "task-c");
@@ -349,7 +415,7 @@ try {
   const taskCLog = await readTaskLog("task-c");
   assert.equal(taskCLog.at(-1).event, "qa-failed");
 
-  run(workspaceScript, ["start", "--cwd", temp, "--session", "session-a", "--task", "task-d", "--operation", "analyze"]);
+  run(workspaceScript, ["start", "--cwd", temp, "--session", "session-a", "--task", "task-d", "--operation", "analyze", "--title", "Analyze task D before cancellation"]);
   const taskDDirectory = path.join(temp, ".agrimap-agent", "tasks", "task-d");
   await writeFile(path.join(taskDDirectory, "result.md"), "# Result\n\n- Outcome: `cancelled`\n", "utf8");
   const closedD = run(workspaceScript, [
@@ -362,6 +428,47 @@ try {
   for (const taskId of ["task-a", "task-b", "task-c", "task-d"]) {
     assert.equal((await readTaskLog(taskId)).every((entry) => logEventSet.has(entry.event)), true);
   }
+
+  await writeFile(
+    path.join(temp, ".agrimap-agent", "logs", new Date().toISOString().slice(0, 7), "malformed-audit.jsonl"),
+    "{malformed audit fixture}\n",
+    "utf8",
+  );
+  const todayUtc = new Date().toISOString().slice(0, 10);
+  const aliceHistory = run(workspaceScript, ["history", "--cwd", temp, "--requester", "alice", "--days", "5"]);
+  assert.equal(aliceHistory.ok, true);
+  assert.equal(aliceHistory.timeBasis, "UTC");
+  assert.equal(aliceHistory.events.every((event) => event.requestedBy === "Alice"), true);
+  assert.equal(aliceHistory.events.every((event) => new Date(event.timestamp).toISOString() === event.timestamp), true);
+  assert.equal(aliceHistory.invalidLines.some((line) => line.reason === "invalid-json"), true);
+  assert.equal(aliceHistory.tasks.find((task) => task.taskId === "task-a").request, "Analyze task A audit behavior");
+  assert.match(aliceHistory.tasks.find((task) => task.taskId === "task-a").artifacts.recentMemory, /memory\/recent\/task-a\.md$/);
+  assert.equal(aliceHistory.requesters.find((requester) => requester.requestedBy === "Alice").taskIds.includes("task-c"), true);
+  const dateHistory = run(workspaceScript, ["history", "--cwd", temp, "--from", todayUtc, "--to", todayUtc]);
+  assert.equal(dateHistory.count >= aliceHistory.count, true);
+  assert.equal(dateHistory.filters.from, `${todayUtc}T00:00:00.000Z`);
+  assert.equal(dateHistory.filters.toExclusive, new Date(Date.parse(`${todayUtc}T00:00:00.000Z`) + 86_400_000).toISOString());
+  const ambiguousTimeHistory = spawnSync(process.execPath, [
+    workspaceScript, "history", "--cwd", temp, "--from", `${todayUtc}T10:00`,
+  ], { encoding: "utf8" });
+  assert.equal(ambiguousTimeHistory.status, 1);
+  assert.equal(JSON.parse(ambiguousTimeHistory.stdout).code, "INVALID_TIME_RANGE");
+  const bobHistory = run(workspaceScript, ["history", "--cwd", temp, "--requester", "Bob", "--days", "5"]);
+  assert.equal(bobHistory.events.every((event) => event.requestedBy === "Bob"), true);
+  assert.equal(bobHistory.tasks.some((task) => task.taskId === "task-b"), true);
+
+  const ambiguousActiveDirectory = path.join(temp, ".agrimap-agent", "runtime", "active");
+  await writeFile(path.join(ambiguousActiveDirectory, "ambiguous-one.json"), `${JSON.stringify({ taskId: "ambiguous-task", sessionId: "ambiguous-one", requestedBy: "Alice" })}\n`, "utf8");
+  await writeFile(path.join(ambiguousActiveDirectory, "ambiguous-two.json"), `${JSON.stringify({ taskId: "ambiguous-task", sessionId: "ambiguous-two", requestedBy: "Bob" })}\n`, "utf8");
+  const ambiguousCheckpoint = spawnSync(process.execPath, [
+    workspaceScript, "checkpoint", "--cwd", temp, "--task", "ambiguous-task", "--summary", "Must not inherit the first session",
+  ], { encoding: "utf8" });
+  assert.equal(ambiguousCheckpoint.status, 1);
+  const ambiguousResult = JSON.parse(ambiguousCheckpoint.stdout);
+  assert.equal(ambiguousResult.code, "AMBIGUOUS_ACTIVE_TASK");
+  assert.deepEqual(ambiguousResult.sessions.map((entry) => entry.sessionId).sort(), ["ambiguous-one", "ambiguous-two"]);
+  await rm(path.join(ambiguousActiveDirectory, "ambiguous-one.json"));
+  await rm(path.join(ambiguousActiveDirectory, "ambiguous-two.json"));
 
   const sourceDirectory = path.join(temp, "src", "app", "shared");
   await mkdir(sourceDirectory, { recursive: true });
@@ -389,12 +496,15 @@ try {
     ok: true,
     cases: [
       "missing requester blocks substantive task start",
+      "new task start requires a durable request objective",
+      "tracked task IDs cannot be reused across requesters",
       "shared CLI parsing preserves boolean flags and key-value options",
       "code extraction ignores Markdown headings inside fenced blocks",
       "prune is fail-safe without valid config and stays within recent memory",
       "target project initializes tracked state while ignoring only runtime and cache",
       "two sessions retain different requester and structured model-role-agent-provider identity",
       "checkpoint logs use structured execution identity without actor composites",
+      "versioned logs retain exact UTC timestamps and the original request without local machine metadata",
       "log events reject undocumented values and preserve memory/log state",
       "completion gate archives only its own session task",
       "completion gate rejects unresolved placeholders without mutating task state",
@@ -403,8 +513,15 @@ try {
       "non-complete task outcomes use documented log events",
       "workspace initializes the canonical service ownership source of trust",
       "hooks load only current-session identity",
+      "hook identity survives transcript-key fallback, legacy schema migration, and every-prompt memory deduplication",
+      "changed project memory refreshes on the next prompt without suppressing the identity envelope",
+      "expired requester identity blocks task start until reconfirmed",
       "hook arguments survive boolean flags and providers are never inferred from environment variables",
       "Claude injects project memory at session start and refreshes changed task context only once",
+      "history queries return requester work by rolling days and inclusive UTC date range with artifact pointers",
+      "history rejects timezone-ambiguous timestamps",
+      "history reports malformed durable log lines instead of silently omitting audit gaps",
+      "ambiguous active sessions require an explicit session instead of inheriting the first match",
       "subagent hook reinforces file ownership and sandbox integration",
       "frontend reuse scan/search/deprecate/validate",
     ],

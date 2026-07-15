@@ -15,6 +15,8 @@ const claudeHooks = await read("plugins/agrimap-agent-skills/hooks/hooks.json");
 const geminiHooks = await read("hooks/hooks.json");
 const refactorModes = [...(await read("skills/agrimap-agent-skills/references/refactor-modes.md")).matchAll(/^## `([^`]+)`/gm)].map((match) => match[1]);
 
+assert.ok(operations.some((item) => item.name === "agm-history" && item.operation === "history"));
+
 assert.match(canonical, /AgriMap skill active/);
 assert.match(canonical, /activation receipt/i);
 assert.match(canonical, /standalone `-h` or `--help` token/);

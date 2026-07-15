@@ -13,6 +13,14 @@ import {
 } from "node:fs/promises";
 import path from "node:path";
 import { parseCliArgs } from "./cli-args.mjs";
+import {
+  confirmationExpiry,
+  DEFAULT_CONFIRMATION_HOURS,
+  IDENTITY_SCHEMA_VERSION,
+  isIdentitySource,
+  localAuditMetadata,
+  normalizeIdentity,
+} from "./identity.mjs";
 import { isLogEvent, logEventError } from "./log-events.mjs";
 
 function workspaceRoot(cwd) {
@@ -83,6 +91,10 @@ function now() {
   return new Date().toISOString();
 }
 
+function confirmationHours(value) {
+  return Math.min(168, Math.max(1, Number(value) || DEFAULT_CONFIRMATION_HOURS));
+}
+
 function defaultTaskId(operation) {
   return `${now().replace(/[-:TZ.]/g, "").slice(0, 14)}-${operation || "task"}`;
 }
@@ -119,6 +131,8 @@ async function ensureLayout(root) {
       identity: {
         mode: "per-session",
         runtimePath: ".agrimap-agent/runtime/sessions",
+        confirmationHours: DEFAULT_CONFIRMATION_HOURS,
+        gitRequesterSuggestion: true,
       },
       memory: {
         projectPath: ".agrimap-agent/memory/project.md",
@@ -170,14 +184,49 @@ async function identify(state, args) {
   if (!sessionId || !requestedBy) {
     return { ok: false, needsSession: !sessionId, needsRequester: !requestedBy, message: "--session and --owner are required." };
   }
+  const identitySource = String(args.source || args.identitySource || args["identity-source"] || "manual-confirmed").trim();
+  if (!isIdentitySource(identitySource) || identitySource === "legacy-migrated") {
+    return { ok: false, code: "INVALID_IDENTITY_SOURCE", message: "--source must be manual-confirmed or git-config-confirmed." };
+  }
+  const config = await readJson(path.join(state, "config.json")).catch(() => ({}));
+  const hours = confirmationHours(args.confirmationHours || args["confirmation-hours"] || config?.identity?.confirmationHours);
+  const confirmedAt = now();
   const identity = {
+    schemaVersion: IDENTITY_SCHEMA_VERSION,
     sessionId,
     requestedBy,
+    requesterId: String(args.requesterId || args["requester-id"] || "").trim() || null,
+    identitySource,
+    confirmedAt,
+    expiresAt: confirmationExpiry(confirmedAt, hours),
     ...executionIdentity(args),
-    updatedAt: now(),
+    ...localAuditMetadata(),
+    updatedAt: confirmedAt,
   };
   await writeJson(sessionIdentityPath(state, sessionId), identity);
   return { ok: true, identity };
+}
+
+async function sessionIdentity(state, sessionId, defaultProvider = "unknown") {
+  if (!sessionId) return null;
+  try {
+    return normalizeIdentity(await readJson(sessionIdentityPath(state, sessionId)), { defaultProvider });
+  } catch {
+    return null;
+  }
+}
+
+function gitRequesterSuggestion(root) {
+  try {
+    const requestedBy = execFileSync("git", ["config", "--get", "user.name"], {
+      cwd: root,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+    return requestedBy ? { requestedBy, source: "git-config-unconfirmed" } : null;
+  } catch {
+    return null;
+  }
 }
 
 async function resolveRequester(state, args) {
@@ -186,8 +235,8 @@ async function resolveRequester(state, args) {
   const sessionId = safeSessionId(args.session);
   if (!sessionId) return null;
   try {
-    const identity = await readJson(sessionIdentityPath(state, sessionId));
-    return String(identity.requestedBy || "").trim() || null;
+    const identity = await sessionIdentity(state, sessionId, args.provider);
+    return identity && !identity.expired ? identity.requestedBy : null;
   } catch {
     return null;
   }
@@ -205,18 +254,47 @@ async function gitStatus(root) {
   }
 }
 
+function auditEventIssues(event) {
+  const issues = [];
+  const requiredFields = ["timestamp", "taskId", "requestedBy", "identitySource", "model", "role", "agent", "provider", "event", "summary", "reason"];
+  for (const field of requiredFields) {
+    if (!String(event[field] || "").trim()) issues.push({ field, reason: "missing" });
+  }
+  if (!Number.isFinite(Date.parse(event.timestamp)) || new Date(event.timestamp).toISOString() !== event.timestamp) {
+    issues.push({ field: "timestamp", reason: "must-be-iso-utc" });
+  }
+  if (!isLogEvent(event.event)) issues.push({ field: "event", reason: "invalid" });
+  if (!isIdentitySource(event.identitySource)) issues.push({ field: "identitySource", reason: "invalid" });
+  if (event.event === "created" && !String(event.request || "").trim()) {
+    issues.push({ field: "request", reason: "missing-on-created-event" });
+  }
+  if (!Array.isArray(event.files)) issues.push({ field: "files", reason: "must-be-array" });
+  if (!Array.isArray(event.verification)) issues.push({ field: "verification", reason: "must-be-array" });
+  return issues;
+}
+
 async function appendLog(state, event) {
   if (!isLogEvent(event.event)) {
     const error = new TypeError(logEventError(event.event).message);
     error.code = "INVALID_LOG_EVENT";
     throw error;
   }
-  const month = now().slice(0, 7);
+  const { machine: _machine, osUser: _osUser, ...trackableEvent } = event;
+  const timestamp = now();
+  const record = { ...trackableEvent, schemaVersion: 1, timestamp };
+  const issues = auditEventIssues(record);
+  if (issues.length > 0) {
+    const error = new TypeError(`Audit event is incomplete: ${issues.map((issue) => `${issue.field}:${issue.reason}`).join(", ")}`);
+    error.code = "INVALID_AUDIT_EVENT";
+    error.issues = issues;
+    throw error;
+  }
+  const month = timestamp.slice(0, 7);
   const directory = path.join(state, "logs", month);
   await mkdir(directory, { recursive: true });
   await appendFile(
     path.join(directory, `${String(event.taskId || "unscoped").replace(/[^a-zA-Z0-9._-]+/g, "-")}.jsonl`),
-    `${JSON.stringify({ timestamp: now(), ...event })}\n`,
+    `${JSON.stringify(record)}\n`,
     "utf8",
   );
 }
@@ -229,13 +307,17 @@ async function init(root, args) {
     if (!result.ok) return result;
     identity = result.identity;
   } else if (args.session) {
-    try {
-      identity = await readJson(sessionIdentityPath(state, args.session));
-    } catch {
-      identity = null;
-    }
+    identity = await sessionIdentity(state, safeSessionId(args.session), args.provider);
   }
-  return { ok: true, root, state, identity, needsRequester: !identity?.requestedBy };
+  const needsRequester = !identity?.requestedBy || identity.expired;
+  return {
+    ok: true,
+    root,
+    state,
+    identity,
+    needsRequester,
+    suggestedRequester: needsRequester ? gitRequesterSuggestion(root) : null,
+  };
 }
 
 async function start(root, args) {
@@ -244,17 +326,30 @@ async function start(root, args) {
   if (!sessionId) {
     return { ok: false, needsSession: true, message: "A stable --session is required so concurrent project users do not collide." };
   }
+  const objective = String(args.title || args.objective || "").trim();
+  if (!objective) {
+    return { ok: false, code: "REQUEST_OBJECTIVE_REQUIRED", needsObjective: true, message: "--title or --objective is required so the durable audit can record what was requested." };
+  }
 
   if (args.owner || args.requestedBy) {
     const identity = await identify(state, args);
     if (!identity.ok) return identity;
   }
-  const requestedBy = await resolveRequester(state, args);
-  if (!requestedBy) {
-    return { ok: false, needsRequester: true, message: "Requester is required before substantive task work." };
+  const confirmedIdentity = await sessionIdentity(state, sessionId, args.provider);
+  if (!confirmedIdentity || confirmedIdentity.expired) {
+    return {
+      ok: false,
+      needsRequester: true,
+      identityExpired: Boolean(confirmedIdentity?.expired),
+      lastRequester: confirmedIdentity?.requestedBy || null,
+      suggestedRequester: gitRequesterSuggestion(root),
+      message: confirmedIdentity?.expired
+        ? "Requester confirmation expired; confirm the human requester again before substantive task work."
+        : "Requester is required before substantive task work.",
+    };
   }
-  const sessionIdentity = await readJson(sessionIdentityPath(state, sessionId)).catch(() => null);
-  const execution = executionIdentity(args, sessionIdentity || {});
+  const requestedBy = confirmedIdentity.requestedBy;
+  const execution = executionIdentity(args, confirmedIdentity);
 
   const activePath = activeTaskPath(state, sessionId);
   if (await exists(activePath)) {
@@ -265,12 +360,20 @@ async function start(root, args) {
   const taskId = safeTaskId(args.task || defaultTaskId(operation));
   if (!taskId) return { ok: false, message: "Task ID is empty after normalization." };
   const taskPath = path.join(state, "tasks", taskId);
+  if (await exists(taskPath)) {
+    return {
+      ok: false,
+      code: "TASK_ID_EXISTS",
+      taskId,
+      message: "This task ID already has tracked artifacts. Use a new task ID so requester and request history cannot be mixed.",
+    };
+  }
   await mkdir(path.join(taskPath, "handoffs"), { recursive: true });
 
   if (!(await exists(path.join(taskPath, "brief.md")))) {
     await writeFile(
       path.join(taskPath, "brief.md"),
-      `# Task brief\n\n- Task ID: \`${taskId}\`\n- Requested by: ${requestedBy}\n- Session: \`${sessionId}\`\n- Model: \`${execution.model}\`\n- Role: \`${execution.role}\`\n- Agent: \`${execution.agent}\`\n- Provider: \`${execution.provider}\`\n- Operation: \`${operation}\`\n- Objective: ${args.title || "Define before implementation."}\n- Scope: Define before implementation.\n- Non-goals: Define before implementation.\n`,
+      `# Task brief\n\n- Task ID: \`${taskId}\`\n- Requested by: ${requestedBy}\n- Requester ID: ${confirmedIdentity.requesterId || "Not recorded"}\n- Identity source: \`${confirmedIdentity.identitySource}\`\n- Session: \`${sessionId}\`\n- Model: \`${execution.model}\`\n- Role: \`${execution.role}\`\n- Agent: \`${execution.agent}\`\n- Provider: \`${execution.provider}\`\n- Operation: \`${operation}\`\n- Objective: ${objective}\n- Scope: Define before implementation.\n- Non-goals: Define before implementation.\n`,
       "utf8",
     );
   }
@@ -282,20 +385,33 @@ async function start(root, args) {
     );
   }
 
-  const active = { taskId, operation, sessionId, requestedBy, ...execution, startedAt: now() };
+  const active = {
+    taskId,
+    operation,
+    objective,
+    sessionId,
+    requestedBy,
+    requesterId: confirmedIdentity.requesterId,
+    identitySource: confirmedIdentity.identitySource,
+    ...execution,
+    startedAt: now(),
+  };
   await writeJson(activePath, active);
   await writeFile(
     path.join(state, "memory", "current", `${taskId}.md`),
-    `# Current task memory\n\n- Task: \`${taskId}\`\n- Requested by: ${requestedBy}\n- Model: \`${execution.model}\`\n- Role: \`${execution.role}\`\n- Agent: \`${execution.agent}\`\n- Provider: \`${execution.provider}\`\n- Status: started\n- Operation: \`${operation}\`\n- Last checkpoint: ${now()}\n- Summary: ${args.title || "Task started; scope must be completed in the task brief."}\n`,
+    `# Current task memory\n\n- Task: \`${taskId}\`\n- Requested by: ${requestedBy}\n- Request: ${objective}\n- Model: \`${execution.model}\`\n- Role: \`${execution.role}\`\n- Agent: \`${execution.agent}\`\n- Provider: \`${execution.provider}\`\n- Status: started\n- Operation: \`${operation}\`\n- Last checkpoint: ${now()}\n- Summary: ${objective}\n`,
     "utf8",
   );
   await appendLog(state, {
     taskId,
     requestedBy,
+    requesterId: confirmedIdentity.requesterId,
+    identitySource: confirmedIdentity.identitySource,
     ...execution,
     event: "created",
     summary: `Started ${operation} task.`,
-    reason: args.title || "Requester request",
+    request: objective,
+    reason: objective,
     files: [],
     verification: [],
   });
@@ -321,22 +437,29 @@ async function checkpoint(root, args) {
   const state = await ensureLayout(root);
 
   const activeMatch = await findActiveForTask(state, taskId, safeSessionId(args.session));
+  if (activeMatch?.ambiguous) return activeTaskAmbiguityError(taskId, activeMatch.matches);
   const taskPath = path.join(state, "tasks", taskId);
-  const requestedBy = activeMatch?.active?.requestedBy || await taskRequester(taskPath) || await resolveRequester(state, args);
+  const taskIdentity = await taskAuditIdentity(taskPath);
+  const requestedBy = activeMatch?.active?.requestedBy || taskIdentity.requestedBy || await resolveRequester(state, args);
   if (!requestedBy) return { ok: false, needsRequester: true, message: "Requester is missing from the session and task brief." };
 
   const execution = executionIdentity(args, activeMatch?.active || {});
+  const requesterId = activeMatch?.active?.requesterId || taskIdentity.requesterId || null;
+  const identitySource = activeMatch?.active?.identitySource || taskIdentity.identitySource || "legacy-migrated";
+  const request = activeMatch?.active?.objective || taskIdentity.request || null;
   const files = listValue(args.files);
   const verification = listValue(args.verification);
   const concerns = String(args.concerns || "None recorded.");
   await writeFile(
     path.join(state, "memory", "current", `${taskId}.md`),
-    `# Current task memory\n\n- Task: \`${taskId}\`\n- Requested by: ${requestedBy}\n- Model: \`${execution.model}\`\n- Role: \`${execution.role}\`\n- Agent: \`${execution.agent}\`\n- Provider: \`${execution.provider}\`\n- Status: ${args.status || "in-progress"}\n- Last checkpoint: ${now()}\n- Summary: ${summary}\n- Reason: ${args.reason || "Atomic task checkpoint."}\n- Files: ${files.length ? files.map((file) => `\`${file}\``).join(", ") : "None"}\n- Verification: ${verification.length ? verification.join("; ") : "Not yet run"}\n- Concerns: ${concerns}\n`,
+    `# Current task memory\n\n- Task: \`${taskId}\`\n- Requested by: ${requestedBy}\n- Request: ${request || "Not recorded (legacy task)"}\n- Model: \`${execution.model}\`\n- Role: \`${execution.role}\`\n- Agent: \`${execution.agent}\`\n- Provider: \`${execution.provider}\`\n- Status: ${args.status || "in-progress"}\n- Last checkpoint: ${now()}\n- Summary: ${summary}\n- Reason: ${args.reason || "Atomic task checkpoint."}\n- Files: ${files.length ? files.map((file) => `\`${file}\``).join(", ") : "None"}\n- Verification: ${verification.length ? verification.join("; ") : "Not yet run"}\n- Concerns: ${concerns}\n`,
     "utf8",
   );
   await appendLog(state, {
     taskId,
     requestedBy,
+    requesterId,
+    identitySource,
     ...execution,
     event,
     summary,
@@ -344,7 +467,7 @@ async function checkpoint(root, args) {
     files,
     verification,
   });
-  return { ok: true, taskId, requestedBy, ...execution, memory: `memory/current/${taskId}.md` };
+  return { ok: true, taskId, requestedBy, requesterId, identitySource, ...execution, memory: `memory/current/${taskId}.md` };
 }
 
 async function filesUnder(directory) {
@@ -435,9 +558,20 @@ function standaloneScaffoldReasons(content) {
   return [...reasons];
 }
 
-async function taskRequester(taskPath) {
+function optionalMarkdownField(content, label) {
+  const value = plainMarkdownValue(markdownField(content, label));
+  return value && !/^not recorded$/i.test(value) ? value : null;
+}
+
+async function taskAuditIdentity(taskPath) {
   const brief = await readFile(path.join(taskPath, "brief.md"), "utf8").catch(() => "");
-  return brief.match(/^\s*- Requested by:\s*(.+?)\s*$/im)?.[1]?.trim() || null;
+  return {
+    requestedBy: optionalMarkdownField(brief, "Requested by"),
+    requesterId: optionalMarkdownField(brief, "Requester ID"),
+    identitySource: optionalMarkdownField(brief, "Identity source"),
+    request: optionalMarkdownField(brief, "Objective"),
+    sessionId: optionalMarkdownField(brief, "Session"),
+  };
 }
 
 async function validate(root, args) {
@@ -525,14 +659,27 @@ async function validate(root, args) {
     || await exists(path.join(state, "memory", "recent", `${taskId}.md`));
   const logFiles = (await filesUnder(path.join(state, "logs"))).filter((file) => file.endsWith(".jsonl"));
   let taskLogged = false;
+  let createdRequestRecorded = false;
+  const auditFailures = [];
   for (const file of logFiles) {
     const lines = (await readFile(file, "utf8")).split(/\r?\n/).filter(Boolean);
-    for (const line of lines) {
+    const source = path.relative(root, file).replace(/\\/g, "/");
+    const belongsToTask = path.basename(file) === `${taskId}.jsonl`;
+    for (let lineNumber = 0; lineNumber < lines.length; lineNumber += 1) {
+      const line = lines[lineNumber];
       try {
         const event = JSON.parse(line);
-        if (event.taskId === taskId && event.requestedBy) taskLogged = true;
+        if (event.taskId !== taskId) continue;
+        if (event.requestedBy) taskLogged = true;
+        if (event.event === "created" && eventRequest(event)) createdRequestRecorded = true;
+        if (Number(event.schemaVersion) >= 1) {
+          for (const issue of auditEventIssues(event)) auditFailures.push({ source, line: lineNumber + 1, ...issue });
+          if (requestedBy && event.requestedBy && requestedBy !== event.requestedBy) {
+            auditFailures.push({ source, line: lineNumber + 1, field: "requestedBy", reason: "task-brief-mismatch" });
+          }
+        }
       } catch {
-        // Malformed lines are handled by repository QA; they are not completion evidence.
+        if (belongsToTask) auditFailures.push({ source, line: lineNumber + 1, field: "json", reason: "invalid" });
       }
     }
   }
@@ -544,6 +691,8 @@ async function validate(root, args) {
       && contentFailures.length === 0
       && qaAccepted
       && taskLogged
+      && createdRequestRecorded
+      && auditFailures.length === 0
       && Boolean(requestedBy)
       && memoryRecorded,
     taskId,
@@ -554,6 +703,8 @@ async function validate(root, args) {
     contentFailures,
     qaAccepted,
     taskLogged,
+    createdRequestRecorded,
+    auditFailures,
     requesterRecorded: Boolean(requestedBy),
     memoryRecorded,
   };
@@ -569,13 +720,31 @@ async function findActiveForTask(state, taskId, sessionId) {
     return null;
   }
   const activeDirectory = path.join(state, "runtime", "active");
+  const matches = [];
   for (const file of await readdir(activeDirectory).catch(() => [])) {
     if (!file.endsWith(".json")) continue;
     const candidatePath = path.join(activeDirectory, file);
     const candidate = await readJson(candidatePath).catch(() => null);
-    if (candidate?.taskId === taskId) return { active: candidate, activePath: candidatePath };
+    if (candidate?.taskId === taskId) matches.push({ active: candidate, activePath: candidatePath });
   }
-  return null;
+  if (matches.length === 0) return null;
+  if (matches.length === 1) return matches[0];
+  return { ambiguous: true, matches };
+}
+
+function activeTaskAmbiguityError(taskId, matches) {
+  return {
+    ok: false,
+    code: "AMBIGUOUS_ACTIVE_TASK",
+    needsSession: true,
+    taskId,
+    sessions: matches.map(({ active, activePath }) => ({
+      sessionId: active?.sessionId || path.basename(activePath, ".json"),
+      requestedBy: active?.requestedBy || null,
+      activePath: activePath.replace(/\\/g, "/"),
+    })),
+    message: "Multiple sessions have this task active; pass --session so requester and execution attribution cannot be inherited from the wrong session.",
+  };
 }
 
 async function complete(root, args) {
@@ -586,7 +755,9 @@ async function complete(root, args) {
   const state = path.join(root, ".agrimap-agent");
   const taskPath = path.join(state, "tasks", taskId);
   const activeMatch = await findActiveForTask(state, taskId, safeSessionId(args.session));
-  const requestedBy = activeMatch?.active?.requestedBy || await taskRequester(taskPath);
+  if (activeMatch?.ambiguous) return activeTaskAmbiguityError(taskId, activeMatch.matches);
+  const taskIdentity = await taskAuditIdentity(taskPath);
+  const requestedBy = activeMatch?.active?.requestedBy || taskIdentity.requestedBy;
   const execution = executionIdentity(args, activeMatch?.active || {});
 
   await copyFile(path.join(taskPath, "result.md"), path.join(state, "memory", "recent", `${taskId}.md`));
@@ -595,6 +766,8 @@ async function complete(root, args) {
   await appendLog(state, {
     taskId,
     requestedBy,
+    requesterId: activeMatch?.active?.requesterId || taskIdentity.requesterId || null,
+    identitySource: activeMatch?.active?.identitySource || taskIdentity.identitySource || "legacy-migrated",
     ...execution,
     event: "completed",
     summary: "Task passed its completion gate.",
@@ -638,7 +811,9 @@ async function closeTask(root, args) {
   }
 
   const activeMatch = await findActiveForTask(state, taskId, safeSessionId(args.session));
-  const requestedBy = activeMatch?.active?.requestedBy || await taskRequester(taskPath);
+  if (activeMatch?.ambiguous) return activeTaskAmbiguityError(taskId, activeMatch.matches);
+  const taskIdentity = await taskAuditIdentity(taskPath);
+  const requestedBy = activeMatch?.active?.requestedBy || taskIdentity.requestedBy;
   if (!requestedBy) return { ok: false, needsRequester: true, message: "Requester is missing from the task brief." };
   const execution = executionIdentity(args, activeMatch?.active || {});
 
@@ -648,6 +823,8 @@ async function closeTask(root, args) {
   await appendLog(state, {
     taskId,
     requestedBy,
+    requesterId: activeMatch?.active?.requesterId || taskIdentity.requesterId || null,
+    identitySource: activeMatch?.active?.identitySource || taskIdentity.identitySource || "legacy-migrated",
     ...execution,
     event: status,
     summary: `Task closed as ${status}; it did not pass the completion gate.`,
@@ -663,6 +840,182 @@ async function closeTask(root, args) {
     complete: false,
     archived: `memory/recent/${taskId}.md`,
     nextPrompt: status === "qa-failed" ? args.nextPrompt || args["next-prompt"] : null,
+  };
+}
+
+function auditBoundary(value, kind) {
+  const raw = String(value || "").trim();
+  if (!raw) return { value: null };
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    const parsed = Date.parse(`${raw}T00:00:00.000Z`);
+    if (!Number.isFinite(parsed) || new Date(parsed).toISOString().slice(0, 10) !== raw) {
+      return { error: `${kind} must be a valid YYYY-MM-DD date or ISO 8601 timestamp.` };
+    }
+    return { value: kind === "to" ? parsed + 86_400_000 : parsed, bareDate: true };
+  }
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,9})?)?(?:Z|[+-]\d{2}:\d{2})$/i.test(raw)) {
+    return { error: `${kind} timestamp must be ISO 8601 with Z or an explicit UTC offset.` };
+  }
+  const parsed = Date.parse(raw);
+  if (!Number.isFinite(parsed)) return { error: `${kind} must be a valid YYYY-MM-DD date or ISO 8601 timestamp.` };
+  return { value: kind === "to" ? parsed + 1 : parsed, bareDate: false };
+}
+
+function displayIso(value) {
+  return Number.isFinite(value) ? new Date(value).toISOString() : null;
+}
+
+function eventRequest(event) {
+  return String(event.request || (event.event === "created" ? event.reason : "") || "").trim() || null;
+}
+
+async function history(root, args) {
+  const state = path.join(root, ".agrimap-agent");
+  const fromInput = auditBoundary(args.from, "from");
+  const toInput = auditBoundary(args.to, "to");
+  if (fromInput.error || toInput.error) {
+    return { ok: false, code: "INVALID_TIME_RANGE", message: fromInput.error || toInput.error };
+  }
+
+  let fromMs = fromInput.value;
+  let toExclusiveMs = toInput.value;
+  const daysRaw = args.days;
+  let days = null;
+  if (daysRaw !== undefined) {
+    days = Number(daysRaw);
+    if (!Number.isInteger(days) || days < 1 || days > 3650) {
+      return { ok: false, code: "INVALID_DAYS", message: "--days must be an integer from 1 to 3650." };
+    }
+    const end = Date.now() + 1;
+    if (toExclusiveMs === null) toExclusiveMs = end;
+    if (fromMs === null) fromMs = toExclusiveMs - days * 86_400_000;
+  }
+  if (fromMs !== null && toExclusiveMs !== null && fromMs >= toExclusiveMs) {
+    return { ok: false, code: "INVALID_TIME_RANGE", message: "The start of the time range must be before its end." };
+  }
+
+  const requesterFilter = String(args.requester || args.owner || "").trim();
+  const requesterIdFilter = String(args.requesterId || args["requester-id"] || "").trim();
+  const taskFilter = safeTaskId(args.task);
+  const eventFilter = String(args.event || "").trim();
+  if (eventFilter && !isLogEvent(eventFilter)) return logEventError(eventFilter);
+
+  const logFiles = (await filesUnder(path.join(state, "logs")))
+    .filter((file) => file.endsWith(".jsonl"))
+    .sort((a, b) => a.localeCompare(b));
+  const allEvents = [];
+  const invalidLines = [];
+  for (const file of logFiles) {
+    const source = path.relative(root, file).replace(/\\/g, "/");
+    const lines = (await readFile(file, "utf8")).split(/\r?\n/);
+    for (let index = 0; index < lines.length; index += 1) {
+      if (!lines[index].trim()) continue;
+      try {
+        const event = JSON.parse(lines[index]);
+        const timestampMs = Date.parse(event.timestamp);
+        if (!Number.isFinite(timestampMs)) {
+          invalidLines.push({ source, line: index + 1, reason: "invalid-or-missing-timestamp" });
+          continue;
+        }
+        if (Number(event.schemaVersion) >= 1) {
+          for (const issue of auditEventIssues(event)) {
+            invalidLines.push({ source, line: index + 1, reason: `audit-${issue.field}-${issue.reason}` });
+          }
+        }
+        allEvents.push({ ...event, source, line: index + 1, timestampMs });
+      } catch {
+        invalidLines.push({ source, line: index + 1, reason: "invalid-json" });
+      }
+    }
+  }
+  allEvents.sort((a, b) => a.timestampMs - b.timestampMs || a.source.localeCompare(b.source) || a.line - b.line);
+
+  const filtered = allEvents.filter((event) => {
+    if (fromMs !== null && event.timestampMs < fromMs) return false;
+    if (toExclusiveMs !== null && event.timestampMs >= toExclusiveMs) return false;
+    if (requesterFilter && String(event.requestedBy || "").localeCompare(requesterFilter, undefined, { sensitivity: "accent" }) !== 0) return false;
+    if (requesterIdFilter && String(event.requesterId || "") !== requesterIdFilter) return false;
+    if (taskFilter && event.taskId !== taskFilter) return false;
+    if (eventFilter && event.event !== eventFilter) return false;
+    return true;
+  });
+
+  const requesterMap = new Map();
+  for (const event of filtered) {
+    const requestedBy = String(event.requestedBy || "Unknown requester");
+    const key = event.requesterId
+      ? `id:${event.requesterId}`
+      : `name:${requestedBy.toLocaleLowerCase()}`;
+    const entry = requesterMap.get(key) || {
+      requestedBy,
+      requesterIds: new Set(),
+      eventCount: 0,
+      taskIds: new Set(),
+      firstAt: event.timestamp,
+      lastAt: event.timestamp,
+    };
+    if (event.requesterId) entry.requesterIds.add(event.requesterId);
+    entry.eventCount += 1;
+    if (event.taskId) entry.taskIds.add(event.taskId);
+    entry.lastAt = event.timestamp;
+    requesterMap.set(key, entry);
+  }
+
+  const taskIds = [...new Set(filtered.map((event) => event.taskId).filter(Boolean))];
+  const tasks = [];
+  for (const taskId of taskIds) {
+    const matching = filtered.filter((event) => event.taskId === taskId);
+    const completeHistory = allEvents.filter((event) => event.taskId === taskId);
+    const created = completeHistory.find((event) => event.event === "created") || completeHistory[0];
+    const taskPath = path.join(state, "tasks", taskId);
+    const briefIdentity = await taskAuditIdentity(taskPath);
+    const artifactCandidates = {
+      brief: path.join(taskPath, "brief.md"),
+      currentMemory: path.join(state, "memory", "current", `${taskId}.md`),
+      recentMemory: path.join(state, "memory", "recent", `${taskId}.md`),
+    };
+    const artifacts = {};
+    for (const [name, file] of Object.entries(artifactCandidates)) {
+      artifacts[name] = await exists(file) ? path.relative(root, file).replace(/\\/g, "/") : null;
+    }
+    artifacts.logSources = [...new Set(completeHistory.map((event) => event.source))];
+    tasks.push({
+      taskId,
+      requestedBy: created?.requestedBy || briefIdentity.requestedBy || null,
+      requesterId: created?.requesterId || briefIdentity.requesterId || null,
+      identitySource: created?.identitySource || briefIdentity.identitySource || null,
+      request: eventRequest(created || {}) || briefIdentity.request || null,
+      firstAt: matching[0]?.timestamp || null,
+      lastAt: matching.at(-1)?.timestamp || null,
+      eventCount: matching.length,
+      events: [...new Set(matching.map((event) => event.event))],
+      artifacts,
+    });
+  }
+
+  const events = filtered.map(({ timestampMs, ...event }) => event);
+  return {
+    ok: true,
+    timeBasis: "UTC",
+    rangeSemantics: "--from is inclusive; --to YYYY-MM-DD includes the whole UTC date; --days is a rolling 24-hour window.",
+    filters: {
+      requester: requesterFilter || null,
+      requesterId: requesterIdFilter || null,
+      taskId: taskFilter || null,
+      event: eventFilter || null,
+      from: displayIso(fromMs),
+      toExclusive: displayIso(toExclusiveMs),
+      days,
+    },
+    count: events.length,
+    requesters: [...requesterMap.values()].map((entry) => ({
+      ...entry,
+      requesterIds: [...entry.requesterIds],
+      taskIds: [...entry.taskIds],
+    })),
+    tasks,
+    events,
+    invalidLines,
   };
 }
 
@@ -762,11 +1115,14 @@ switch (command) {
   case "close":
     result = await closeTask(root, args);
     break;
+  case "history":
+    result = await history(root, args);
+    break;
   case "prune":
     result = await prune(root);
     break;
   default:
-    result = { ok: false, message: "Use init, identify, start, checkpoint, validate, complete, close, or prune." };
+    result = { ok: false, message: "Use init, identify, start, checkpoint, validate, complete, close, history, or prune." };
 }
 
 process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);

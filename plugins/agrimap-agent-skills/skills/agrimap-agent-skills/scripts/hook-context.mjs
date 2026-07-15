@@ -5,6 +5,7 @@ import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { parseCliArgs } from "./cli-args.mjs";
+import { normalizeIdentity } from "./identity.mjs";
 
 function workspaceRoot(cwd) {
   try {
@@ -49,6 +50,18 @@ function fingerprint(value) {
   return createHash("sha256").update(value).digest("hex");
 }
 
+function gitRequesterSuggestion(cwd) {
+  try {
+    return execFileSync("git", ["config", "--get", "user.name"], {
+      cwd,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim() || null;
+  } catch {
+    return null;
+  }
+}
+
 async function writeJson(filePath, value) {
   if (!filePath) return;
   try {
@@ -80,25 +93,28 @@ const cwd = workspaceRoot(path.resolve(input.cwd || process.cwd()));
 const stateRoot = path.join(cwd, ".agrimap-agent");
 const sessionId = safeSessionId(input.session_id || input.sessionId || input.conversation_id || input.conversationId);
 const hookSessionKey = sessionId || safeSessionId(path.basename(input.transcript_path || input.transcriptPath || ""));
-const identity = sessionId
-  ? await readJson(path.join(stateRoot, "runtime", "sessions", `${sessionId}.json`))
+const effectiveSessionId = hookSessionKey;
+const rawIdentity = effectiveSessionId
+  ? await readJson(path.join(stateRoot, "runtime", "sessions", `${effectiveSessionId}.json`))
   : null;
-const activeTask = sessionId
-  ? await readJson(path.join(stateRoot, "runtime", "active", `${sessionId}.json`))
+const identity = rawIdentity ? normalizeIdentity(rawIdentity, { defaultProvider: provider }) : null;
+const confirmedIdentity = identity && !identity.expired ? identity : null;
+const activeTask = effectiveSessionId
+  ? await readJson(path.join(stateRoot, "runtime", "active", `${effectiveSessionId}.json`))
   : null;
-const requestedBy = identity?.requestedBy || activeTask?.requestedBy || null;
-const execution = activeTask || identity || {};
+const taskRequester = activeTask?.requestedBy || null;
+const execution = activeTask || confirmedIdentity || identity || {};
+const suggestedRequester = confirmedIdentity ? null : gitRequesterSuggestion(cwd);
 const projectMemory = await readText(path.join(stateRoot, "memory", "project.md"));
 const currentTaskMemory = activeTask?.taskId
   ? await readText(path.join(stateRoot, "memory", "current", `${activeTask.taskId}.md`))
   : "";
-const taskFingerprint = fingerprint(JSON.stringify({
-  requestedBy,
-  execution,
+const memoryFingerprint = fingerprint(JSON.stringify({
+  projectMemory,
   activeTask,
   currentTaskMemory,
 }));
-const hookStatePath = hookSessionKey && (projectMemory || identity || activeTask)
+const hookStatePath = effectiveSessionId && (projectMemory || identity || activeTask)
   ? path.join(stateRoot, "runtime", "hooks", `${safeSessionId(provider)}-${hookSessionKey}.json`)
   : "";
 const previousHookState = mode === "task" && hookStatePath
@@ -106,19 +122,30 @@ const previousHookState = mode === "task" && hookStatePath
   : null;
 
 const context = [
-  "AgriMap Agent Skills context:",
+  "AgriMap identity and audit context:",
   `- Provider: ${provider}`,
   `- Hook mode: ${mode}`,
-  sessionId ? `- Session: ${sessionId}` : "- Session ID is unavailable. Create a stable local conversation ID before substantive task work.",
-  requestedBy
-    ? `- Requested by: ${requestedBy}`
-    : "- Requester is unknown for this session/task. Ask the human before substantive work; never infer from the latest shared log.",
+  effectiveSessionId
+    ? `- Session: ${effectiveSessionId}${sessionId ? "" : " (derived from transcript path)"}`
+    : "- Session ID is unavailable. Create a stable local conversation ID before substantive task work.",
+  confirmedIdentity
+    ? `- Confirmed session requester: ${confirmedIdentity.requestedBy}; valid until ${confirmedIdentity.expiresAt}.`
+    : identity?.expired
+      ? `- Requester confirmation expired. Last confirmed requester was ${identity.requestedBy}; ask the human to confirm again before substantive work.`
+      : "- Session requester is unknown. Ask the human before substantive work; never infer attribution from shared logs, machine/OS user, or Git config.",
+  taskRequester
+    ? `- Active task requested by: ${taskRequester}; immutable task attribution comes from its tracked brief and created log event.`
+    : "- No active task requester is recorded for this session.",
   `- Execution identity: model=${execution.model || "unknown"}, role=${execution.role || "leader"}, agent=${execution.agent || "primary"}, provider=${execution.provider || provider}.`,
-  "- Persist session identity with agm-workspace.mjs identify --session <id> --owner <name>; runtime identity is ignored by Git.",
-  "- Copy requestedBy into the tracked task brief and every durable log event; record model, role, agent, and provider as separate fields. Never combine them into actor names such as frontier-codex.",
-  "- Read the umbrella skill before using an agm workflow.",
-  "- Do not add permission gates. Discuss only material logic/contract/data/architecture trade-offs.",
-  "- Update memory and concise logs after every atomic task; do not claim completion with unchecked items.",
+  effectiveSessionId
+    ? `- Persist or reconfirm identity with agm-workspace.mjs identify --session ${effectiveSessionId} --owner <confirmed-human-name>; runtime identity is ignored by Git.`
+    : "- Persist identity with agm-workspace.mjs identify --session <stable-local-id> --owner <confirmed-human-name>; runtime identity is ignored by Git.",
+  suggestedRequester
+    ? `- Unconfirmed Git-name suggestion: ${suggestedRequester}. Ask the human to confirm it; never attribute work automatically from this value.`
+    : "- Do not substitute machine, OS, or Git identity for explicit human confirmation.",
+  "- Durable audit rule: every task must record who requested what in its tracked brief and created log; checkpoint each atomic action with an accurate UTC timestamp.",
+  "- For audit/history questions, run agm-workspace.mjs history with person/date/task filters, then open its returned brief and memory artifact paths; never answer from conversational recall alone.",
+  "- Durable project memory is .agrimap-agent/memory/project.md; reopen it when context was compacted or current project facts are needed.",
 ];
 
 if (activeTask?.taskId) {
@@ -135,20 +162,28 @@ if (mode === "subagent") {
   );
 }
 
-if (mode !== "task" && projectMemory) context.push("\nCurrent project memory:\n", projectMemory);
-if (currentTaskMemory) context.push("\nCurrent task memory:\n", currentTaskMemory);
+if (mode !== "task") {
+  context.push(
+    "- Read the umbrella skill before using an agm workflow.",
+    "- Do not add permission gates. Discuss only material logic/contract/data/architecture trade-offs.",
+    "- Update memory and concise logs after every atomic task; do not claim completion with unchecked items.",
+  );
+  if (projectMemory) context.push("\nCurrent project memory:\n", projectMemory);
+  if (currentTaskMemory) context.push("\nCurrent task memory:\n", currentTaskMemory);
+} else if (currentTaskMemory && previousHookState?.memoryFingerprint !== memoryFingerprint) {
+  if (projectMemory) context.push("\nProject memory (changed since the last hook refresh):\n", projectMemory);
+  context.push("\nCurrent task memory (changed since the last hook refresh):\n", currentTaskMemory);
+} else if (projectMemory && previousHookState?.memoryFingerprint !== memoryFingerprint) {
+  context.push("\nProject memory (changed since the last hook refresh):\n", projectMemory);
+}
 
 const hookEventName = input.hook_event_name || input.hookEventName || "SessionStart";
-let additionalContext = context.join("\n");
+const additionalContext = context.join("\n");
 
 if (mode === "task") {
-  if (previousHookState?.taskFingerprint === taskFingerprint) {
-    additionalContext = "";
-  } else {
-    await writeJson(hookStatePath, { version: 1, taskFingerprint });
-  }
+  await writeJson(hookStatePath, { version: 2, memoryFingerprint });
 } else if (mode === "session") {
-  await writeJson(hookStatePath, { version: 1, taskFingerprint });
+  await writeJson(hookStatePath, { version: 2, memoryFingerprint });
 }
 
 const output = {

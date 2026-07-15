@@ -14,7 +14,7 @@ skills/agrimap-agent-skills/       canonical workflow + patterns + scripts
               └── Gemini extension commands (/agm-*) + umbrella skill
 
 project/.agrimap-agent/            tracked tasks, per-task memory/logs, knowledge, decisions
-project/.agrimap-agent/runtime/    ignored per-session identity + active tasks
+project/.agrimap-agent/runtime/    ignored per-session identity + active tasks + hook refresh state
 ```
 
 The package does not import legacy `.agm` governance and does not create an extra permission layer. Platform permissions remain authoritative. Preserved legacy code samples are compatibility evidence only and are hash-verified.
@@ -90,9 +90,9 @@ Gemini may show its native consent prompt when activating a skill or fingerprint
 
 At the first chat/session interaction, the Leader must resolve who is requesting the work. In a multi-person project there is no shared `owner.json`.
 
-- ignored live identity: `.agrimap-agent/runtime/sessions/<session-id>.json`
+- ignored live identity: `.agrimap-agent/runtime/sessions/<session-id>.json`, confirmed for a bounded window (24 hours by default)
 - ignored active task: `.agrimap-agent/runtime/active/<session-id>.json`
-- tracked attribution: `Requested by` in the task brief and `requestedBy` in every task-scoped JSONL log event
+- tracked attribution: who requested what in the task brief and versioned task-scoped JSONL events with exact UTC timestamps
 - execution attribution: `model`, `role`, `agent`, and `provider` are separate; `requestedBy` remains the human
 
 If the hook cannot identify the current human, it instructs the agent to ask before substantive work. It must never copy the requester from the latest shared log.
@@ -119,11 +119,21 @@ Commit `.agrimap-agent/tasks`, `memory/project.md`, task-scoped `memory/current|
 | `agm-design` | flow, behavior, states, acceptance |
 | `agm-architect` | boundaries, contracts, migration |
 | `agm-review` | evidence-backed findings |
+| `agm-history` | read-only requester/task history by person, date, task, or event |
 | `agm-refactor-fe/be/sql` | explicit refactor behavior mode |
 | `agm-qa` | independent read-only requirements-to-evidence verification |
 | `agm-create-unit-test` | target-specific tests |
 | `agm-create-feature` | FE/BE/batch/library/SQL feature |
 | `agm-create-prompt` | provider/model-aware delegation prompts |
+
+Audit examples:
+
+```powershell
+node <installed-package>\skills\agrimap-agent-skills\scripts\agm-workspace.mjs history --cwd . --from 2026-07-01 --to 2026-07-15
+node <installed-package>\skills\agrimap-agent-skills\scripts\agm-workspace.mjs history --cwd . --requester Billy --days 5
+```
+
+Logs supply the chronology; each result points to the tracked brief and current/recent memory for task detail. Bare dates use UTC.
 
 For backend creation/testing, use `target_kind=be-main` with required `backend_profile=agmws|agmbo`. These profiles are not target kinds; no generic or fallback profile exists. `be-library` does not use `backend_profile`.
 

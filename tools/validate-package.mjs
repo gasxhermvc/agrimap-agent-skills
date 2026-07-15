@@ -62,6 +62,7 @@ for (const required of [
   "skills/agrimap-agent-skills/references/backend-engineer.md",
   "skills/agrimap-agent-skills/references/service-ownership.md",
   "skills/agrimap-agent-skills/scripts/log-events.mjs",
+  "skills/agrimap-agent-skills/scripts/identity.mjs",
   "skills/agrimap-agent-skills/assets/templates/service-ownership.yaml",
   "docs/USAGE.md",
   "plugins/agrimap-agent-skills/docs/USAGE.md",
@@ -87,6 +88,8 @@ if (!packageManifest?.scripts?.test?.includes("npm run verify:golden")) errors.p
 const canonicalSkill = await readFile(path.join(root, "skills", "agrimap-agent-skills", "SKILL.md"), "utf8");
 if (!/^---\r?\nname: agrimap-agent-skills\r?\ndescription: .+\r?\n---/s.test(canonicalSkill)) errors.push("Canonical SKILL.md frontmatter is invalid.");
 if (canonicalSkill.split(/\r?\n/).length > 500) errors.push("Canonical SKILL.md exceeds 500 lines.");
+for (const marker of ["Answer audit/history questions", "conversational recall alone", "created event must preserve the requested objective"])
+  if (!canonicalSkill.includes(marker)) errors.push(`Canonical audit/history contract missing marker: ${marker}`);
 
 const memoryAndLogsReference = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "memory-and-logs.md"), "utf8");
 const documentedLogEvents = memoryAndLogsReference.match(/"event":\s*"([^"]+)"/)?.[1]?.split("|") || [];
@@ -97,6 +100,8 @@ const workspaceScriptReference = await readFile(path.join(root, "skills", "agrim
 if (!workspaceScriptReference.includes('from "./log-events.mjs"')) {
   errors.push("agm-workspace.mjs does not enforce the canonical log event enum.");
 }
+for (const marker of ["auditEventIssues", 'case "history"', "REQUEST_OBJECTIVE_REQUIRED", "TASK_ID_EXISTS", "AMBIGUOUS_ACTIVE_TASK"])
+  if (!workspaceScriptReference.includes(marker)) errors.push(`Workspace audit implementation missing marker: ${marker}`);
 
 const syncAdapter = await readFile(path.join(root, "tools", "sync-adapters.mjs"), "utf8");
 if (!syncAdapter.includes("packageManifest.version")) errors.push("Sync adapter does not read the canonical package version.");
@@ -190,6 +195,7 @@ if (operations) {
   const names = operations.operations.map((item) => item.name);
   if (new Set(names).size !== names.length) errors.push("Operation aliases are not unique.");
   if (names.includes("agm-fe-engineer")) errors.push("Passive frontend discipline must not expose agm-fe-engineer.");
+  if (!operations.operations.some((item) => item.name === "agm-history" && item.operation === "history")) errors.push("agm-history operation is required for durable requester/task queries.");
   for (const name of names) {
     for (const target of [
       path.join(root, "commands", `${name}.toml`),
