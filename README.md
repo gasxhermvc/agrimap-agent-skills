@@ -94,6 +94,9 @@ At the first chat/session interaction, the Leader must resolve who is requesting
 - ignored active task: `.agrimap-agent/runtime/active/<session-id>.json`
 - tracked attribution: who requested what in the task brief and versioned task-scoped JSONL events with exact UTC timestamps
 - execution attribution: `model`, `role`, `agent`, and `provider` are separate; `requestedBy` remains the human
+- change context: schema-v2 events always record explicit `gitHead`/`gitDirty` context (`null` outside Git), and `changed` checkpoints require at least one nonblank claimed affected file
+
+This is workflow attribution, not proof of the physical editor or commit author. Use `$agm-history` for requester/executor/task chronology and Git log/blame separately for actual commit authorship. `recordedFiles` contains only valid versioned non-terminal claims; any `legacyClaimedFiles` are diagnostic and are not promoted into that attribution. Check `auditStorage` before relying on the result across machines: ignored or untracked logs are local-only. JSONL is not cryptographically tamper-evident; use an external immutable audit system if that threat model applies.
 
 If the hook cannot identify the current human, it instructs the agent to ask before substantive work. It must never copy the requester from the latest shared log.
 
@@ -133,7 +136,7 @@ node <installed-package>\skills\agrimap-agent-skills\scripts\agm-workspace.mjs h
 node <installed-package>\skills\agrimap-agent-skills\scripts\agm-workspace.mjs history --cwd . --requester Billy --days 5
 ```
 
-Logs supply the chronology; each result points to the tracked brief and current/recent memory for task detail. Bare dates use UTC.
+Logs supply workflow chronology; each result distinguishes requester, executor, claimed files, Git context, and storage durability, and points to brief/result/QA/current/recent artifacts. Bare dates use UTC. Invalid versioned records are reported but excluded from evidence.
 
 For backend creation/testing, use `target_kind=be-main` with required `backend_profile=agmws|agmbo`. These profiles are not target kinds; no generic or fallback profile exists. `be-library` does not use `backend_profile`.
 

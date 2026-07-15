@@ -23,6 +23,10 @@ import {
 } from "./identity.mjs";
 import { isLogEvent, logEventError } from "./log-events.mjs";
 
+const AUDIT_SCHEMA_VERSION = 2;
+const SUPPORTED_AUDIT_SCHEMA_VERSIONS = new Set([1, AUDIT_SCHEMA_VERSION]);
+const TERMINAL_AUDIT_EVENTS = new Set(["qa-failed", "blocked", "cancelled", "completed"]);
+
 function workspaceRoot(cwd) {
   try {
     return execFileSync("git", ["rev-parse", "--show-toplevel"], {
@@ -254,8 +258,42 @@ async function gitStatus(root) {
   }
 }
 
+function gitOutput(root, args, options = {}) {
+  try {
+    return {
+      ok: true,
+      stdout: execFileSync("git", args, {
+        cwd: root,
+        encoding: "utf8",
+        stdio: [options.input === undefined ? "ignore" : "pipe", "pipe", "ignore"],
+        input: options.input,
+      }).trim(),
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      stdout: String(error?.stdout || "").trim(),
+    };
+  }
+}
+
+function gitAuditSnapshot(root) {
+  const repository = gitOutput(root, ["rev-parse", "--is-inside-work-tree"]);
+  if (!repository.ok || repository.stdout !== "true") return { gitHead: null, gitDirty: null };
+  const head = gitOutput(root, ["rev-parse", "HEAD"]);
+  const status = gitOutput(root, ["status", "--porcelain=v1"]);
+  return {
+    gitHead: head.ok && /^[0-9a-f]{40,64}$/i.test(head.stdout) ? head.stdout : null,
+    gitDirty: status.ok ? Boolean(status.stdout) : null,
+  };
+}
+
 function auditEventIssues(event) {
   const issues = [];
+  const schemaVersion = event.schemaVersion;
+  if (!SUPPORTED_AUDIT_SCHEMA_VERSIONS.has(schemaVersion)) {
+    issues.push({ field: "schemaVersion", reason: "unsupported" });
+  }
   const requiredFields = ["timestamp", "taskId", "requestedBy", "identitySource", "model", "role", "agent", "provider", "event", "summary", "reason"];
   for (const field of requiredFields) {
     if (!String(event[field] || "").trim()) issues.push({ field, reason: "missing" });
@@ -269,7 +307,23 @@ function auditEventIssues(event) {
     issues.push({ field: "request", reason: "missing-on-created-event" });
   }
   if (!Array.isArray(event.files)) issues.push({ field: "files", reason: "must-be-array" });
+  else if (schemaVersion >= 2) {
+    if (event.files.some((file) => typeof file !== "string" || !file.trim())) {
+      issues.push({ field: "files", reason: "must-contain-nonblank-paths" });
+    }
+    if (event.event === "changed" && !event.files.some((file) => typeof file === "string" && file.trim())) {
+      issues.push({ field: "files", reason: "required-on-changed-event" });
+    }
+  }
   if (!Array.isArray(event.verification)) issues.push({ field: "verification", reason: "must-be-array" });
+  if (schemaVersion >= 2 && !Object.hasOwn(event, "gitHead")) issues.push({ field: "gitHead", reason: "missing" });
+  if (schemaVersion >= 2 && !Object.hasOwn(event, "gitDirty")) issues.push({ field: "gitDirty", reason: "missing" });
+  if (event.gitHead !== null && event.gitHead !== undefined && !/^[0-9a-f]{40,64}$/i.test(String(event.gitHead))) {
+    issues.push({ field: "gitHead", reason: "invalid" });
+  }
+  if (event.gitDirty !== null && event.gitDirty !== undefined && typeof event.gitDirty !== "boolean") {
+    issues.push({ field: "gitDirty", reason: "must-be-boolean-or-null" });
+  }
   return issues;
 }
 
@@ -281,7 +335,8 @@ async function appendLog(state, event) {
   }
   const { machine: _machine, osUser: _osUser, ...trackableEvent } = event;
   const timestamp = now();
-  const record = { ...trackableEvent, schemaVersion: 1, timestamp };
+  const gitSnapshot = gitAuditSnapshot(path.dirname(state));
+  const record = { ...trackableEvent, schemaVersion: AUDIT_SCHEMA_VERSION, timestamp, ...gitSnapshot };
   const issues = auditEventIssues(record);
   if (issues.length > 0) {
     const error = new TypeError(`Audit event is incomplete: ${issues.map((issue) => `${issue.field}:${issue.reason}`).join(", ")}`);
@@ -434,6 +489,14 @@ async function checkpoint(root, args) {
   if (!taskId || !summary) return { ok: false, message: "--task and --summary are required." };
   const event = String(args.event || "changed").trim();
   if (!isLogEvent(event)) return logEventError(event);
+  const files = listValue(args.files);
+  if (event === "changed" && files.length === 0) {
+    return {
+      ok: false,
+      code: "CHANGED_FILES_REQUIRED",
+      message: "A changed checkpoint requires --files so later history can distinguish what the executor claims to have changed.",
+    };
+  }
   const state = await ensureLayout(root);
 
   const activeMatch = await findActiveForTask(state, taskId, safeSessionId(args.session));
@@ -447,7 +510,6 @@ async function checkpoint(root, args) {
   const requesterId = activeMatch?.active?.requesterId || taskIdentity.requesterId || null;
   const identitySource = activeMatch?.active?.identitySource || taskIdentity.identitySource || "legacy-migrated";
   const request = activeMatch?.active?.objective || taskIdentity.request || null;
-  const files = listValue(args.files);
   const verification = listValue(args.verification);
   const concerns = String(args.concerns || "None recorded.");
   await writeFile(
@@ -478,6 +540,89 @@ async function filesUnder(directory) {
     else files.push(entryPath);
   }
   return files;
+}
+
+async function recordedTaskFiles(state, taskId) {
+  const recorded = new Set();
+  const logFiles = (await filesUnder(path.join(state, "logs"))).filter((file) => file.endsWith(".jsonl"));
+  for (const file of logFiles) {
+    for (const line of (await readFile(file, "utf8")).split(/\r?\n/).filter(Boolean)) {
+      try {
+        const event = JSON.parse(line);
+        const versioned = SUPPORTED_AUDIT_SCHEMA_VERSIONS.has(event.schemaVersion);
+        if (
+          event.taskId !== taskId
+          || !versioned
+          || TERMINAL_AUDIT_EVENTS.has(event.event)
+          || auditEventIssues(event).length > 0
+        ) continue;
+        for (const changedFile of event.files) {
+          const normalized = typeof changedFile === "string" ? changedFile.trim() : "";
+          if (normalized) recorded.add(normalized);
+        }
+      } catch {
+        // Invalid lines are reported by validation/history and never supply file attribution.
+      }
+    }
+  }
+  return [...recorded];
+}
+
+function auditStorageStatus(root, logFiles) {
+  const repository = gitOutput(root, ["rev-parse", "--is-inside-work-tree"]);
+  const relativeLogs = logFiles
+    .map((file) => path.relative(root, file).replace(/\\/g, "/"))
+    .sort((a, b) => a.localeCompare(b));
+  if (!repository.ok || repository.stdout !== "true") {
+    return {
+      status: relativeLogs.length ? "local-only-no-git" : "no-logs",
+      gitRepository: false,
+      logFileCount: relativeLogs.length,
+      trackedCount: 0,
+      ignoredCount: 0,
+      workingTreeChanges: [],
+      recoverableFromCurrentCommit: false,
+      note: "Logs exist only in this local filesystem because the target is not a Git worktree.",
+    };
+  }
+
+  const trackedOutput = gitOutput(root, ["ls-files", "--", ".agrimap-agent/logs"]);
+  const tracked = new Set(trackedOutput.stdout.split(/\r?\n/).filter(Boolean).map((file) => file.replace(/\\/g, "/")));
+  const ignoredOutput = relativeLogs.length
+    ? gitOutput(root, ["check-ignore", "--stdin"], { input: `${relativeLogs.join("\n")}\n` })
+    : { stdout: "" };
+  const ignored = new Set(ignoredOutput.stdout.split(/\r?\n/).filter(Boolean).map((file) => file.replace(/\\/g, "/")));
+  const workingTree = gitOutput(root, ["status", "--porcelain=v1", "--", ".agrimap-agent/logs"]);
+  const workingTreeChanges = workingTree.stdout.split(/\r?\n/).filter(Boolean);
+  const trackedCount = relativeLogs.filter((file) => tracked.has(file)).length;
+  const ignoredCount = relativeLogs.filter((file) => ignored.has(file)).length;
+  const allTracked = relativeLogs.length > 0 && trackedCount === relativeLogs.length;
+  const recoverableFromCurrentCommit = allTracked && workingTreeChanges.length === 0;
+
+  let status = "no-logs";
+  if (relativeLogs.length > 0 && allTracked) status = recoverableFromCurrentCommit ? "tracked-clean" : "tracked-with-working-tree-changes";
+  else if (trackedCount > 0) status = "partially-tracked";
+  else if (ignoredCount > 0) status = "local-only-ignored";
+  else if (relativeLogs.length > 0) status = "untracked";
+
+  const notes = {
+    "no-logs": "No durable audit log files exist yet.",
+    "tracked-clean": "All audit logs are present in the current Git commit; remote/team recovery still depends on pushing that commit.",
+    "tracked-with-working-tree-changes": "Audit logs are tracked but have staged or unstaged changes that are not fully recoverable from the current commit.",
+    "partially-tracked": "Only some audit logs are tracked; history is incomplete for another clone.",
+    "local-only-ignored": "Audit logs are ignored by Git and will not be available in another clone or to teammates.",
+    untracked: "Audit logs are not ignored, but they have not been added to Git and are local-only.",
+  };
+  return {
+    status,
+    gitRepository: true,
+    logFileCount: relativeLogs.length,
+    trackedCount,
+    ignoredCount,
+    workingTreeChanges,
+    recoverableFromCurrentCommit,
+    note: notes[status],
+  };
 }
 
 function escapeRegExp(value) {
@@ -759,6 +904,7 @@ async function complete(root, args) {
   const taskIdentity = await taskAuditIdentity(taskPath);
   const requestedBy = activeMatch?.active?.requestedBy || taskIdentity.requestedBy;
   const execution = executionIdentity(args, activeMatch?.active || {});
+  const files = await recordedTaskFiles(state, taskId);
 
   await copyFile(path.join(taskPath, "result.md"), path.join(state, "memory", "recent", `${taskId}.md`));
   await rm(path.join(state, "memory", "current", `${taskId}.md`), { force: true });
@@ -772,7 +918,7 @@ async function complete(root, args) {
     event: "completed",
     summary: "Task passed its completion gate.",
     reason: "Checklist, QA, memory, and logs are complete.",
-    files: [],
+    files,
     verification: ["agm-workspace validate: passed"],
   });
   return { ok: true, taskId, requestedBy, archived: `memory/recent/${taskId}.md` };
@@ -816,6 +962,7 @@ async function closeTask(root, args) {
   const requestedBy = activeMatch?.active?.requestedBy || taskIdentity.requestedBy;
   if (!requestedBy) return { ok: false, needsRequester: true, message: "Requester is missing from the task brief." };
   const execution = executionIdentity(args, activeMatch?.active || {});
+  const files = await recordedTaskFiles(state, taskId);
 
   await copyFile(resultPath, path.join(state, "memory", "recent", `${taskId}.md`));
   await rm(path.join(state, "memory", "current", `${taskId}.md`), { force: true });
@@ -829,7 +976,7 @@ async function closeTask(root, args) {
     event: status,
     summary: `Task closed as ${status}; it did not pass the completion gate.`,
     reason: String(args.reason || "Closed without claiming completion."),
-    files: [],
+    files,
     verification: status === "qa-failed" ? [`QA failed; next prompt: ${args.nextPrompt || args["next-prompt"]}`] : [],
   });
   return {
@@ -917,12 +1064,22 @@ async function history(root, args) {
           invalidLines.push({ source, line: index + 1, reason: "invalid-or-missing-timestamp" });
           continue;
         }
-        if (Number(event.schemaVersion) >= 1) {
-          for (const issue of auditEventIssues(event)) {
+        const versioned = Object.hasOwn(event, "schemaVersion");
+        if (versioned) {
+          const issues = auditEventIssues(event);
+          for (const issue of issues) {
             invalidLines.push({ source, line: index + 1, reason: `audit-${issue.field}-${issue.reason}` });
           }
+          if (issues.length > 0) continue;
         }
-        allEvents.push({ ...event, source, line: index + 1, timestampMs });
+        allEvents.push({
+          ...event,
+          source,
+          line: index + 1,
+          timestampMs,
+          timestampUtc: new Date(timestampMs).toISOString(),
+          evidenceLevel: versioned ? "versioned-workflow-log" : "legacy-unverified",
+        });
       } catch {
         invalidLines.push({ source, line: index + 1, reason: "invalid-json" });
       }
@@ -951,13 +1108,13 @@ async function history(root, args) {
       requesterIds: new Set(),
       eventCount: 0,
       taskIds: new Set(),
-      firstAt: event.timestamp,
-      lastAt: event.timestamp,
+      firstAt: event.timestampUtc,
+      lastAt: event.timestampUtc,
     };
     if (event.requesterId) entry.requesterIds.add(event.requesterId);
     entry.eventCount += 1;
     if (event.taskId) entry.taskIds.add(event.taskId);
-    entry.lastAt = event.timestamp;
+    entry.lastAt = event.timestampUtc;
     requesterMap.set(key, entry);
   }
 
@@ -966,11 +1123,40 @@ async function history(root, args) {
   for (const taskId of taskIds) {
     const matching = filtered.filter((event) => event.taskId === taskId);
     const completeHistory = allEvents.filter((event) => event.taskId === taskId);
-    const created = completeHistory.find((event) => event.event === "created") || completeHistory[0];
+    const versionedHistory = completeHistory.filter((event) => event.evidenceLevel === "versioned-workflow-log");
+    const legacyHistory = completeHistory.filter((event) => event.evidenceLevel === "legacy-unverified");
+    const attributionHistory = versionedHistory.filter((event) => !TERMINAL_AUDIT_EVENTS.has(event.event));
+    const created = versionedHistory.find((event) => event.event === "created")
+      || completeHistory.find((event) => event.event === "created")
+      || completeHistory[0];
+    const recordedFiles = [...new Set(attributionHistory.flatMap((event) => Array.isArray(event.files) ? event.files : [])
+      .map((file) => typeof file === "string" ? file.trim() : "").filter(Boolean))];
+    const legacyClaimedFiles = [...new Set(legacyHistory.flatMap((event) => Array.isArray(event.files) ? event.files : [])
+      .map((file) => typeof file === "string" ? file.trim() : "").filter(Boolean))];
+    const gitHeads = [...new Set(versionedHistory.map((event) => event.gitHead).filter(Boolean))];
+    const legacyActors = [...new Set(legacyHistory.map((event) => String(event.actor || "").trim()).filter(Boolean))];
+    const executorMap = new Map();
+    for (const event of versionedHistory) {
+      if (![event.model, event.role, event.agent, event.provider].some((value) => String(value || "").trim())) continue;
+      const executor = {
+        model: String(event.model || "unknown"),
+        role: String(event.role || "unknown"),
+        agent: String(event.agent || "unknown"),
+        provider: String(event.provider || "unknown"),
+      };
+      const key = `${executor.model}\u0000${executor.role}\u0000${executor.agent}\u0000${executor.provider}`;
+      const existing = executorMap.get(key) || { ...executor, eventCount: 0, firstAt: event.timestampUtc, lastAt: event.timestampUtc };
+      existing.eventCount += 1;
+      existing.lastAt = event.timestampUtc;
+      executorMap.set(key, existing);
+    }
     const taskPath = path.join(state, "tasks", taskId);
     const briefIdentity = await taskAuditIdentity(taskPath);
     const artifactCandidates = {
       brief: path.join(taskPath, "brief.md"),
+      checklist: path.join(taskPath, "checklist.md"),
+      qa: path.join(taskPath, "qa.md"),
+      result: path.join(taskPath, "result.md"),
       currentMemory: path.join(state, "memory", "current", `${taskId}.md`),
       recentMemory: path.join(state, "memory", "recent", `${taskId}.md`),
     };
@@ -985,19 +1171,43 @@ async function history(root, args) {
       requesterId: created?.requesterId || briefIdentity.requesterId || null,
       identitySource: created?.identitySource || briefIdentity.identitySource || null,
       request: eventRequest(created || {}) || briefIdentity.request || null,
-      firstAt: matching[0]?.timestamp || null,
-      lastAt: matching.at(-1)?.timestamp || null,
+      firstAt: matching[0]?.timestampUtc || null,
+      lastAt: matching.at(-1)?.timestampUtc || null,
       eventCount: matching.length,
       events: [...new Set(matching.map((event) => event.event))],
+      recordedFiles,
+      legacyClaimedFiles,
+      executors: [...executorMap.values()],
+      legacyActors,
+      gitHeads,
       artifacts,
     });
   }
 
   const events = filtered.map(({ timestampMs, ...event }) => event);
+  const auditStorage = auditStorageStatus(root, logFiles);
+  const versionedEventCount = allEvents.filter((event) => event.evidenceLevel === "versioned-workflow-log").length;
+  const legacyEventCount = allEvents.length - versionedEventCount;
   return {
     ok: true,
     timeBasis: "UTC",
+    timestampSemantics: "events[].timestamp preserves the recorded value; events[].timestampUtc, requester/task ranges, and filters use normalized UTC.",
     rangeSemantics: "--from is inclusive; --to YYYY-MM-DD includes the whole UTC date; --days is a rolling 24-hour window.",
+    attributionSemantics: {
+      requestedBy: "Confirmed human who requested the task; not proof of who edited or committed files.",
+      executionIdentity: "Model, role, agent, and provider recorded by the workflow event.",
+      recordedFiles: "Paths claimed by valid versioned non-terminal workflow events; not filesystem or Git authorship proof.",
+      legacyClaimedFiles: "Paths found only in unversioned legacy events; visible for diagnosis but never promoted into versioned attribution or closure events.",
+      gitContext: "gitHead/gitDirty describe repository state when a versioned event was appended; use Git history/blame separately for commit authorship.",
+      integrity: "Project-controlled JSONL is not cryptographically tamper-evident; inspect Git history or an external audit system when adversarial integrity matters.",
+    },
+    auditStorage,
+    evidence: {
+      versionedEventCount,
+      legacyEventCount,
+      invalidLineCount: invalidLines.length,
+      includedEventCount: allEvents.length,
+    },
     filters: {
       requester: requesterFilter || null,
       requesterId: requesterIdFilter || null,

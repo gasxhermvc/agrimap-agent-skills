@@ -5,7 +5,7 @@ Use `.agrimap-agent/` under the target project root as the cross-provider worksp
 ## State location
 
 - Installed use: resolve the project currently being worked on and write both durable memory and concise logs to `<target-project>/.agrimap-agent/`.
-- Skill/plugin development repository: keep that repository's entire `.agrimap-agent/` local-only with a root `.gitignore` entry. Do not publish developer logs or memory with the package.
+- Skill/plugin development repository: keep that repository's entire `.agrimap-agent/` local-only with a root `.gitignore` entry. Do not publish developer logs or memory with the package. Consequently, its history is available only on that machine and is not recoverable from a fresh clone; `history.auditStorage` must report this explicitly.
 - Runtime identity/cache inside an ordinary target project remains ignored through `.agrimap-agent/.gitignore`; project memory, task artifacts, decisions, knowledge, prompts, and logs remain visible for the project to track.
 - Do not use an AI Gateway in v1. It is neither a sink, mirror, fallback, nor completion dependency.
 
@@ -66,7 +66,7 @@ Record the actual model exposed by the running surface. If it is unavailable, us
 - `knowledge/index.jsonl`: durable facts and pointers that remain useful across tasks.
 - `knowledge/service-ownership.yaml`: the only project service/data ownership map; task artifacts point to `service_id` instead of copying it.
 - `decisions/`: owner-approved decisions and trade-offs.
-- `logs/YYYY-MM/<task-id>.jsonl`: durable concise event history split by task to reduce multi-person Git collisions. Memory pruning must not delete logs.
+- `logs/YYYY-MM/<task-id>.jsonl`: durable concise event history split by task to reduce multi-person Git collisions. Memory pruning must not delete logs. “Durable for the team” requires these files to be tracked and committed; a local ignored/untracked log is durable only for that filesystem.
 
 Do not use generated provider memory as the only copy of a required rule or project decision.
 
@@ -90,7 +90,7 @@ Append one JSON object per line:
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "timestamp": "2026-07-15T09:20:31.123Z",
   "taskId": "task-id",
   "requestedBy": "human name",
@@ -104,11 +104,13 @@ Append one JSON object per line:
   "summary": "concise action",
   "reason": "problem addressed",
   "files": ["path"],
-  "verification": ["command/result"]
+  "verification": ["command/result"],
+  "gitHead": "40-or-64-character-commit-id-or-null",
+  "gitDirty": false
 }
 ```
 
-The first event for every new task is `created` and also contains `request`, the durable normalized statement of what the human asked for. Timestamps are generated at append time as ISO-8601 UTC and logs are append-only. Completion validation rejects versioned task events with missing attribution/execution/time fields or a missing created request.
+The first event for every new task is `created` and also contains `request`, the durable normalized statement of what the human asked for. Timestamps are generated at append time as ISO-8601 UTC and logs are append-only. Schema v2 requires explicit `gitHead`/`gitDirty` repository context (both may be `null` outside Git) and requires every `changed` checkpoint to contain at least one nonblank claimed affected file. Completed/non-complete closure events carry forward unique files only from valid versioned, non-terminal task events; invalid, legacy-unverified, and earlier terminal records cannot supply carried attribution. Those Git fields are context, not proof that the logged requester or executor authored that commit. Completion validation keeps schema v1 readable without retroactively imposing the v2 Git or changed-file rules, while rejecting incomplete attribution/execution/time fields or a missing created request in every versioned event.
 
 The canonical event enum is defined in `scripts/log-events.mjs`. `qa-failed` is a task outcome event; keep the QA status `failed` in `qa.md` rather than writing `failed` as a log event.
 
@@ -121,7 +123,9 @@ node <skill>\scripts\agm-workspace.mjs history --cwd . --from 2026-07-01 --to 20
 node <skill>\scripts\agm-workspace.mjs history --cwd . --requester Billy --days 5
 ```
 
-The result groups matching events into `requesters` and `tasks`, retains exact `events[].timestamp` values, and returns artifact paths to open for detail. `--from` is inclusive. A bare `--to` date includes the entire UTC calendar day; an ISO timestamp is inclusive to that instant and must include `Z` or an explicit UTC offset. `--days` is a rolling number of 24-hour periods. Report invalid JSON or missing/invalid timestamp lines from `invalidLines` as limitations rather than inventing history.
+The result groups matching events into `requesters` and `tasks`, retains exact `events[].timestamp` values, adds normalized `events[].timestampUtc`, and aggregates task `executors`, `recordedFiles`, `legacyClaimedFiles`, `gitHeads`, and paths to brief/checklist/QA/result/current/recent artifacts. `recordedFiles` comes only from valid versioned non-terminal events; `legacyClaimedFiles` is diagnostic evidence that is never promoted into versioned attribution. `attributionSemantics` states what each identity proves; `auditStorage` reports whether logs are ignored, untracked, partially tracked, dirty, or recoverable from the current commit. `--from` is inclusive. A bare `--to` date includes the entire UTC calendar day; an ISO timestamp is inclusive to that instant and must include `Z` or an explicit UTC offset. `--days` is a rolling number of 24-hour periods.
+
+Invalid versioned records are excluded from authoritative events and reported through `invalidLines`; legacy unversioned records remain visible with `evidenceLevel=legacy-unverified`. Never infer actual editor/commit authorship from requester or workflow execution fields. For that question, correlate the task evidence with Git history or blame and report the two evidence sources separately. Project-controlled JSONL is append-only by workflow contract but is not cryptographically tamper-evident; use Git history or an external immutable audit system when adversarial integrity matters.
 
 ## Retention
 

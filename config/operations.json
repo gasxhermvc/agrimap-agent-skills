@@ -8,7 +8,7 @@
     {"name":"agm-design","operation":"design","description":"Design a user flow, behavior, and acceptance criteria"},
     {"name":"agm-architect","operation":"architect","description":"Design boundaries, contracts, and migration trade-offs"},
     {"name":"agm-review","operation":"review","description":"Review code or artifacts with evidence-backed findings"},
-    {"name":"agm-history","operation":"history","description":"Query durable requester and task history by person, task, event, or UTC time range"},
+    {"name":"agm-history","operation":"history","description":"Query workflow attribution and audit-storage status by person, task, event, or UTC time range"},
     {"name":"agm-refactor-fe","operation":"refactor-fe","description":"Refactor frontend code using an explicit behavior mode"},
     {"name":"agm-refactor-be","operation":"refactor-be","description":"Refactor backend code using an explicit behavior mode"},
     {"name":"agm-refactor-sql","operation":"refactor-sql","description":"Refactor SQL using an explicit behavior mode"},

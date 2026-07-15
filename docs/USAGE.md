@@ -128,6 +128,8 @@ Receipt นี้ไม่ใช่ permission gate เพิ่มเติม 
 
 งาน FE/BE จะ compose discipline ให้อัตโนมัติ ไม่มี `/agm-fe-engineer` หรือ `/agm-be-engineer`. `agmws|agmbo` เป็น `backend_profile` ของ `be-main`, ไม่ใช่ `target_kind`.
 
+`agm-history` ตอบจาก workflow evidence: `requestedBy` คือผู้ขอ, executor คือ model/role/agent/provider จาก versioned event ที่ผ่าน validation และ `recordedFiles` คือไฟล์จาก valid versioned non-terminal event เท่านั้น ส่วน `legacyClaimedFiles` เป็นข้อมูลวินิจฉัยที่ห้ามยกระดับเป็น versioned attribution ทั้งหมดนี้ไม่ใช่หลักฐานว่าใครเป็นผู้พิมพ์แก้หรือ author ของ commit. ถ้าถามผู้แก้จริงให้ตรวจ Git log/blame แยกต่างหาก และต้องดู `auditStorage` ก่อน—logs ที่ ignored/untracked เป็นข้อมูลเฉพาะเครื่องและจะไม่ตามไป clone ใหม่.
+
 ### Create-feature and create-unit-test target matrix
 
 ทุก target ใช้ได้กับทั้ง `$agm-create-feature` และ `$agm-create-unit-test`; ด้านล่างให้คำสั่งทั้งสองแบบเพื่อไม่ให้ผู้ใช้ต้องเดา field ที่จำเป็น:

@@ -39,7 +39,9 @@ Answer requester/task audit questions from tracked evidence without creating a t
 - `--days <1..3650>` for a rolling 24-hour window;
 - `--task <task-id>` or `--event <canonical-event>`.
 
-Bare dates are UTC and inclusive by calendar date (`--to 2026-07-15` includes that whole UTC day). Timestamp filters must include `Z` or an explicit UTC offset so the range cannot depend on the machine timezone. Read the returned `tasks[].artifacts.brief`, `currentMemory`, or `recentMemory` for details, and use `events[]` for exact dates, times, actions, models, and verification. Summarize by requester and task while retaining exact timestamps. Report `invalidLines` as an audit limitation; never fill gaps from guesswork or infer the requester from Git/OS/machine identity.
+Bare dates are UTC and inclusive by calendar date (`--to 2026-07-15` includes that whole UTC day). Timestamp filters must include `Z` or an explicit UTC offset so the range cannot depend on the machine timezone. Use `events[].timestampUtc` for normalized chronology and retain `events[].timestamp` when the exact recorded representation matters.
+
+Read `attributionSemantics` before answering: `requestedBy` is the confirmed human requester, `executors` are valid workflow-recorded model/role/agent/provider identities, and `recordedFiles` are claimed affected paths from valid versioned non-terminal events. `legacyClaimedFiles` is diagnostic only and must not be presented as versioned attribution. None proves who physically edited or committed a file. Use `gitHeads` only as event-time repository context and inspect Git log/blame separately for actual commit authorship. Read `auditStorage`; ignored, untracked, partially tracked, or dirty logs are not guaranteed to exist in another clone. Open `tasks[].artifacts.brief`, `result`, `qa`, `currentMemory`, or `recentMemory` for detail. Report `invalidLines` as an audit limitation and never count excluded invalid versioned records as evidence.
 
 ## `/agm-refactor-fe`, `/agm-refactor-be`, `/agm-refactor-sql`
 

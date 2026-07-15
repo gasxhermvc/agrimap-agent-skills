@@ -192,9 +192,11 @@ try {
   assert.equal(taskALog.includes('"actor"'), false);
   assert.equal(taskALog.includes('"machine"'), false);
   assert.equal(taskALog.includes('"osUser"'), false);
-  assert.equal((await readTaskLog("task-a"))[0].request, "Analyze task A audit behavior");
-  assert.equal((await readTaskLog("task-a")).every((entry) => entry.schemaVersion === 1 && new Date(entry.timestamp).toISOString() === entry.timestamp), true);
-  assert.equal((await readTaskLog("task-a")).every((entry) => logEventSet.has(entry.event)), true);
+  const taskALogEntries = await readTaskLog("task-a");
+  assert.equal(taskALogEntries[0].request, "Analyze task A audit behavior");
+  assert.equal(taskALogEntries.every((entry) => entry.schemaVersion === 2 && new Date(entry.timestamp).toISOString() === entry.timestamp), true);
+  assert.equal(taskALogEntries.every((entry) => logEventSet.has(entry.event)), true);
+  assert.equal(taskALogEntries.every((entry) => entry.gitHead === null && entry.gitDirty === null), true);
 
   const taskBMemoryPath = path.join(temp, ".agrimap-agent", "memory", "current", "task-b.md");
   const taskBLogBeforeInvalidEvent = JSON.stringify(await readTaskLog("task-b"));
@@ -208,6 +210,16 @@ try {
   const invalidEventResult = JSON.parse(invalidEventCheckpoint.stdout);
   assert.equal(invalidEventResult.code, "INVALID_LOG_EVENT");
   assert.match(invalidEventResult.message, /qa-failed\|blocked\|cancelled/);
+  assert.equal(JSON.stringify(await readTaskLog("task-b")), taskBLogBeforeInvalidEvent);
+  assert.equal(await readFile(taskBMemoryPath, "utf8"), taskBMemoryBeforeInvalidEvent);
+
+  const missingChangedFiles = spawnSync(process.execPath, [
+    workspaceScript,
+    "checkpoint", "--cwd", temp, "--session", "session-b", "--task", "task-b",
+    "--summary", "A changed event without file attribution must be rejected",
+  ], { encoding: "utf8" });
+  assert.equal(missingChangedFiles.status, 1);
+  assert.equal(JSON.parse(missingChangedFiles.stdout).code, "CHANGED_FILES_REQUIRED");
   assert.equal(JSON.stringify(await readTaskLog("task-b")), taskBLogBeforeInvalidEvent);
   assert.equal(await readFile(taskBMemoryPath, "utf8"), taskBMemoryBeforeInvalidEvent);
 
@@ -394,11 +406,46 @@ try {
   await assert.rejects(readFile(path.join(temp, ".agrimap-agent", "runtime", "active", "session-a.json"), "utf8"));
   assert.equal(JSON.parse(await readFile(path.join(temp, ".agrimap-agent", "runtime", "active", "session-b.json"), "utf8")).taskId, "task-b");
   assert.match(await readFile(taskARecentPath, "utf8"), /Task A passed targeted inspection/);
+  assert.deepEqual((await readTaskLog("task-a")).at(-1).files, ["src/a.ts"]);
 
   const taskC = run(workspaceScript, ["start", "--cwd", temp, "--session", "session-a", "--task", "task-c", "--operation", "create-feature", "--title", "Implement task C and send it to QA"]);
   assert.equal(taskC.activeTask.requestedBy, "Alice");
-  run(workspaceScript, ["checkpoint", "--cwd", temp, "--session", "session-a", "--task", "task-c", "--summary", "Implementation returned for QA"]);
+  run(workspaceScript, ["checkpoint", "--cwd", temp, "--session", "session-a", "--task", "task-c", "--summary", "Implementation returned for QA", "--files", "src/c.ts"]);
   const taskCDirectory = path.join(temp, ".agrimap-agent", "tasks", "task-c");
+  const taskCLogPath = path.join(temp, ".agrimap-agent", "logs", new Date().toISOString().slice(0, 7), "task-c.jsonl");
+  const invalidTaskCFileClaim = {
+    schemaVersion: 2,
+    timestamp: new Date().toISOString(),
+    taskId: "task-c",
+    requestedBy: "Alice",
+    requesterId: null,
+    identitySource: "manual-confirmed",
+    model: "forged-model",
+    role: "executor",
+    agent: "forged-agent",
+    provider: "forged-provider",
+    event: "changed",
+    summary: "Invalid v2 evidence must never be promoted by closure aggregation.",
+    reason: "The required gitHead and gitDirty fields are deliberately absent.",
+    files: ["src/evil.ts"],
+    verification: [],
+  };
+  const legacyTaskCFileClaim = {
+    timestamp: new Date().toISOString(),
+    taskId: "task-c",
+    requestedBy: "Alice",
+    actor: "legacy-agent",
+    event: "changed",
+    summary: "Legacy evidence remains diagnostic only.",
+    reason: "Unversioned compatibility fixture.",
+    files: ["src/legacy.ts"],
+    verification: [],
+  };
+  await writeFile(
+    taskCLogPath,
+    `${JSON.stringify(invalidTaskCFileClaim)}\n${JSON.stringify(legacyTaskCFileClaim)}\n`,
+    { encoding: "utf8", flag: "a" },
+  );
   await writeFile(path.join(taskCDirectory, "qa.md"), "# QA\n\n- Status: failed\n\nReproducible defect.\n", "utf8");
   await writeFile(path.join(taskCDirectory, "result.md"), "# Result\n\n- Outcome: `qa-failed`\n", "utf8");
   const nextPrompt = path.join(temp, ".agrimap-agent", "prompts", "task-c-fix", "executor.md");
@@ -414,6 +461,9 @@ try {
   assert.match(await readFile(path.join(temp, ".agrimap-agent", "memory", "recent", "task-c.md"), "utf8"), /qa-failed/);
   const taskCLog = await readTaskLog("task-c");
   assert.equal(taskCLog.at(-1).event, "qa-failed");
+  assert.deepEqual(taskCLog.at(-1).files, ["src/c.ts"]);
+  assert.equal(taskCLog.at(-1).files.includes("src/evil.ts"), false);
+  assert.equal(taskCLog.at(-1).files.includes("src/legacy.ts"), false);
 
   run(workspaceScript, ["start", "--cwd", temp, "--session", "session-a", "--task", "task-d", "--operation", "analyze", "--title", "Analyze task D before cancellation"]);
   const taskDDirectory = path.join(temp, ".agrimap-agent", "tasks", "task-d");
@@ -429,20 +479,96 @@ try {
     assert.equal((await readTaskLog(taskId)).every((entry) => logEventSet.has(entry.event)), true);
   }
 
+  const schemaV1CompatibilityEvent = {
+    schemaVersion: 1,
+    timestamp: new Date().toISOString(),
+    taskId: "schema-v1-compatibility",
+    requestedBy: "Legacy V1",
+    requesterId: null,
+    identitySource: "legacy-migrated",
+    model: "unknown",
+    role: "leader",
+    agent: "primary",
+    provider: "unknown",
+    event: "changed",
+    summary: "Schema v1 changed event without files remains readable after the v2 upgrade.",
+    reason: "Compatibility fixture.",
+    files: [],
+    verification: [],
+  };
+  const blankSchemaV2ChangedEvent = {
+    schemaVersion: 2,
+    timestamp: new Date().toISOString(),
+    taskId: "blank-v2-file-claim",
+    requestedBy: "Mallory",
+    requesterId: null,
+    identitySource: "manual-confirmed",
+    model: "unknown",
+    role: "leader",
+    agent: "primary",
+    provider: "unknown",
+    event: "changed",
+    summary: "Whitespace is not a usable affected path.",
+    reason: "Schema-v2 validation fixture.",
+    files: ["   "],
+    verification: [],
+    gitHead: null,
+    gitDirty: null,
+  };
+  const unsupportedSchemaEvent = {
+    ...blankSchemaV2ChangedEvent,
+    schemaVersion: 99,
+    taskId: "unsupported-audit-schema",
+    files: ["src/future.ts"],
+  };
   await writeFile(
     path.join(temp, ".agrimap-agent", "logs", new Date().toISOString().slice(0, 7), "malformed-audit.jsonl"),
-    "{malformed audit fixture}\n",
+    `{malformed audit fixture}\n${JSON.stringify({
+      schemaVersion: 2,
+      timestamp: new Date().toISOString(),
+      taskId: "forged-versioned-event",
+      requestedBy: "Mallory",
+      event: "changed",
+      summary: "This incomplete versioned record must not become audit evidence.",
+      reason: "Missing required execution and identity attribution.",
+      files: ["src/forged.ts"],
+      verification: [],
+    })}\n${JSON.stringify(blankSchemaV2ChangedEvent)}\n${JSON.stringify(unsupportedSchemaEvent)}\n${JSON.stringify(schemaV1CompatibilityEvent)}\n`,
     "utf8",
   );
   const todayUtc = new Date().toISOString().slice(0, 10);
   const aliceHistory = run(workspaceScript, ["history", "--cwd", temp, "--requester", "alice", "--days", "5"]);
   assert.equal(aliceHistory.ok, true);
   assert.equal(aliceHistory.timeBasis, "UTC");
+  assert.match(aliceHistory.attributionSemantics.requestedBy, /not proof of who edited or committed/i);
+  assert.match(aliceHistory.attributionSemantics.integrity, /not cryptographically tamper-evident/i);
+  assert.equal(aliceHistory.auditStorage.status, "local-only-no-git");
   assert.equal(aliceHistory.events.every((event) => event.requestedBy === "Alice"), true);
   assert.equal(aliceHistory.events.every((event) => new Date(event.timestamp).toISOString() === event.timestamp), true);
+  assert.equal(aliceHistory.events.every((event) => event.timestampUtc === event.timestamp), true);
+  assert.equal(aliceHistory.events.every((event) => ["versioned-workflow-log", "legacy-unverified"].includes(event.evidenceLevel)), true);
+  assert.equal(aliceHistory.events.some((event) => event.taskId === "task-c" && event.evidenceLevel === "legacy-unverified"), true);
   assert.equal(aliceHistory.invalidLines.some((line) => line.reason === "invalid-json"), true);
+  assert.equal(aliceHistory.invalidLines.some((line) => line.reason === "audit-identitySource-missing"), true);
+  assert.equal(aliceHistory.invalidLines.some((line) => line.reason === "audit-gitHead-missing"), true);
+  assert.equal(aliceHistory.invalidLines.some((line) => line.reason === "audit-gitDirty-missing"), true);
+  assert.equal(aliceHistory.invalidLines.some((line) => line.reason === "audit-files-required-on-changed-event"), true);
+  assert.equal(aliceHistory.invalidLines.some((line) => line.reason === "audit-files-must-contain-nonblank-paths"), true);
+  assert.equal(aliceHistory.invalidLines.some((line) => line.reason === "audit-schemaVersion-unsupported"), true);
+  assert.equal(aliceHistory.events.some((event) => event.taskId === "forged-versioned-event"), false);
+  assert.equal(aliceHistory.events.some((event) => event.taskId === "blank-v2-file-claim"), false);
+  assert.equal(aliceHistory.events.some((event) => event.taskId === "unsupported-audit-schema"), false);
   assert.equal(aliceHistory.tasks.find((task) => task.taskId === "task-a").request, "Analyze task A audit behavior");
   assert.match(aliceHistory.tasks.find((task) => task.taskId === "task-a").artifacts.recentMemory, /memory\/recent\/task-a\.md$/);
+  assert.match(aliceHistory.tasks.find((task) => task.taskId === "task-a").artifacts.result, /tasks\/task-a\/result\.md$/);
+  assert.match(aliceHistory.tasks.find((task) => task.taskId === "task-a").artifacts.qa, /tasks\/task-a\/qa\.md$/);
+  assert.deepEqual(aliceHistory.tasks.find((task) => task.taskId === "task-a").recordedFiles, ["src/a.ts"]);
+  assert.equal(aliceHistory.tasks.find((task) => task.taskId === "task-a").executors.some((executor) => executor.model === "gpt-5.4" && executor.agent === "be"), true);
+  const taskCHistory = aliceHistory.tasks.find((task) => task.taskId === "task-c");
+  assert.deepEqual(taskCHistory.recordedFiles, ["src/c.ts"]);
+  assert.deepEqual(taskCHistory.legacyClaimedFiles, ["src/legacy.ts"]);
+  assert.equal(taskCHistory.recordedFiles.includes("src/evil.ts"), false);
+  assert.equal(taskCHistory.executors.some((executor) => executor.model === "forged-model"), false);
   assert.equal(aliceHistory.requesters.find((requester) => requester.requestedBy === "Alice").taskIds.includes("task-c"), true);
   const dateHistory = run(workspaceScript, ["history", "--cwd", temp, "--from", todayUtc, "--to", todayUtc]);
   assert.equal(dateHistory.count >= aliceHistory.count, true);
@@ -456,12 +582,38 @@ try {
   const bobHistory = run(workspaceScript, ["history", "--cwd", temp, "--requester", "Bob", "--days", "5"]);
   assert.equal(bobHistory.events.every((event) => event.requestedBy === "Bob"), true);
   assert.equal(bobHistory.tasks.some((task) => task.taskId === "task-b"), true);
+  const schemaV1History = run(workspaceScript, ["history", "--cwd", temp, "--task", "schema-v1-compatibility"]);
+  assert.equal(schemaV1History.count, 1);
+  assert.equal(schemaV1History.events[0].schemaVersion, 1);
+  assert.deepEqual(schemaV1History.events[0].files, []);
+
+  const auditGitRoot = path.join(temp, "audit-git-project");
+  await mkdir(auditGitRoot, { recursive: true });
+  execFileSync("git", ["init"], { cwd: auditGitRoot, stdio: "ignore" });
+  await writeFile(path.join(auditGitRoot, ".gitignore"), ".agrimap-agent/\n", "utf8");
+  execFileSync("git", ["add", ".gitignore"], { cwd: auditGitRoot, stdio: "ignore" });
+  execFileSync("git", ["-c", "user.name=Audit Fixture", "-c", "user.email=audit@example.invalid", "commit", "-m", "Ignore local audit state"], { cwd: auditGitRoot, stdio: "ignore" });
+  const auditBaseCommit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: auditGitRoot, encoding: "utf8" }).trim();
+  run(workspaceScript, ["init", "--cwd", auditGitRoot]);
+  run(workspaceScript, ["identify", "--cwd", auditGitRoot, "--session", "audit-session", "--owner", "Auditor"]);
+  run(workspaceScript, ["start", "--cwd", auditGitRoot, "--session", "audit-session", "--task", "audit-task", "--operation", "analyze", "--title", "Audit storage durability"]);
+  run(workspaceScript, ["checkpoint", "--cwd", auditGitRoot, "--session", "audit-session", "--task", "audit-task", "--summary", "Recorded an attributed change", "--files", "src/audit.ts"]);
+  const ignoredAuditHistory = run(workspaceScript, ["history", "--cwd", auditGitRoot, "--task", "audit-task"]);
+  assert.equal(ignoredAuditHistory.auditStorage.status, "local-only-ignored");
+  assert.equal(ignoredAuditHistory.auditStorage.recoverableFromCurrentCommit, false);
+  assert.equal(ignoredAuditHistory.tasks[0].gitHeads.includes(auditBaseCommit), true);
+  await writeFile(path.join(auditGitRoot, ".gitignore"), "", "utf8");
+  execFileSync("git", ["add", ".gitignore", ".agrimap-agent"], { cwd: auditGitRoot, stdio: "ignore" });
+  execFileSync("git", ["-c", "user.name=Audit Fixture", "-c", "user.email=audit@example.invalid", "commit", "-m", "Track audit history"], { cwd: auditGitRoot, stdio: "ignore" });
+  const trackedAuditHistory = run(workspaceScript, ["history", "--cwd", auditGitRoot, "--task", "audit-task"]);
+  assert.equal(trackedAuditHistory.auditStorage.status, "tracked-clean");
+  assert.equal(trackedAuditHistory.auditStorage.recoverableFromCurrentCommit, true);
 
   const ambiguousActiveDirectory = path.join(temp, ".agrimap-agent", "runtime", "active");
   await writeFile(path.join(ambiguousActiveDirectory, "ambiguous-one.json"), `${JSON.stringify({ taskId: "ambiguous-task", sessionId: "ambiguous-one", requestedBy: "Alice" })}\n`, "utf8");
   await writeFile(path.join(ambiguousActiveDirectory, "ambiguous-two.json"), `${JSON.stringify({ taskId: "ambiguous-task", sessionId: "ambiguous-two", requestedBy: "Bob" })}\n`, "utf8");
   const ambiguousCheckpoint = spawnSync(process.execPath, [
-    workspaceScript, "checkpoint", "--cwd", temp, "--task", "ambiguous-task", "--summary", "Must not inherit the first session",
+    workspaceScript, "checkpoint", "--cwd", temp, "--task", "ambiguous-task", "--summary", "Must not inherit the first session", "--files", "src/ambiguous.ts",
   ], { encoding: "utf8" });
   assert.equal(ambiguousCheckpoint.status, 1);
   const ambiguousResult = JSON.parse(ambiguousCheckpoint.stdout);
@@ -505,7 +657,9 @@ try {
       "two sessions retain different requester and structured model-role-agent-provider identity",
       "checkpoint logs use structured execution identity without actor composites",
       "versioned logs retain exact UTC timestamps and the original request without local machine metadata",
+      "audit schema v2 adds Git/file provenance without invalidating schema v1 history",
       "log events reject undocumented values and preserve memory/log state",
+      "changed checkpoints require file attribution and preserve state when rejected",
       "completion gate archives only its own session task",
       "completion gate rejects unresolved placeholders without mutating task state",
       "completion gate rejects section scaffolds while allowing non-workflow moustache syntax",
@@ -521,6 +675,8 @@ try {
       "history queries return requester work by rolling days and inclusive UTC date range with artifact pointers",
       "history rejects timezone-ambiguous timestamps",
       "history reports malformed durable log lines instead of silently omitting audit gaps",
+      "history excludes invalid versioned records and distinguishes requester, executor, claimed files, Git context, and storage durability",
+      "history reports ignored local logs versus clean Git-tracked logs",
       "ambiguous active sessions require an explicit session instead of inheriting the first match",
       "subagent hook reinforces file ownership and sandbox integration",
       "frontend reuse scan/search/deprecate/validate",

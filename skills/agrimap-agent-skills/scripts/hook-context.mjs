@@ -144,7 +144,7 @@ const context = [
     ? `- Unconfirmed Git-name suggestion: ${suggestedRequester}. Ask the human to confirm it; never attribute work automatically from this value.`
     : "- Do not substitute machine, OS, or Git identity for explicit human confirmation.",
   "- Durable audit rule: every task must record who requested what in its tracked brief and created log; checkpoint each atomic action with an accurate UTC timestamp.",
-  "- For audit/history questions, run agm-workspace.mjs history with person/date/task filters, then open its returned brief and memory artifact paths; never answer from conversational recall alone.",
+  "- For audit/history questions, run agm-workspace.mjs history with person/date/task filters; inspect attributionSemantics, auditStorage, invalidLines, and returned brief/result/QA/memory paths. Distinguish requester, workflow executor, claimed files, and Git author; never answer from conversational recall alone.",
   "- Durable project memory is .agrimap-agent/memory/project.md; reopen it when context was compacted or current project facts are needed.",
 ];
 

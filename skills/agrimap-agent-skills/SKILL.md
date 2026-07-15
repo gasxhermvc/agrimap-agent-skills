@@ -17,7 +17,9 @@ Return concise help containing the provider-specific command, operation and purp
 
 ## Answer audit/history questions / ตอบว่าใครทำอะไรเมื่อไร
 
-Treat `.agrimap-agent/logs/**/*.jsonl` as the chronological source of truth for who requested what and when work happened. For requests such as “who did what between these dates?” or “show A's work in the last five days,” run the read-only `agm-workspace.mjs history` query described in [workflows.md](references/workflows.md), then open the returned task brief and current/recent memory artifacts for the required detail. Report the exact logged UTC timestamps and state the time basis; convert to a requested timezone only when you label the conversion. Do not answer from conversational recall alone, infer identity from Git/OS/machine data, or silently omit malformed log lines reported by the query.
+Treat `.agrimap-agent/logs/**/*.jsonl` as the chronological source of truth for workflow attribution: who requested a task, which model/role/agent/provider recorded each valid versioned event, what files valid versioned non-terminal events claimed were affected, and when the event was appended. Legacy file claims remain diagnostic as `legacyClaimedFiles` and must not be promoted into versioned attribution. This is not proof of the human who physically edited a file or authored a commit. For requests such as “who did what between these dates?” or “show A's work in the last five days,” run the read-only `agm-workspace.mjs history` query described in [workflows.md](references/workflows.md), inspect `attributionSemantics`, `auditStorage`, `invalidLines`, and the returned task/result/QA artifacts, then distinguish requester, workflow executor, legacy evidence, and Git author in the answer. Use Git history or blame separately when actual commit/file authorship is requested.
+
+Report `events[].timestampUtc` for normalized UTC chronology while preserving the original `events[].timestamp` as logged. Do not answer from conversational recall alone, infer requester identity from Git/OS/machine data, count invalid versioned records as evidence, or claim team durability when `auditStorage` reports ignored/untracked/local-only logs.
 
 History lookup is read-only: it does not require identifying the person asking the question, create an active task, or append another audit event unless the requester separately asks to change the project.
 
@@ -92,7 +94,7 @@ After each Leader task or delegated subtask:
 1. Write a concise result or handoff.
 2. Update `.agrimap-agent/memory/current/<task-id>.md` immediately; update `memory/project.md` only for project-wide facts.
 3. Append durable knowledge or decisions only when they remain useful beyond the task.
-4. Append a concise event to `.agrimap-agent/logs/YYYY-MM/<task-id>.jsonl` containing schema version, exact UTC time, requester attribution, execution identity, what, why, affected files, and verification. Never rewrite or prune durable logs.
+4. Append a concise event to `.agrimap-agent/logs/YYYY-MM/<task-id>.jsonl` containing schema version, exact UTC time, requester attribution, execution identity, what, why, affected files, verification, and explicit automatic Git HEAD/dirty context (`null` outside Git). A schema-v2 `changed` event must name at least one nonblank affected file. Never rewrite or prune durable logs.
 5. Store recent task memory for the configured 10-30 day retention window; never delete durable logs during memory pruning.
 
 Read [memory-and-logs.md](references/memory-and-logs.md) for schemas and retention.
