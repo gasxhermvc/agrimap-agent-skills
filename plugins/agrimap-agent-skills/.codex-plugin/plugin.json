@@ -1,6 +1,6 @@
 {
   "name": "agrimap-agent-skills",
-  "version": "0.1.0",
+  "version": "9.8.7-test.1",
   "description": "Cross-agent AgriMap engineering workflows, patterns, memory, and QA",
   "author": {
     "name": "Billy",
@@ -15,7 +15,10 @@
     "longDescription": "Use one AgriMap workflow source of trust for analysis, delivery, QA, prompt delegation, coding patterns, and concise multi-person project memory.",
     "developerName": "Billy",
     "category": "Developer Tools",
-    "capabilities": ["Read", "Write"],
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
     "defaultPrompt": [
       "$agrimap-agent-skills route and execute this engineering task."
     ]

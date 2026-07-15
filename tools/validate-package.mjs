@@ -73,6 +73,10 @@ const canonicalSkill = await readFile(path.join(root, "skills", "agrimap-agent-s
 if (!/^---\r?\nname: agrimap-agent-skills\r?\ndescription: .+\r?\n---/s.test(canonicalSkill)) errors.push("Canonical SKILL.md frontmatter is invalid.");
 if (canonicalSkill.split(/\r?\n/).length > 500) errors.push("Canonical SKILL.md exceeds 500 lines.");
 
+const syncAdapter = await readFile(path.join(root, "tools", "sync-adapters.mjs"), "utf8");
+if (!syncAdapter.includes("packageManifest.version")) errors.push("Sync adapter does not read the canonical package version.");
+if (/\bversion\s*:\s*["']\d+\.\d+\.\d+/.test(syncAdapter)) errors.push("Sync adapter contains a hardcoded semantic version.");
+
 const ownerExampleStatus = "missing-owner-example";
 for (const relativePath of [
   "README.md",
@@ -148,7 +152,7 @@ for (const [label, manifest] of [["Codex", codexPlugin], ["Claude", claudePlugin
 }
 if (codexMarketplace?.plugins?.[0]?.source?.path !== "./plugins/agrimap-agent-skills") errors.push("Codex marketplace source path is invalid.");
 if (claudeMarketplace?.plugins?.[0]?.source !== "./plugins/agrimap-agent-skills") errors.push("Claude marketplace source path is invalid.");
-if (claudeMarketplace?.plugins?.[0]?.version !== claudePlugin?.version) errors.push("Claude marketplace and plugin versions differ.");
+if (claudeMarketplace?.plugins?.[0]?.version !== packageManifest?.version) errors.push(`Claude marketplace version differs from package version ${packageManifest?.version}.`);
 if (!geminiHooks?.hooks?.SessionStart || !geminiHooks?.hooks?.BeforeAgent) errors.push("Gemini context hooks are incomplete.");
 if (!pluginHooks?.hooks?.SessionStart || !pluginHooks?.hooks?.UserPromptSubmit || !pluginHooks?.hooks?.SubagentStart) errors.push("Codex/Claude context hooks are incomplete.");
 

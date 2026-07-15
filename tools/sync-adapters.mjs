@@ -7,6 +7,11 @@ const root = process.cwd();
 const canonicalSkill = path.join(root, "skills", "agrimap-agent-skills");
 const pluginRoot = path.join(root, "plugins", "agrimap-agent-skills");
 const pluginSkills = path.join(pluginRoot, "skills");
+const packageManifest = JSON.parse(await readFile(path.join(root, "package.json"), "utf8"));
+const packageVersion = packageManifest.version;
+if (typeof packageVersion !== "string" || !/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/.test(packageVersion)) {
+  throw new Error("package.json version must be a valid semantic version.");
+}
 const operations = JSON.parse(await readFile(path.join(root, "config", "operations.json"), "utf8"));
 
 await rm(pluginSkills, { recursive: true, force: true });
@@ -27,6 +32,18 @@ for (const item of operations.operations) {
   );
 }
 
+const codexManifestPath = path.join(pluginRoot, ".codex-plugin", "plugin.json");
+const codexManifest = JSON.parse(await readFile(codexManifestPath, "utf8"));
+codexManifest.version = packageVersion;
+await writeFile(codexManifestPath, `${JSON.stringify(codexManifest, null, 2)}\n`, "utf8");
+
+const claudeMarketplacePath = path.join(root, ".claude-plugin", "marketplace.json");
+const claudeMarketplace = JSON.parse(await readFile(claudeMarketplacePath, "utf8"));
+const claudeMarketplaceEntry = claudeMarketplace.plugins?.find((plugin) => plugin.name === packageManifest.name);
+if (!claudeMarketplaceEntry) throw new Error(`Claude marketplace entry not found for ${packageManifest.name}.`);
+claudeMarketplaceEntry.version = packageVersion;
+await writeFile(claudeMarketplacePath, `${JSON.stringify(claudeMarketplace, null, 2)}\n`, "utf8");
+
 const claudeManifestDirectory = path.join(pluginRoot, ".claude-plugin");
 await mkdir(claudeManifestDirectory, { recursive: true });
 await writeFile(
@@ -34,7 +51,7 @@ await writeFile(
   `${JSON.stringify({
     name: "agrimap-agent-skills",
     description: "Cross-agent AgriMap engineering workflows, patterns, memory, and QA",
-    version: "0.1.0",
+    version: packageVersion,
     author: { name: "Billy" },
   }, null, 2)}\n`,
   "utf8",
@@ -131,12 +148,12 @@ await writeFile(
   path.join(root, "gemini-extension.json"),
   `${JSON.stringify({
     name: "agrimap-agent-skills",
-    version: "0.1.0",
+    version: packageVersion,
     description: "Cross-agent AgriMap engineering workflows, patterns, memory, and QA",
   }, null, 2)}\n`,
   "utf8",
 );
 
 process.stdout.write(
-  `${JSON.stringify({ ok: true, aliases: operations.operations.length, canonicalSkill, pluginRoot }, null, 2)}\n`,
+  `${JSON.stringify({ ok: true, version: packageVersion, aliases: operations.operations.length, canonicalSkill, pluginRoot }, null, 2)}\n`,
 );

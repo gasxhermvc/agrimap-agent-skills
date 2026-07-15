@@ -12,3 +12,4 @@
 - Normalized `agmws` and `agmbo` as the only `backend_profile` values under `target_kind=be-main`; removed them from the target-kind dimension.
 - Bound installation and package metadata to `gasxhermvc/agrimap-agent-skills`; license remains pending golden-example rights confirmation.
 - Added Codex plugin, Claude marketplace/plugin, and Gemini extension packaging.
+- Made `package.json` the single package-version source of truth for all generated provider manifests and marketplace metadata.

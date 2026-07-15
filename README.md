@@ -227,6 +227,6 @@ npm test
 npm run validate
 ```
 
-`npm run sync` rebuilds all thin aliases and provider adapters from the canonical umbrella and `config/operations.json`. Never edit generated alias skills or Gemini command files directly. Before a public release, resolve the golden-example rights/license decision, bump the version consistently in the Codex manifest, Claude manifest/marketplace, and Gemini manifest, then rerun sync and validation.
+`package.json` is the only package-version source of truth. `npm run sync` propagates that version to the Codex manifest, Claude manifest/marketplace, and Gemini manifest while rebuilding all thin aliases and provider adapters from the canonical umbrella and `config/operations.json`. Never edit generated alias skills, Gemini command files, or generated manifest versions directly. Before a public release, resolve the golden-example rights/license decision, update `package.json`, add the release entry to `CHANGELOG.md`, then rerun sync, tests, and validation.
 
 Official format references: [Codex plugins](https://developers.openai.com/codex/build-plugins), [Claude plugin marketplaces](https://code.claude.com/docs/en/plugin-marketplaces), and [Gemini extensions](https://geminicli.com/docs/extensions/reference/).
