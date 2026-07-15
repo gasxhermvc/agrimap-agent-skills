@@ -1,8 +1,6 @@
-// for insert / update / delete response structure
-// have data
+// error response structure
 {
-  "data": {
-    "success": true
-  },
+  "status_code": 404,
+  "code": "string",
   "message": "string"
 }

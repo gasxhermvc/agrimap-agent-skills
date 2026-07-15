@@ -56,8 +56,8 @@ Keep workflow rules from this skill authoritative. For technical implementation 
 
 1. Explicit owner decision for the current task.
 2. Current repository code, tests, contracts, and local documentation.
-3. Verified AgriMap patterns in this skill.
-4. Annotated golden examples as evidence, not unquestionable law.
+3. Verified AgriMap patterns and golden collections marked `current`.
+4. Annotated `legacy-compatible` or `unverified` golden evidence.
 5. General engineering practice.
 
 Stop and discuss only when an unresolved choice can change business logic, public contract, data behavior, architecture ownership, destructive scope, or a costly implementation direction. Do not request permission for routine, reversible actions already inside the approved scope.
@@ -90,7 +90,7 @@ Read [workflows.md](references/workflows.md) for task routing, [roles.md](refere
 - Missing or unverified patterns: read [pattern-status.md](references/patterns/pattern-status.md) and [owner-example-intake.md](references/patterns/owner-example-intake.md).
 - Cross-service, cross-database, integration, or ownership-sensitive work: read [service-ownership.md](references/service-ownership.md) and use only `.agrimap-agent/knowledge/service-ownership.yaml` as the project ownership SoT.
 
-Never import a golden example blindly. Compare it with the current project and its annotation first.
+Read `references/patterns/golden/manifest.json` and the selected collection manifest before using golden material. A `current` curated reference is maintained AgriMap guidance; raw immutable material is compatibility evidence and must be interpreted through its annotation. Never override an owner decision or an active-project contract blindly.
 
 ## Delegate deliberately
 

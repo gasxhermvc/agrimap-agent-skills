@@ -1,12 +1,5 @@
 namespace AgriMap.Web.Service.Application.UseCases;
 
-using AgriMap.Platform.Abstractions;
-using AgriMap.Web.Service.Application.Interfaces;
-using AgriMap.Web.Service.Infrastructure.Persistence.Interfaces;
-using AgriMap.Web.Service.Presentation.DTOs.Requests;
-using AgriMap.Web.Service.Presentation.DTOs.Responses;
-using System.Text.Json;
-
 public class UserUseCase : IUserUseCase
 {
     private readonly IUserRepository _userRepository;

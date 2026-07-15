@@ -1,233 +1,125 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "collection": "frontend-main",
-  "source": ".agm/front-end/agrimap_frontend_coding_pattern.md",
-  "sourceSha256": "b2d29d7dccf0805ff42914ede908632bf6568404b492eede169d81028efbd446",
-  "note": "Extracted code blocks only. Legacy prose and guardrails were intentionally excluded.",
+  "source": "apps/web/agmwa-platform-ng/docs/CODING-STANDARD.md",
+  "capturedAt": "2026-07-16",
+  "status": "current",
+  "evidenceMode": "curated-reference",
+  "note": "Renumbered 2026-07-16: NNN-<section>-<topic> where <section> = section number in CODING-STANDARD.md (1-10). Duplicates removed: 002-ui-rules.md, 008-4-asynchronous-data-flow-template.ts, 009-4-asynchronous-data-flow-template.html, 028-1-3-error-handler.ts. Sections 11 (generated API contract / gen-code) and 12 (mandatory testing conventions) added 2026-07-16 from the app tooling — they extend beyond CODING-STANDARD.md's current 10 sections and should be back-ported into that doc.",
   "examples": [
     {
-      "fileName": "001-1-architecture-overview.txt",
-      "heading": "1️⃣ Architecture Overview",
-      "language": "text",
-      "lineEnd": 100,
-      "lineStart": 35,
-      "sha256": "bebcd034f7c759d4bce737c7df14fd35b3e4a1ee999d949b80497123bc6382cd"
+      "fileName": "001-1-project-structure.md",
+      "heading": "1. Project Structure",
+      "language": "md",
+      "sha256": "de1b0603a9492f603f7473b44ccb7531d6b4bd55749e70329bbb7390865354f4"
     },
     {
-      "fileName": "002-example.txt",
-      "heading": "🎯 แนวคิดหลัก",
-      "language": "text",
-      "lineEnd": 110,
-      "lineStart": 104,
-      "sha256": "9ecfa4a1c342ac94a598d8a8b7b57f805de2061c2b984de1294b3a0aede9a88c"
+      "fileName": "002-2-architecture-rules.md",
+      "heading": "2. Architecture Rules — Layered Facade Pattern (R1–R5)",
+      "language": "md",
+      "sha256": "f78c25640aa21432f92eed3f5eb0f83597d0363d77b45d8d79196de62d364061"
     },
     {
-      "fileName": "003-example.txt",
-      "heading": "🎯 แนวคิดหลัก",
-      "language": "text",
-      "lineEnd": 123,
-      "lineStart": 117,
-      "sha256": "efe73e64f947ff986072299cdb6da9a7b0e46d569f4c9e21ffcf7b315aeac3c1"
-    },
-    {
-      "fileName": "004-3-typesafe.ts",
-      "heading": "3️⃣ Typesafe",
+      "fileName": "003-3-typesafe-t1-class-member.ts",
+      "heading": "3. Typesafe — T1 Class member",
       "language": "ts",
-      "lineEnd": 172,
-      "lineStart": 152,
-      "sha256": "cd53d2a466156d629feb0ce9296bd6bc03d5ecba7b6f04cffbad00067532c65e"
+      "sha256": "8d1755911aabfd41f475fcd3c525a2af3b60b5558023add0ec028d7d476e4ea6"
     },
     {
-      "fileName": "005-3-typesafe.ts",
-      "heading": "3️⃣ Typesafe",
+      "fileName": "004-3-typesafe-t2-signal.ts",
+      "heading": "3. Typesafe — T2 Signal",
       "language": "ts",
-      "lineEnd": 189,
-      "lineStart": 176,
-      "sha256": "d6682380b0571262366d4a71870dddc0dac2d079f83defc5431dc299167a0d01"
+      "sha256": "6c4dc6aab2a354682a1e0b8ba3e32b17b81878a0ad3f207a995a75118fd082e0"
     },
     {
-      "fileName": "006-4-asynchronous-data-flow.ts",
-      "heading": "4️⃣ Asynchronous Data Flow",
+      "fileName": "005-3-typesafe-t3-component-api.ts",
+      "heading": "3. Typesafe — T3 Signal-based component API",
       "language": "ts",
-      "lineEnd": 235,
-      "lineStart": 205,
-      "sha256": "750cae1b8704f32e469e9f4135e508c286536f27f28d7a6c7a4076e6a3462f9c"
+      "sha256": "c8b16555fff1e8168f9a4324e53c7412996620a1e2e6a9cdff0d227367621990"
     },
     {
-      "fileName": "007-4-asynchronous-data-flow.ts",
-      "heading": "4️⃣ Asynchronous Data Flow",
+      "fileName": "006-3-typesafe-t4-rxjs.ts",
+      "heading": "3. Typesafe — T4 RxJS",
       "language": "ts",
-      "lineEnd": 263,
-      "lineStart": 238,
-      "sha256": "c44605f14db06d08829751058a8969408c2986b0f9ce79807a27fdfa044b3012"
+      "sha256": "3827e9da3e3ba86bd868aa34157f9ce51e1a716ea77345664403c0330b85f1ff"
     },
     {
-      "fileName": "008-4-asynchronous-data-flow.ts",
-      "heading": "4️⃣ Asynchronous Data Flow",
+      "fileName": "007-3-typesafe-t5-interop.ts",
+      "heading": "3. Typesafe — T5 Interop (RxJS ↔ Signal ↔ Promise)",
       "language": "ts",
-      "lineEnd": 268,
-      "lineStart": 265,
-      "sha256": "e7587cd62059e64808db33dc473ce1d3a42db12580a9ff14d4aebe8f90e5c5d9"
+      "sha256": "2734a4c8aa76c34e8cdbf75a6388929ae01e1f6a33849d28cd6cd72054336073"
     },
     {
-      "fileName": "009-4-asynchronous-data-flow.html",
-      "heading": "4️⃣ Asynchronous Data Flow",
-      "language": "html",
-      "lineEnd": 275,
-      "lineStart": 270,
-      "sha256": "275c70099ec57a9ec96df62ef2b2345b8365bfa5e6c8f5a700f42ec1b1a38a5d"
-    },
-    {
-      "fileName": "010-5-component.ts",
-      "heading": "5️⃣ โครงสร้าง Component ทั่วไป",
+      "fileName": "008-3-typesafe-t6-forbidden.ts",
+      "heading": "3. Typesafe — T6 ข้อห้ามรวม",
       "language": "ts",
-      "lineEnd": 345,
-      "lineStart": 296,
-      "sha256": "933d800270bbc2394619322647c35d4608f7a80f4ac2fd22d8191325528a7f7d"
+      "sha256": "87594b1d0ebed048fc75c62e4b64b59d99e1aa9e79df2f0136cc86484dc34628"
     },
     {
-      "fileName": "011-example-flow.ts",
-      "heading": "ตัวอย่างจาก example-flow",
+      "fileName": "009-4-signal-decision-guide.md",
+      "heading": "4. Signal Decision Guide — signal vs computed vs effect vs linkedSignal",
+      "language": "md",
+      "sha256": "527695fb544e33a34b163cabc34ddcd8c26d3b1c62c2103a1fc3f3f0c17bbaa8"
+    },
+    {
+      "fileName": "010-5-component-layout.md",
+      "heading": "5. Component Layout — ลำดับ section ในไฟล์ component",
+      "language": "md",
+      "sha256": "dc3865b20e41ec81f5535c638faeb9966bb8e46747fe4f2537e576830abf53e3"
+    },
+    {
+      "fileName": "011-6-facade-flow-case-studies.md",
+      "heading": "6. Facade Flow Journey — ตามรอยโค้ดจริง 3 ระดับ",
+      "language": "md",
+      "sha256": "ef24a9e68a862cf033f48921005645dbd036b9aba20981891330baf803eb5e59"
+    },
+    {
+      "fileName": "012-7-view-control-flow-syntax.md",
+      "heading": "7. Template Control Flow (@if/@for/@switch/@let/@defer)",
+      "language": "md",
+      "sha256": "9076629ce73f026db89042886d5abeccaec60c857649f5683063d407ca2ad636"
+    },
+    {
+      "fileName": "013-8-naming-patterns.md",
+      "heading": "8. Naming Patterns (N1–N10)",
+      "language": "md",
+      "sha256": "2f6464bf5f257a2ffb24b0a05141affef5e731aca0173624ee3a490e1a0b3f7b"
+    },
+    {
+      "fileName": "014-9-domain-file-template.ts",
+      "heading": "9. Domain file template — model/store/facade/provider scaffold",
       "language": "ts",
-      "lineEnd": 368,
-      "lineStart": 363,
-      "sha256": "94183fa3843f1655b3d5c90bcfc84e1d9b69d7bb943ad9abaa878fc405d1b07f"
+      "sha256": "03d5c027b421ffc6bb41c58f8a3b45e9cfb1abb592a6ff429b59880a9cd82687"
     },
     {
-      "fileName": "012-example-flow.ts",
-      "heading": "ตัวอย่างจาก example-flow",
+      "fileName": "015-9-async-data-flow-store.ts",
+      "heading": "9. Domain file template — Store implementation (async data flow)",
       "language": "ts",
-      "lineEnd": 396,
-      "lineStart": 372,
-      "sha256": "261a9395a11f69614532a0e16ac6e437be4ff28999ed6c4914199f60580a654d"
+      "sha256": "1ef22b13b2a402fcb5f0644b4b699f67ec955b5bfd98975e43cadb20f9b7f241"
     },
     {
-      "fileName": "013-example.ts",
-      "heading": "ตัวอย่าง",
+      "fileName": "016-9-async-data-flow-facade.ts",
+      "heading": "9. Domain file template — Facade implementation (async data flow)",
       "language": "ts",
-      "lineEnd": 451,
-      "lineStart": 441,
-      "sha256": "8349b8a1035ec4809fca5042bc2bf7058c900b468d88bef2374cd01ed94a4346"
+      "sha256": "385a5a8c604576b09594e876923f3f1b877ce8c520985511a44ff991dff6a85b"
     },
     {
-      "fileName": "014-example.html",
-      "heading": "ตัวอย่าง",
-      "language": "html",
-      "lineEnd": 457,
-      "lineStart": 455,
-      "sha256": "0aa5e344dcec789d67b69479616e1421ceed9a04b919d9b0c0337051ee40d7ef"
+      "fileName": "017-10-assets-management.md",
+      "heading": "10. Assets & Images — base path ต่อ environment",
+      "language": "md",
+      "sha256": "eb9afb99842843933307177c0db1def796226b1edec4d14919017eaa402c547d"
     },
     {
-      "fileName": "015-1-0-view-html.html",
-      "heading": "1️⃣0️⃣ การเขียน View HTML",
-      "language": "html",
-      "lineEnd": 498,
-      "lineStart": 478,
-      "sha256": "c0cbfbb71b9d34c281a7ffb22ffc7192adead57166bb4c76777c53a2628d8619"
+      "fileName": "018-11-generated-api-contract.md",
+      "heading": "11. Generated API Contract — gen-code workflow (npm run gen-api:api)",
+      "language": "md",
+      "sha256": "905d064d1d9d3a89ea0e40994ccff5c7d1b6f8ee4de00a80b46149da38958b36"
     },
     {
-      "fileName": "016-1-0-view-html.html",
-      "heading": "1️⃣0️⃣ การเขียน View HTML",
-      "language": "html",
-      "lineEnd": 505,
-      "lineStart": 501,
-      "sha256": "6368e5e02abc20d1fad75ed84f557420f73b1ce934638483f98269a1fb8bf779"
-    },
-    {
-      "fileName": "017-1-0-view-html.html",
-      "heading": "1️⃣0️⃣ การเขียน View HTML",
-      "language": "html",
-      "lineEnd": 520,
-      "lineStart": 508,
-      "sha256": "966be803b6f45c3a05672485e3004fb305e327c2bec953ccf6fa533bfbb7e204"
-    },
-    {
-      "fileName": "018-angular-signal-loop-if-if-if-signal.html",
-      "heading": "🎴 ผนวกกับแนวทาง Angular signal (Loop, if, if ซ้อน if, สกัดค่าจาก signal)",
-      "language": "html",
-      "lineEnd": 545,
-      "lineStart": 526,
-      "sha256": "5a43079c504f198e98f08e0bf31e7ea22e84768a5a00f08eae7f0e59725b2098"
-    },
-    {
-      "fileName": "019-input-pattern-naming.ts",
-      "heading": "🎴 Input — pattern & naming",
-      "language": "ts",
-      "lineEnd": 552,
-      "lineStart": 548,
-      "sha256": "577f2e43dcbdbd8c8ffc4d8e147f0ecbd9f1aa12d05fd9c898e3fdd6c002af1e"
-    },
-    {
-      "fileName": "020-input-pattern-naming.html",
-      "heading": "🎴 Input — pattern & naming",
-      "language": "html",
-      "lineEnd": 557,
-      "lineStart": 554,
-      "sha256": "f2e61bb9b5bd7a45abb7d5cb7d5cae1dbc5bc43d9315cbed72d36c21a4213567"
-    },
-    {
-      "fileName": "021-output-pattern-naming.ts",
-      "heading": "🎴 Output — pattern & naming",
-      "language": "ts",
-      "lineEnd": 572,
-      "lineStart": 565,
-      "sha256": "6b6e0ce5c5325ffc6756dd2aa197751ae7c76ef76e037f3bbdedfc483683fd9c"
-    },
-    {
-      "fileName": "022-output-pattern-naming.html",
-      "heading": "🎴 Output — pattern & naming",
-      "language": "html",
-      "lineEnd": 580,
-      "lineStart": 575,
-      "sha256": "5238980f60aa12cb22361f32a38db86c875984942ff817108908cf5cf28b88df"
-    },
-    {
-      "fileName": "023-realtime-detect-change-with-signal.html",
-      "heading": "🎴 Realtime detect change with signal",
-      "language": "html",
-      "lineEnd": 591,
-      "lineStart": 586,
-      "sha256": "e3086475502d0b5881058128440de2e790aaeefa60f85e985d4f542c10648759"
-    },
-    {
-      "fileName": "024-import-image-html.txt",
-      "heading": "🎴 การ import image ใน html",
-      "language": "text",
-      "lineEnd": 603,
-      "lineStart": 594,
-      "sha256": "44c94d571432e4c247ce03cb3b87e5a58798f2b39c4dc3b2d0465fb756e3562f"
-    },
-    {
-      "fileName": "025-import-image-html.html",
-      "heading": "🎴 การ import image ใน html",
-      "language": "html",
-      "lineEnd": 607,
-      "lineStart": 605,
-      "sha256": "54101f75a8cc78a252fac1084275bf09f9140a384a9b565e5ebcd093e956c6bf"
-    },
-    {
-      "fileName": "026-1-2-rule.txt",
-      "heading": "1️⃣2️⃣ Rule",
-      "language": "text",
-      "lineEnd": 720,
-      "lineStart": 715,
-      "sha256": "59d4d4b5a1560aaddc68690711c1d25e6e84c3fd1b22347d210a513aa14e9ab3"
-    },
-    {
-      "fileName": "027-1-2-rule.txt",
-      "heading": "1️⃣2️⃣ Rule",
-      "language": "text",
-      "lineEnd": 724,
-      "lineStart": 722,
-      "sha256": "849e04a1b31f8e649840ddebc2998f093357feb306fdeb009fc8544fbe9f76b5"
-    },
-    {
-      "fileName": "028-1-3-error-handler.ts",
-      "heading": "1️⃣3️⃣ Error handler",
-      "language": "ts",
-      "lineEnd": 750,
-      "lineStart": 729,
-      "sha256": "bdfa14a11c0dfc6d93fb2510c1c09f5ebaf109718cb13cb5e86678f054d8a654"
+      "fileName": "019-12-testing-conventions.md",
+      "heading": "12. Testing Conventions — mandatory store/facade tests (Karma+Jasmine)",
+      "language": "md",
+      "sha256": "b4053d373f69696ebc16b79005ac8d3fe34213d3af4849291795184ab6fbadff"
     }
   ]
 }

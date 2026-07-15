@@ -14,6 +14,16 @@ const claudeHooks = await read("plugins/agrimap-agent-skills/hooks/hooks.json");
 const geminiHooks = await read("hooks/hooks.json");
 const refactorModes = [...(await read("skills/agrimap-agent-skills/references/refactor-modes.md")).matchAll(/^## `([^`]+)`/gm)].map((match) => match[1]);
 
+async function filesUnder(directory) {
+  const files = [];
+  for (const entry of await readdir(directory, { withFileTypes: true })) {
+    const entryPath = path.join(directory, entry.name);
+    if (entry.isDirectory()) files.push(...await filesUnder(entryPath));
+    else files.push(entryPath);
+  }
+  return files;
+}
+
 test("published aliases route to umbrella operations", async () => {
   assert.ok(operations.some((item) => item.name === "agm-history" && item.operation === "history"));
   for (const item of operations) {
@@ -31,6 +41,22 @@ test("published aliases route to umbrella operations", async () => {
   const commands = (await readdir(path.join(projectRoot, "commands"))).filter((name) => name.endsWith(".toml"));
   assert.deepEqual(commands.sort(), operations.map((item) => `${item.name}.toml`).sort());
   assert.equal(operations.some((item) => item.name === "agm-fe-engineer"), false);
+});
+
+test("plugin umbrella is a byte-for-byte generated mirror of the canonical skill", async () => {
+  const canonicalRoot = path.join(projectRoot, "skills", "agrimap-agent-skills");
+  const mirrorRoot = path.join(projectRoot, "plugins", "agrimap-agent-skills", "skills", "agrimap-agent-skills");
+  const canonicalFiles = (await filesUnder(canonicalRoot)).map((file) => path.relative(canonicalRoot, file)).sort();
+  const mirrorFiles = (await filesUnder(mirrorRoot)).map((file) => path.relative(mirrorRoot, file)).sort();
+  assert.deepEqual(mirrorFiles, canonicalFiles, "Run npm run sync: plugin umbrella file list drifted from canonical.");
+  for (const relativeFile of canonicalFiles) {
+    assert.deepEqual(
+      await readFile(path.join(mirrorRoot, relativeFile)),
+      await readFile(path.join(canonicalRoot, relativeFile)),
+      `Run npm run sync: plugin umbrella content drifted at ${relativeFile}.`,
+    );
+  }
+  assert.match(await read("plugins/agrimap-agent-skills/README.md"), /Do not edit generated copies directly/);
 });
 
 test("usage documentation covers activation, help, and provider syntax", async () => {

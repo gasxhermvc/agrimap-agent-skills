@@ -29,7 +29,7 @@ Optimize for reuse and a stable public API:
 - generated API integration behind a stable library surface;
 - no assumption that a consuming application's facade/store belongs inside the library.
 
-The legacy source did not contain a verified FE-library golden example. Read the target library and its tests first. If no local pattern exists, request the owner-example set in `owner-example-intake.md` before defining a new convention.
+Use the current curated references under `golden/frontend-libraries/` for published API, naming, generated APIs, environment injection, Playground, and the test baseline. The active library's `public-api.ts`, package version, consumers, and neighboring tests remain the contract. Request owner evidence only for gaps listed in `owner-example-intake.md`.
 
 ## Naming and file placement
 
@@ -42,11 +42,11 @@ The legacy source did not contain a verified FE-library golden example. Read the
 
 ## Golden examples
 
-Raw extracted blocks live under `golden/frontend-main/` and are immutable. Read its `manifest.json` for source lines and hashes.
+Current curated application references live under `golden/frontend-main/`; current library references live under `golden/frontend-libraries/`. Read each `manifest.json` for source, status, evidence mode, and hashes.
 
-Before using a block, read [conflict-resolution.md](conflict-resolution.md). Known issues include inconsistent `list/items` state names, an API/provider variable mismatch, child-component naming typos, and mixed Signal/template access. These are resolved in annotation, not by editing the raw evidence.
+Before using an entry, read [conflict-resolution.md](conflict-resolution.md). Defects from the retired frontend-main extraction were removed on 2026-07-16. Apply only the remaining collection known issues and conflict rows, including library public-API compatibility and project-dependent syntax.
 
-Golden examples are not copy-ready. Use them for architectural rhythm and syntax evidence only after matching the current Angular version, value kinds, generated-code boundary, and local project pattern.
+Current golden references are maintained guidance, not permission to bypass the active contract. Match the Angular version, target kind, public API, value kinds, generated-code boundary, and local project pattern before applying them.
 
 ## FE verification
 

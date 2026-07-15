@@ -59,11 +59,11 @@ For every library feature:
 - add or update the Playground example;
 - run library tests/build and the Playground verification path.
 
-No verified BE-library or scheduler golden example exists in the legacy source. Use local-project evidence or request the owner-example set.
+Current curated BE-library references live under `golden/backend-libraries/` and cover public behavior, configuration, README-style usage, and Playground paths. Match them to the active package version and published surface. No verified `backend_profile=agmbo` scheduler example exists; request the scheduler-specific owner set when that gap affects the task.
 
 ## Golden examples
 
-Raw extracted blocks live under `golden/backend-main/` with hashes and source provenance. They demonstrate controllers, DTOs, use cases, repository calls, response shapes, routes, and stored-procedure integration.
+Raw legacy-compatible blocks live under `golden/backend-main/`; current curated library references live under `golden/backend-libraries/`. Their manifests record status, evidence mode, hashes, and source provenance.
 
 Read [conflict-resolution.md](conflict-resolution.md) before using them. Known legacy issues include duplicate imports, duplicate placeholder methods, inconsistent async naming, Presentation DTO leakage into a repository port, pseudo-JSON files, and ambiguous Domain versus persistence placement.
 

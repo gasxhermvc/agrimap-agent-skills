@@ -1,8 +1,5 @@
 namespace AgriMap.Web.Service.Application.Interfaces;
 
-using AgriMap.Web.Service.Presentation.DTOs.Requests;
-using AgriMap.Web.Service.Presentation.DTOs.Responses;
-
 public interface IUserUseCase
 {
     Task<PaginatedResultResponseDto<UserResponseDto>> SearchUser(UserSearchRequestDto request);

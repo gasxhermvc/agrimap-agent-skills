@@ -16,7 +16,7 @@
   "scripts": {
     "sync": "node tools/sync-adapters.mjs",
     "test": "npm run test:unit && npm run test:integration && npm run verify:golden",
-    "test:unit": "node --test tests/unit/cli-args.test.mjs tests/unit/extract-code-blocks.test.mjs",
+    "test:unit": "node --test tests/unit/cli-args.test.mjs tests/unit/extract-code-blocks.test.mjs tests/unit/verify-golden.test.mjs",
     "test:integration": "npm run test:workspace && npm run test:usage",
     "test:workspace": "node --test tests/integration/workspace/workspace.test.mjs",
     "test:usage": "node --test tests/integration/package/usage.test.mjs",

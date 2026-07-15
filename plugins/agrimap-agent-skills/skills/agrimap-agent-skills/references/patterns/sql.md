@@ -7,7 +7,7 @@ Classify the task as `sql-table`, `sql-procedure`, or `sql-table-and-procedure`.
 1. Existing target database project and neighboring objects.
 2. Owner-approved behavior and relationships.
 3. Verified project-specific AgriMap pattern.
-4. Immutable golden files under `golden/sql/` as legacy compatibility evidence.
+4. Golden SQL entries under `golden/sql/`, using each entry's manifest status and evidence mode.
 
 ## Do not invent
 
@@ -59,9 +59,9 @@ For `readability-organization` and `strict-preserve-logic`, collection is contra
 
 ## Golden examples and conflicts
 
-Ten raw files under `golden/sql/` are byte-for-byte copies with SHA-256 entries in `golden/manifest.json`.
+The SQL collection manifest covers every file under `golden/sql/`. It intentionally mixes current AgriMap schema/deployment references, one curated idempotent message example, and immutable legacy-compatible evidence. Read `golden/sql/manifest.json` before selecting an entry.
 
-Read [conflict-resolution.md](conflict-resolution.md) before using them. The legacy set contains competing styles and business semantics, including default constraints, splitter/cursor choices, cascade actions, fixed seed IDs, duplicate index candidates, and replace-all role/permission updates. Preserve the files but do not promote one variant without current-project evidence and, where logical/data behavior changes, owner approval.
+Read [conflict-resolution.md](conflict-resolution.md) before using them. Legacy entries contain competing styles and business semantics, including default constraints, splitter/cursor choices, cascade actions, fixed seed IDs, duplicate index candidates, and replace-all role/permission updates. Current entries prove only their recorded AgriMap object shape; they do not override the active database reference. Do not promote a project-specific variant without current-project evidence and, where logical/data behavior changes, owner approval.
 
 ## SQL verification
 

@@ -1,8 +1,0 @@
-🔴 public/                        
-├─ 🔵 images/ 
-│  ├─ 🔵 icon-currect.png
-│  ├─ 🔵 ...    
-🔴 src/                 
-├─ 🔵 app/              
-│  ├─ 🔵 ...
-

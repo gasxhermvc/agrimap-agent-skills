@@ -68,6 +68,7 @@ for (const required of [
   "tests/helpers/harness.mjs",
   "tests/unit/cli-args.test.mjs",
   "tests/unit/extract-code-blocks.test.mjs",
+  "tests/unit/verify-golden.test.mjs",
   "tests/integration/package/usage.test.mjs",
   "tests/integration/workspace/workspace.test.mjs",
   "tests/integration/workspace/cases/bootstrap-and-prune.mjs",

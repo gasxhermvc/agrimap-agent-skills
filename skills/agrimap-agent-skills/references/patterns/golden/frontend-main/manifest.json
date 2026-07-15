@@ -2,13 +2,16 @@
   "schemaVersion": 2,
   "collection": "frontend-main",
   "source": "apps/web/agmwa-platform-ng/docs/CODING-STANDARD.md",
-  "note": "Renumbered 2026-07-16: NNN-<section>-<topic> where <section> = section number in CODING-STANDARD.md (1-10). Duplicates removed: 002-ui-rules.md, 008-4-asynchronous-data-flow-template.ts, 009-4-asynchronous-data-flow-template.html, 028-1-3-error-handler.ts.",
+  "capturedAt": "2026-07-16",
+  "status": "current",
+  "evidenceMode": "curated-reference",
+  "note": "Renumbered 2026-07-16: NNN-<section>-<topic> where <section> = section number in CODING-STANDARD.md (1-10). Duplicates removed: 002-ui-rules.md, 008-4-asynchronous-data-flow-template.ts, 009-4-asynchronous-data-flow-template.html, 028-1-3-error-handler.ts. Sections 11 (generated API contract / gen-code) and 12 (mandatory testing conventions) added 2026-07-16 from the app tooling — they extend beyond CODING-STANDARD.md's current 10 sections and should be back-ported into that doc.",
   "examples": [
     {
-      "fileName": "001-1-project-structure.txt",
+      "fileName": "001-1-project-structure.md",
       "heading": "1. Project Structure",
-      "language": "text",
-      "sha256": "6df3313cd8cc015c5fd968f76a5ab8463d5539b1ae5308b87762e61bf5f76e1a"
+      "language": "md",
+      "sha256": "de1b0603a9492f603f7473b44ccb7531d6b4bd55749e70329bbb7390865354f4"
     },
     {
       "fileName": "002-2-architecture-rules.md",
@@ -105,6 +108,18 @@
       "heading": "10. Assets & Images — base path ต่อ environment",
       "language": "md",
       "sha256": "eb9afb99842843933307177c0db1def796226b1edec4d14919017eaa402c547d"
+    },
+    {
+      "fileName": "018-11-generated-api-contract.md",
+      "heading": "11. Generated API Contract — gen-code workflow (npm run gen-api:api)",
+      "language": "md",
+      "sha256": "905d064d1d9d3a89ea0e40994ccff5c7d1b6f8ee4de00a80b46149da38958b36"
+    },
+    {
+      "fileName": "019-12-testing-conventions.md",
+      "heading": "12. Testing Conventions — mandatory store/facade tests (Karma+Jasmine)",
+      "language": "md",
+      "sha256": "b4053d373f69696ebc16b79005ac8d3fe34213d3af4849291795184ab6fbadff"
     }
   ]
 }

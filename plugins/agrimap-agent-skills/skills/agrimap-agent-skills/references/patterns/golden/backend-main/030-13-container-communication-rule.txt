@@ -1,0 +1,38 @@
+// upload step
+step1: client > upload shapefile to agmws-file-management-netcore with url https://domain.com/agmws-gateway/agmws-data-management/content/upload
+step2: agmws-data-management-netcore > call http://agmws-file-management:5000/api/agmws-file-management/file/upload
+
+// publish step
+step1: client > publisher mapservice to https://domain.com/agmws-gateway/agmws-layer-management/publish/mapservice/{content_id}
+step2: agmws-layer-management-netcore call http://agmws-fil-management:5000/api/file-management/file/{file_id} to download file
+step3: insert record to database and call GeoProcessing to publish mapservice
+
+// k8s
+> ### API Services
+| App Name | URL (Pod-to-Pod) |
+| --- | --- |
+| `agmws-data-management-netcore` | `http://agmws-data-management-netcore-svc.agrimap-api.svc.cluster.local` |
+| `agmws-dynamic-dashboard-netcore` | `http://agmws-dynamic-dashboard-netcore-svc.agrimap-api.svc.cluster.local` |
+| `agmws-dynamic-form-netcore` | `http://agmws-dynamic-form-netcore-svc.agrimap-api.svc.cluster.local` |
+| `agmws-file-management-netcore` | `http://agmws-file-management-netcore-svc.agrimap-api.svc.cluster.local` |
+| `agmws-identity-netcore` | `http://agmws-identity-netcore-svc.agrimap-api.svc.cluster.local` |
+| `agmws-initialize-netcore` | `http://agmws-initialize-netcore-svc.agrimap-api.svc.cluster.local` |
+| `agmws-interfaces-netcore` | `http://agmws-interfaces-netcore-svc.agrimap-api.svc.cluster.local` |
+| `agmws-layer-management-netcore` | `http://agmws-layer-management-netcore-svc.agrimap-api.svc.cluster.local` |
+| `agmws-notification-netcore` | `http://agmws-notification-netcore-svc.agrimap-api.svc.cluster.local` |
+| `agmws-pdpa-netcore` | `http://agmws-pdpa-netcore-svc.agrimap-api.svc.cluster.local` |
+| `agmws-plus-netcore` | `http://agmws-plus-netcore-svc.agrimap-api.svc.cluster.local` |
+| `agmws-pro-netcore` | `http://agmws-pro-netcore-svc.agrimap-api.svc.cluster.local` |
+| `agmws-proxy` | `http://agmws-proxy-svc.agrimap-api.svc.cluster.local` |
+| `agmws-pro-proxy` | `http://agmws-pro-proxy-svc.agrimap-api.svc.cluster.local` |
+| `agmws-executive-proxy` | `http://agmws-executive-proxy-svc.agrimap-api.svc.cluster.local` |
+| `agmws-ii-online-proxy` | `http://agmws-ii-online-proxy-svc.agrimap-api.svc.cluster.local` |
+| `agmws-query-engine-netcore` | `http://agmws-query-engine-netcore-svc.agrimap-api.svc.cluster.local` |
+| `agmws-telerik-report-netcore` | `http://agmws-telerik-report-netcore-svc.agrimap-api.svc.cluster.local` |
+| `agmws-user-management-netcore` | `http://agmws-user-management-netcore-svc.agrimap-api.svc.cluster.local` |
+
+> ### Jobs
+| App Name | URL (Pod-to-Pod) |
+| --- | --- |
+| `agmbo-geoprocessing-netcore` | `http://agmws-geoprocessing-netcore-svc.agrimap-api.svc.cluster.local` (เรียก Internal API โดยตรง) |
+| `agmbo-publisher-netcore` | `http://agmws-publisher-netcore-svc.agrimap-api.svc.cluster.local` (เรียก Internal API โดยตรง) |  

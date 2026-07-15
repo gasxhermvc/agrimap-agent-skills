@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 2,
+  "collection": "backend-libraries",
+  "source": "Owner-maintained AgriMap.Platform library references",
+  "capturedAt": "2026-07-16",
+  "status": "current",
+  "evidenceMode": "curated-reference",
+  "note": "Current library guidance covering public behavior, configuration, Playground usage, and known implementation constraints. Preserve published contracts and verify against the active library source before changing behavior.",
+  "examples": [
+    {
+      "fileName": "001-1-abstractions-app-exception.md",
+      "heading": "Abstractions",
+      "language": "md",
+      "sha256": "10c21ae700805b2683f9cf81efe8a7a41d84fe6e5e37a8bd20397da6c906c10e"
+    },
+    {
+      "fileName": "002-1-anonymous-session.md",
+      "heading": "AgriMap Platform Anonymous",
+      "language": "md",
+      "sha256": "fc5fd7c425ab1e25bd8257fd318bd535a572c45bef4d32ce115f982f98143657"
+    },
+    {
+      "fileName": "003-1-app-data.md",
+      "heading": "AppData",
+      "language": "md",
+      "sha256": "931aa25488ab8c712c74108c8592337b73ea0380fced939757eeb5fa82ee4114"
+    },
+    {
+      "fileName": "004-1-caching.md",
+      "heading": "Caching Module",
+      "language": "md",
+      "sha256": "49588f758b887620ac8a6c45d79175346f880af8a4208a0267336239d0a1127a"
+    },
+    {
+      "fileName": "005-1-configuration.md",
+      "heading": "Configuration",
+      "language": "md",
+      "sha256": "b76fe294b0436d1812357c98b72f837859085207841141984a32d986dfe9f901"
+    },
+    {
+      "fileName": "006-1-content-proxy.md",
+      "heading": "ContentProxy Module",
+      "language": "md",
+      "sha256": "c19fd25aaa14d387d197ef9d869c3a2f17ebc92571896f37aa32455e61736eb0"
+    },
+    {
+      "fileName": "007-1-fluent-http-client.md",
+      "heading": "AgriMap Fluent HTTP Client",
+      "language": "md",
+      "sha256": "5584cbc2d3ebe1a8f9115fd0c1837b1d1b36e47bdf5028592c7c90ee6f28824d"
+    },
+    {
+      "fileName": "008-1-logging.md",
+      "heading": "AgriMap Platform Logging",
+      "language": "md",
+      "sha256": "9839bf462064b8da279e8b58126a07bda2d83cdda79774c6562a963872b1bf8f"
+    },
+    {
+      "fileName": "009-1-mail-client.md",
+      "heading": "AgriMap Platform MailClient",
+      "language": "md",
+      "sha256": "241b3ea28ec1d259cc15e2a3343f69c5535463b828e588e9fb2cb07237bfc852"
+    },
+    {
+      "fileName": "010-1-messaging-queue.md",
+      "heading": "AgriMap Platform MessagingQueue",
+      "language": "md",
+      "sha256": "514728d86ac815663cbc93516c32ca3419f6e6b78e9b663257a94b18309e2a79"
+    },
+    {
+      "fileName": "011-1-security-auth.md",
+      "heading": "Security Auth",
+      "language": "md",
+      "sha256": "c9d1c81b7a3bf260a2c46b6592c51f653aa091edeae160b4b220a697634b22b8"
+    },
+    {
+      "fileName": "011-2-security-auth-flow.md",
+      "heading": "Auth Flow Core Handoff For `agmws-identity-netcore`",
+      "language": "md",
+      "sha256": "07f630c121553db3bf7b2365b080dfbc8e6459e85a532d5935a2b9208c2d7522"
+    },
+    {
+      "fileName": "012-1-security-crypto-aes.md",
+      "heading": "AES Cryptography",
+      "language": "md",
+      "sha256": "55a7d1a298f8ce10bacedfacaecc24a619b1427ccd1685a0f886b93f155969df"
+    },
+    {
+      "fileName": "012-2-security-crypto-bcrypt.md",
+      "heading": "BCrypt Cryptography",
+      "language": "md",
+      "sha256": "75544361b471e95839cae7b2758bef83c618a77bb2d581869629a5277d62a720"
+    },
+    {
+      "fileName": "012-3-security-crypto-hmacsha256.md",
+      "heading": "HMAC SHA Cryptography",
+      "language": "md",
+      "sha256": "0d79cf563c71115c2027c59bb4346e517135782642393bd27a4ea4845eff4adb"
+    }
+  ]
+}

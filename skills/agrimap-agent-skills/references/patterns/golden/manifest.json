@@ -1,45 +1,61 @@
 {
-  "schemaVersion": 1,
-  "policy": "Raw examples are immutable evidence. Workflow rules and legacy prose were not migrated.",
+  "schemaVersion": 2,
+  "policy": "Use current curated references as maintained AgriMap guidance and raw immutable examples as compatibility evidence. Always preserve owner decisions and active-project contracts.",
   "annotation": "../conflict-resolution.md",
+  "maturity": "near-complete",
+  "coverage": "90%+",
   "collections": {
     "frontend-main": {
       "status": "current",
+      "evidenceMode": "curated-reference",
       "manifest": "frontend-main/manifest.json",
-      "note": "Renumbered and de-duplicated 2026-07-16; content aligned to apps/web/agmwa-platform-ng/docs/CODING-STANDARD.md sections 1-10. Legacy known issues (list/items mismatch, konectApi, naming typos, mixed Signal access) were removed with the defective files.",
+      "note": "Renumbered and de-duplicated 2026-07-16; aligned to the current application standard and tooling. Sections 11-12 add the generated API and mandatory test contracts.",
       "knownIssues": []
+    },
+    "frontend-libraries": {
+      "status": "current",
+      "evidenceMode": "curated-reference",
+      "manifest": "frontend-libraries/manifest.json",
+      "note": "Authored 2026-07-16 from the Angular 21 multi-library workspace. Documents published API, per-library generated APIs, environment injection, naming, Playground, and test baselines.",
+      "knownIssues": [
+        "legacy naming/style inconsistency across libraries; do not mass-refactor",
+        "ui-kit native-event output names are a published compatibility contract",
+        "auth-client pins @agrimap/ui-kit at an exact version"
+      ]
     },
     "backend-main": {
       "status": "legacy-compatible",
+      "evidenceMode": "raw-immutable",
       "manifest": "backend-main/manifest.json",
       "knownIssues": [
         "duplicate imports",
-        "duplicate placeholder methods",
+        "mutually exclusive placeholder methods",
         "inconsistent async naming",
-        "Presentation DTO leakage into repository boundary",
+        "Presentation DTO leakage into repository boundaries",
         "ambiguous Domain versus persistence model placement",
         "illustrative .json files are not valid JSON fixtures"
       ]
     },
+    "backend-libraries": {
+      "status": "current",
+      "evidenceMode": "curated-reference",
+      "manifest": "backend-libraries/manifest.json",
+      "note": "Owner-maintained AgriMap.Platform library references with public behavior, configuration, and Playground usage.",
+      "knownIssues": [
+        "published API and active source remain authoritative when a reference is older than the target package",
+        "the auth-flow handoff includes project integration decisions that must be confirmed in the target service"
+      ]
+    },
     "sql": {
-      "status": "legacy-compatible",
+      "status": "mixed",
+      "evidenceMode": "mixed",
+      "manifest": "sql/manifest.json",
+      "note": "Contains current AgriMap schema/deployment references and legacy-compatible raw examples. Inspect each manifest entry before use.",
       "knownIssues": [
         "competing default and cascade conventions",
         "possible redundant index",
         "mixed splitter and cursor techniques",
         "business-specific seed and replace semantics"
-      ],
-      "files": [
-        {"path":"sql/FILE_STORAGE_I.sql","sha256":"614780756ed47bd4635854355b96510828d6dbc7dd18fa864e4f48031b2e4369"},
-        {"path":"sql/LUT_NOTI_CHANNEL.sql","sha256":"6a77d564ddb6d8db9fef1ac7d7e22d171c29362e3d57496f5fd9e71983b46b24"},
-        {"path":"sql/messages.txt","sha256":"29f5943b2f4c8eab29f16a850a196baaba48128f522535bd19f585dfa9c1c77c"},
-        {"path":"sql/NOTIFICATION_CONTENT.sql","sha256":"f52deec55bb153bf987b0c2c11fdcf05661a4ff1cdf1fef62d58518e7176e11d"},
-        {"path":"sql/NOTIFICATION_MESSAGE.sql","sha256":"b3bab211a7af718471daeda79bede8887d560baea94a72bd4326baafde69aab6"},
-        {"path":"sql/NOTIFICATION_TEMPLATE.sql","sha256":"91adf8426c2bad3f5979a518ec45ad6d3bab33c87963f3ba3e1c3900ddafc72c"},
-        {"path":"sql/NOTIFICATION_USERS_Q.sql","sha256":"5d6c0fb737ae5217aa26c3d45c90a0037069ff62b77e6a053c698f8eb53865ed"},
-        {"path":"sql/UM_USER_D.sql","sha256":"240527e948b1182e7f39f2aa2497eedc377091e101eb64010af123c8411a35e4"},
-        {"path":"sql/UM_USER_I.sql","sha256":"7d4256caf8639ea37b733a890087cdf4c2d4b0204847b52dbec29f3e521608fa"},
-        {"path":"sql/UM_USER_U.sql","sha256":"1525f496eb349afe0339d6a7374a20cafd3a996401865bd5618e2a6774b53610"}
       ]
     }
   }

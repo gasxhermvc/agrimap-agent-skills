@@ -1,61 +1,42 @@
 # Owner example intake
 
-Request only the missing set relevant to the active task. Keep raw owner examples immutable and add a separate annotation.
+Read `golden/manifest.json`, the relevant collection manifest, and [pattern-status.md](pattern-status.md) first. Request only an unresolved item that can change the active task; never request a full example set already covered by a `current` collection. Keep raw owner evidence immutable and place interpretation in an annotation.
 
-## FE main
+## Remaining gaps
 
-- feature component TS/HTML/SCSS;
-- facade, store, provider;
-- generated API usage;
-- route and tests;
-- expected naming, comments, inputs, outputs, and error handling.
+### FE main
 
-## FE library
+- assertion depth beyond mandatory store/facade success and error cases;
+- an owner exception when the active Angular version or deployed contract conflicts with the current collection.
 
-- workspace/project tree and `public-api.ts`;
-- reusable component/directive/pipe;
-- Angular service and generated API wrapper;
-- consumer example;
-- unit tests/build command/versioning notes.
+### FE library
 
-## BE main with `backend_profile=agmws`
+- agreed minor/major semver triggers beyond the current patch workflow;
+- richer unit-test assertions beyond the documented smoke-test baseline;
+- an owner exception for a published symbol or consumer contract.
 
-- controller, request/response DTO, use-case interface/implementation;
-- Domain entity/model/value object;
-- persistence projection and repository port/implementation;
-- DI registration, error mapping, and tests.
+### BE main with `backend_profile=agmws`
 
-## BE main with `backend_profile=agmbo`
+- repository-port placement and Presentation-to-Application mapping in the current service;
+- Domain entity versus persistence projection examples;
+- route/response conventions and representative tests where neighboring code conflicts.
 
-- batch entry point/use case;
-- `Infrastructure/TaskScheduler.cs`;
-- scheduling registration/configuration;
-- retry/concurrency/error logging;
-- tests and run command.
+### BE main with `backend_profile=agmbo`
 
-## BE library
+- batch entry point/use case and `Infrastructure/TaskScheduler.cs`;
+- scheduling registration, retry, concurrency, and error logging;
+- representative tests and run command.
 
-- public API and project tree;
-- representative domain/service/infrastructure code;
-- `README.md` structure;
-- Playground project and example;
-- tests, build, packaging, and compatibility rules.
+### BE library
 
-## SQL
+- a published API or package-version case not covered by `golden/backend-libraries`;
+- representative tests for behavior beyond the documented Playground/smoke path;
+- compatibility policy when a current consumer contradicts the reference.
 
-- one current table script;
-- query and DML procedure examples;
-- message artifact;
-- deployment/rollback convention;
-- naming and test command.
+### SQL
 
-## Unit tests
+- relationship semantics: cascade, uniqueness, indexes, seed ownership, or replace behavior;
+- the active project's deployment/rollback and structured-input convention when absent from database references;
+- representative SQL test commands and failure cases.
 
-- one test per target kind;
-- file/method naming;
-- setup/fixture/mock pattern;
-- assertion style;
-- test/build commands;
-- integration-test boundary.
-
-For every example, record `project`, `target_kind`, conditional `backend_profile`, `file`, `symbol`, `status`, `owner`, `date`, and known exceptions.
+For every new example, record `project`, `target_kind`, conditional `backend_profile`, `file`, `symbol`, `authorityStatus`, `evidenceMode`, `source`, `owner`, `capturedAt`, and known exceptions. Add it to exactly one collection manifest and verify its SHA-256 before use.

@@ -1,26 +1,32 @@
 # Pattern status
 
-These catalog statuses describe pattern authority. Conflict-matrix rows use the resolution statuses in [conflict-resolution.md](conflict-resolution.md). `missing-owner-example` is shared by both taxonomies with the same meaning.
+These authority statuses apply to catalog collections and entries. Conflict-matrix rows use the resolution statuses in [conflict-resolution.md](conflict-resolution.md). `missing-owner-example` has the same meaning in both places.
 
-Use these statuses:
-
-- `verified`: owner or current project confirms the pattern is authoritative.
-- `legacy-compatible`: retained because deployed code may follow it; compare with the current project.
+- `current`: maintained AgriMap guidance confirmed from a current standard, project, or owner set.
+- `verified`: authoritative for the stated scope, but not necessarily the newest cross-project convention.
+- `legacy-compatible`: retained because deployed code may follow it; compare with the active project.
 - `unverified`: useful evidence with unresolved correctness or placement concerns.
-- `missing-owner-example`: do not establish a new global convention from this skill.
+- `missing-owner-example`: do not establish a new shared convention from this skill.
+- `mixed`: collection-only status; inspect every entry because authority differs within the collection.
+
+Evidence mode is separate from authority:
+
+- `curated-reference`: maintained guidance; update content and hash together when the owner changes it.
+- `raw-immutable`: byte-for-byte source evidence; annotate defects outside the evidence.
+- `mixed`: collection-only mode; inspect every entry.
 
 ## Current catalog
 
 | Pattern | Status | Notes |
 | --- | --- | --- |
-| FE main facade/signal/generated API | `legacy-compatible` | Architecture is useful; `conflict-resolution.md` contains canonical corrections while raw snippets remain immutable. |
-| FE library | `missing-owner-example` | Read local library or request examples. |
+| FE main architecture, generated API, and mandatory store/facade tests | `current` | Use `golden/frontend-main`; match the active Angular version and deployed contracts. |
+| FE library public API, naming, generated API, Playground, and smoke-test baseline | `current` | Use `golden/frontend-libraries`; richer assertions and full semver rules remain owner gaps. |
 | BE new boundary placement | `verified` | Map transport DTOs before inward repository ports; classify models by meaning. Do not silently migrate legacy code. |
-| BE main with `backend_profile=agmws` examples | `legacy-compatible` | Layer flow is useful; exact port location, route/response conventions, and Domain versus persistence examples need owner tour evidence. |
-| BE main with `backend_profile=agmbo` scheduler | `missing-owner-example` | Requires `TaskScheduler.cs` example. |
-| BE library README + Playground | `missing-owner-example` | Requirement known; exact pattern missing. |
-| SQL structural frame | `legacy-compatible` | Raw examples are immutable; follow current-project headers, transaction, and deployment rhythm. |
-| SQL relationship/data semantics | `unverified` | Cascade, seed IDs, list input, indexing, and replace semantics require project evidence or owner decision. |
-| FE/BE/SQL unit tests | `missing-owner-example` | Read the target project's framework and naming first. |
+| BE main with `backend_profile=agmws` examples | `legacy-compatible` | Layer flow is useful; exact port location, route/response conventions, and Domain versus persistence examples still need owner evidence. |
+| BE main with `backend_profile=agmbo` scheduler | `missing-owner-example` | Requires `TaskScheduler.cs`, registration, retry, and concurrency examples. |
+| BE library behavior, configuration, README-style usage, and Playground | `current` | Use `golden/backend-libraries`; the active package's published API and source remain authoritative. |
+| SQL collection | `mixed` | Read every entry's status in `golden/sql/manifest.json`; never infer data semantics from collection status. |
+| SQL relationship/data semantics | `unverified` | Cascade, seed IDs, list input, indexing, and replace semantics require active-project evidence or owner decision. |
+| BE/SQL unit and integration tests | `missing-owner-example` | Read the target framework and neighboring tests first. FE test baselines are documented separately above. |
 
-Change a status only with owner approval or strong current-project evidence. Record the change in `.agrimap-agent/decisions/` and knowledge index.
+Change authority only with owner approval or strong current-project evidence. Record the decision in `.agrimap-agent/decisions/` and the knowledge index. Coverage or maturity such as `90%+`/`near-complete` describes breadth, not authority.

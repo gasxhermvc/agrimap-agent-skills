@@ -1,8 +1,11 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "collection": "backend-main",
   "source": ".agm/back-end/agrimap_backend_coding_pattern_reference.instructions.md",
   "sourceSha256": "4db2db5c4ca9babce36fd9d6ad67c74ff721ffafcc2c0b74e6f4e198fad96e18",
+  "capturedAt": "2026-07-16",
+  "status": "legacy-compatible",
+  "evidenceMode": "raw-immutable",
   "note": "Extracted code blocks only. Legacy prose and guardrails were intentionally excluded.",
   "examples": [
     {
@@ -59,7 +62,7 @@
       "language": "csharp",
       "lineEnd": 380,
       "lineStart": 367,
-      "sha256": "5c178d8f147e27cffbced6cd49f9f3d2a8c0d78fedb54caad4eb86e5500c2204"
+      "sha256": "b5e3a58e2b4095f3b82ffdfd4f04f63b95fec5fee0c68bfdf67c7a0dc5f7eb6c"
     },
     {
       "fileName": "008-3-2-use-case-implementation.cs",
@@ -67,7 +70,7 @@
       "language": "csharp",
       "lineEnd": 519,
       "lineStart": 384,
-      "sha256": "f85956764f28c28d655f265c3c2b3e4272ccbdd74f8076486fa1e7fe34c825a7"
+      "sha256": "2828a7da6651689edf6f931f40b07726bf64b212f93c8be9333e77e2cd22c1ba"
     },
     {
       "fileName": "009-4-1-repository-interface.cs",
@@ -75,7 +78,7 @@
       "language": "csharp",
       "lineEnd": 547,
       "lineStart": 534,
-      "sha256": "02ce0352858d4566fa8ece47e99b38c6158f61d8d2d1da407a5eb4c58824f7d3"
+      "sha256": "53022af39ea7d200c276beec8e6f7257048b3b4130bfce30f2034392c4d0273c"
     },
     {
       "fileName": "010-4-2-repository-implementation.cs",
@@ -83,7 +86,7 @@
       "language": "csharp",
       "lineEnd": 731,
       "lineStart": 551,
-      "sha256": "caf89c569fb2c8a4dd47e06d339e0c93a021156fc7e007b41d983726a1ed2745"
+      "sha256": "8f6f9a969dce97cd5a2b49331e4c5def511260f5d5537f0931b6347ff4e77b9c"
     },
     {
       "fileName": "011-4-3-injection-pattern.cs",
@@ -91,7 +94,7 @@
       "language": "csharp",
       "lineEnd": 749,
       "lineStart": 735,
-      "sha256": "d385420615fd4ff5a52e2e90ffa8ef70045e378e28517df8961272bbd6b540d6"
+      "sha256": "f71bbaea155255edf864d69ca3e0a2c34465d219387744789faad09a5548cacc"
     },
     {
       "fileName": "012-4-4-debugging-sql-stored-procedure.cs",
@@ -123,7 +126,7 @@
       "language": "csharp",
       "lineEnd": 853,
       "lineStart": 841,
-      "sha256": "5a89e81e044cfc941a37047e243fc8be02b3f7ac075e1964c6b55b2f6ea67ede"
+      "sha256": "03ebb0030eac15b6a538888d33c8f801ba00fcd9fc067a65c7314a38a1fa946e"
     },
     {
       "fileName": "016-4-6-multiple-record-payload-pattern.cs",
@@ -182,14 +185,6 @@
       "sha256": "d68aa09ef801d141e0e421b31730976998609c3e047263df2f602355b275e8d5"
     },
     {
-      "fileName": "023-9-stored-procedure-naming.txt",
-      "heading": "9) Stored Procedure Naming",
-      "language": "text",
-      "lineEnd": 1033,
-      "lineStart": 1026,
-      "sha256": "6ef6250f01d6ac7e433fdecfb7f77f279c32c4f81e58f42c948fb8bda7ca9776"
-    },
-    {
       "fileName": "024-9-stored-procedure-naming.txt",
       "heading": "9) Stored Procedure Naming",
       "language": "text",
@@ -198,7 +193,7 @@
       "sha256": "cf45618c6d8e2c239e07c79dd75f2f02e1546b1364bd58117f72c0b6f6b91a93"
     },
     {
-      "fileName": "025-10-response-structure-reference.json",
+      "fileName": "024-10-response-structure-reference.json",
       "heading": "10) Response Structure Reference",
       "language": "json",
       "lineEnd": 1068,
@@ -206,7 +201,7 @@
       "sha256": "9e43910f27660c6bf4557dd1cf0eb0f19dd08422c93c0cc3328cfc8f5761f468"
     },
     {
-      "fileName": "026-10-response-structure-reference.json",
+      "fileName": "025-10-response-structure-reference.json",
       "heading": "10) Response Structure Reference",
       "language": "json",
       "lineEnd": 1082,
@@ -214,7 +209,7 @@
       "sha256": "2ad279f6100b3d2e774a2473fb93fff640baafdd0663a866e634a02bc0a5f260"
     },
     {
-      "fileName": "027-10-response-structure-reference.json",
+      "fileName": "026-10-response-structure-reference.json",
       "heading": "10) Response Structure Reference",
       "language": "json",
       "lineEnd": 1093,
@@ -222,7 +217,7 @@
       "sha256": "978fef84aeef4ecd41e3ec838164381bacffc8e7685aa91d6b1e6ef7fed21969"
     },
     {
-      "fileName": "028-10-response-structure-reference.json",
+      "fileName": "027-10-response-structure-reference.json",
       "heading": "10) Response Structure Reference",
       "language": "json",
       "lineEnd": 1104,
@@ -230,7 +225,7 @@
       "sha256": "3dca74a6025a8a05c81c60aad4d7184e72f815ccd4ec3a692b046922c078f837"
     },
     {
-      "fileName": "029-10-response-structure-reference.json",
+      "fileName": "028-10-response-structure-reference.json",
       "heading": "10) Response Structure Reference",
       "language": "json",
       "lineEnd": 1113,
@@ -238,7 +233,7 @@
       "sha256": "c00ea5cef63db88569390ba4327fe8cec159b436f18d5f5c2b4d382f357ed246"
     },
     {
-      "fileName": "030-12-comment-reference.cs",
+      "fileName": "029-12-comment-reference.cs",
       "heading": "12) Comment Reference",
       "language": "csharp",
       "lineEnd": 1167,
@@ -246,12 +241,12 @@
       "sha256": "33288ee1ada35cf08f60b9eb805d3138f2c9b31569a746fc681bd8ac33cb08ce"
     },
     {
-      "fileName": "031-13-container-communication-rule.txt",
+      "fileName": "030-13-container-communication-rule.txt",
       "heading": "13) Container Communication Rule",
       "language": "text",
       "lineEnd": 1203,
       "lineStart": 1194,
-      "sha256": "6195e9c5ad249452a1f1fffcba643ceb2086ada29f240a1279d7ebe931ccf618"
+      "sha256": "76d60dd7cf78aeb1fa027dd5154fde2beafade701bcf0fe53861734039150cc4"
     }
   ]
 }

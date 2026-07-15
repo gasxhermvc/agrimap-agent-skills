@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 2,
+  "collection": "frontend-libraries",
+  "source": "standards/libraries/angular/agrimap-platform",
+  "capturedAt": "2026-07-16",
+  "status": "current",
+  "evidenceMode": "curated-reference",
+  "note": "Authored 2026-07-16 from the Angular 21 multi-library workspace (ng-packagr). Numbering NNN-<section>-<topic>. Covers what differs from frontend-main so an agent can work in @agrimap/* libraries and refactor without breaking published contracts.",
+  "examples": [
+    {
+      "fileName": "001-1-workspace-structure.md",
+      "heading": "1. Workspace Structure — Angular library monorepo",
+      "language": "md",
+      "sha256": "ad382c750e4c0682c7241cc37e673ca928390c27f6a19590f802b6e9795cb07b"
+    },
+    {
+      "fileName": "002-2-library-catalog-dependency-graph.md",
+      "heading": "2. Library Catalog & Dependency Graph (11 libs, peer deps, exact-pin trap)",
+      "language": "md",
+      "sha256": "473cf1981adc22e11d3e7ce669de5dc7d7791c4ae1a8ecadabb825b6d78366b6"
+    },
+    {
+      "fileName": "003-3-public-api-contract.md",
+      "heading": "3. Public API Contract — public-api.ts as frozen contract",
+      "language": "md",
+      "sha256": "1e04d0f399bb27ce94b4ca94faebb5549b5d16b6c5554c04287ea53e7b783a1f"
+    },
+    {
+      "fileName": "004-4-versioning-publish-workflow.md",
+      "heading": "4. Versioning & Publish Workflow (dev 0.0.N / prod 1.0.N, Nexus)",
+      "language": "md",
+      "sha256": "110d95ca7ab3f41332a836adb9a1818eb0be72a4592e7c6ce26a7fe335240b4c"
+    },
+    {
+      "fileName": "005-5-naming-in-libraries.md",
+      "heading": "5. Naming in Libraries — no-suffix class/file, differs from frontend-main",
+      "language": "md",
+      "sha256": "c74d4c75ca4d36adc8a55a97e19f39d159eb78008ff0d955a8368a278e33d935"
+    },
+    {
+      "fileName": "006-6-facade-patterns-in-library.md",
+      "heading": "6. Facade Patterns in Library — and when NOT to use a facade",
+      "language": "md",
+      "sha256": "2f48d0f0c42b6f6ca795d013e0ce8ace6a8ba05a55bdac9d974e20fad2bf3a1a"
+    },
+    {
+      "fileName": "007-7-generated-apis-per-library.md",
+      "heading": "7. Generated APIs — per-library generated-apis, gen tooling",
+      "language": "md",
+      "sha256": "4d44271ff9bf3c1de9e353bbf47a7dc9e1c37f201cdcb1c3f207d82e23bc5bd8"
+    },
+    {
+      "fileName": "008-8-environment-injection-consumer-wiring.md",
+      "heading": "8. Environment Injection & Consumer Wiring (ENVIRONMENT_INJECT_<LIB>, provideXxx)",
+      "language": "md",
+      "sha256": "71602a8d1e122e403b154d003a1433e3442f30326f85d2a335c4bab0581d81ec"
+    },
+    {
+      "fileName": "009-9-ui-kit-form-control-pattern.ts",
+      "heading": "9. UI-Kit Form Control Pattern — ControlContainer + controlName",
+      "language": "ts",
+      "sha256": "838e715abf3d60ca82dff504e1739900518a4cb0ec9ebefcd0a7beef238ecc49"
+    },
+    {
+      "fileName": "010-9-form-ctrl-config-driven.ts",
+      "heading": "9. form-ctrl — config-driven form (CVA + Validator)",
+      "language": "ts",
+      "sha256": "93961659fe9c419da076485bf03fd7d6070c2a5d12fb7b0051b2f9a9dae3435e"
+    },
+    {
+      "fileName": "011-10-playground-demo-pattern.md",
+      "heading": "10. Playground Demo Pattern — consumer reference + verify gate",
+      "language": "md",
+      "sha256": "14638c66df9881f8a3e8d478c32f9b83e0a2b74aac21a3256b698e120b6dadd5"
+    },
+    {
+      "fileName": "012-11-testing-conventions.ts",
+      "heading": "11. Testing Conventions (library) — TestBed + whenStable()",
+      "language": "ts",
+      "sha256": "6d6e1deb3394e65eba2c18d918c18c06dfbd773dbea7511314e9d408f90ec358"
+    }
+  ]
+}
