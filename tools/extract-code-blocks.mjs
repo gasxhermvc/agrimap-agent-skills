@@ -3,15 +3,10 @@
 import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { parseCliArgs } from "../skills/agrimap-agent-skills/scripts/cli-args.mjs";
 
-const args = new Map();
-for (let index = 2; index < process.argv.length; index += 2) {
-  args.set(process.argv[index], process.argv[index + 1]);
-}
-
-const source = args.get("--source");
-const output = args.get("--output");
-const collection = args.get("--collection");
+const args = parseCliArgs(process.argv.slice(2));
+const { source, output, collection } = args;
 
 if (!source || !output || !collection) {
   console.error(
@@ -50,15 +45,20 @@ function sha256(value) {
 }
 
 const markdown = await readFile(source, "utf8");
+const blockPattern = /^```([^\r\n]*)\r?\n([\s\S]*?)^```[\t ]*\r?$/gm;
+const blockMatches = [...markdown.matchAll(blockPattern)];
 const headingMatches = [
   ...markdown.matchAll(/^#{1,6}\s+(.+)\r?$/gm),
-].map((match) => ({ index: match.index, title: match[1].trim() }));
+]
+  .filter((headingMatch) => !blockMatches.some((blockMatch) => (
+    headingMatch.index >= blockMatch.index
+    && headingMatch.index < blockMatch.index + blockMatch[0].length
+  )))
+  .map((match) => ({ index: match.index, title: match[1].trim() }));
 
 const blocks = [];
-const blockPattern = /^```([^\r\n]*)\r?\n([\s\S]*?)^```[\t ]*\r?$/gm;
-let match;
 
-while ((match = blockPattern.exec(markdown)) !== null) {
+for (const match of blockMatches) {
   const language = match[1].trim().toLowerCase() || "text";
   const body = match[2];
   const lineStart = markdown.slice(0, match.index).split(/\r?\n/).length;

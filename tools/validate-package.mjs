@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
+import { LOG_EVENTS } from "../skills/agrimap-agent-skills/scripts/log-events.mjs";
 
 const root = process.cwd();
 const errors = [];
@@ -37,6 +38,17 @@ async function filesUnder(directory) {
   return result;
 }
 
+function hookCommands(value) {
+  if (Array.isArray(value)) return value.flatMap(hookCommands);
+  if (!value || typeof value !== "object") return [];
+  return [
+    ...(typeof value.command === "string" ? [value.command] : []),
+    ...Object.entries(value)
+      .filter(([key]) => key !== "command")
+      .flatMap(([, child]) => hookCommands(child)),
+  ];
+}
+
 for (const required of [
   "skills/agrimap-agent-skills/SKILL.md",
   "plugins/agrimap-agent-skills/.codex-plugin/plugin.json",
@@ -49,6 +61,7 @@ for (const required of [
   "skills/agrimap-agent-skills/references/analysis-discipline.md",
   "skills/agrimap-agent-skills/references/backend-engineer.md",
   "skills/agrimap-agent-skills/references/service-ownership.md",
+  "skills/agrimap-agent-skills/scripts/log-events.mjs",
   "skills/agrimap-agent-skills/assets/templates/service-ownership.yaml",
   "docs/USAGE.md",
   "plugins/agrimap-agent-skills/docs/USAGE.md",
@@ -72,6 +85,16 @@ const pluginHooks = await parseJson("plugins/agrimap-agent-skills/hooks/hooks.js
 const canonicalSkill = await readFile(path.join(root, "skills", "agrimap-agent-skills", "SKILL.md"), "utf8");
 if (!/^---\r?\nname: agrimap-agent-skills\r?\ndescription: .+\r?\n---/s.test(canonicalSkill)) errors.push("Canonical SKILL.md frontmatter is invalid.");
 if (canonicalSkill.split(/\r?\n/).length > 500) errors.push("Canonical SKILL.md exceeds 500 lines.");
+
+const memoryAndLogsReference = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "memory-and-logs.md"), "utf8");
+const documentedLogEvents = memoryAndLogsReference.match(/"event":\s*"([^"]+)"/)?.[1]?.split("|") || [];
+if (JSON.stringify(documentedLogEvents) !== JSON.stringify(LOG_EVENTS)) {
+  errors.push(`Documented log event enum differs from scripts/log-events.mjs: ${documentedLogEvents.join("|") || "missing"}`);
+}
+const workspaceScriptReference = await readFile(path.join(root, "skills", "agrimap-agent-skills", "scripts", "agm-workspace.mjs"), "utf8");
+if (!workspaceScriptReference.includes('from "./log-events.mjs"')) {
+  errors.push("agm-workspace.mjs does not enforce the canonical log event enum.");
+}
 
 const syncAdapter = await readFile(path.join(root, "tools", "sync-adapters.mjs"), "utf8");
 if (!syncAdapter.includes("packageManifest.version")) errors.push("Sync adapter does not read the canonical package version.");
@@ -134,6 +157,7 @@ if (backendDiscipline.includes("Require `change_kind`")) errors.push("Backend di
 const modelMatrix = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "model-capability-matrix.yaml"), "utf8");
 if (modelMatrix.includes("fable5")) errors.push("Fable is duplicated as fable and fable5 instead of one model label.");
 if (!modelMatrix.includes("fable: Fable 5")) errors.push("Fable 5 display label is missing.");
+if (!modelMatrix.includes("mode: sparse_overrides") || !modelMatrix.includes("fallback: model_key")) errors.push("Display-label fallback policy must declare sparse overrides with model-key fallback.");
 
 const rootIgnore = await readFile(path.join(root, ".gitignore"), "utf8").catch(() => "");
 if (!rootIgnore.split(/\r?\n/).includes(".agrimap-agent/")) errors.push("Development repository must ignore its entire local .agrimap-agent state.");
@@ -154,7 +178,11 @@ if (codexMarketplace?.plugins?.[0]?.source?.path !== "./plugins/agrimap-agent-sk
 if (claudeMarketplace?.plugins?.[0]?.source !== "./plugins/agrimap-agent-skills") errors.push("Claude marketplace source path is invalid.");
 if (claudeMarketplace?.plugins?.[0]?.version !== packageManifest?.version) errors.push(`Claude marketplace version differs from package version ${packageManifest?.version}.`);
 if (!geminiHooks?.hooks?.SessionStart || !geminiHooks?.hooks?.BeforeAgent) errors.push("Gemini context hooks are incomplete.");
-if (!pluginHooks?.hooks?.SessionStart || !pluginHooks?.hooks?.UserPromptSubmit || !pluginHooks?.hooks?.SubagentStart) errors.push("Codex/Claude context hooks are incomplete.");
+if (!pluginHooks?.hooks?.SessionStart || !pluginHooks?.hooks?.UserPromptSubmit || !pluginHooks?.hooks?.SubagentStart) errors.push("Claude context hooks are incomplete.");
+const claudeHookCommands = hookCommands(pluginHooks);
+if (!claudeHookCommands.length || claudeHookCommands.some((command) => !command.includes("--provider claude"))) errors.push("Claude hooks must pass an explicit claude provider.");
+const geminiHookCommands = hookCommands(geminiHooks);
+if (!geminiHookCommands.length || geminiHookCommands.some((command) => !command.includes("--provider gemini"))) errors.push("Gemini hooks must pass an explicit gemini provider.");
 
 if (operations) {
   const names = operations.operations.map((item) => item.name);

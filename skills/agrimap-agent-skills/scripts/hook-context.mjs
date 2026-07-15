@@ -1,16 +1,10 @@
 #!/usr/bin/env node
 
 import { execFileSync } from "node:child_process";
-import { readFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-
-function parseArgs(argv) {
-  const values = {};
-  for (let index = 2; index < argv.length; index += 2) {
-    values[argv[index].replace(/^--/, "")] = argv[index + 1];
-  }
-  return values;
-}
+import { parseCliArgs } from "./cli-args.mjs";
 
 function workspaceRoot(cwd) {
   try {
@@ -51,6 +45,20 @@ async function readText(filePath, limit = 7000) {
   }
 }
 
+function fingerprint(value) {
+  return createHash("sha256").update(value).digest("hex");
+}
+
+async function writeJson(filePath, value) {
+  if (!filePath) return;
+  try {
+    await mkdir(path.dirname(filePath), { recursive: true });
+    await writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+  } catch {
+    // Context delivery must remain fail-open. A later prompt may retry the refresh.
+  }
+}
+
 async function readStdin() {
   let value = "";
   for await (const chunk of process.stdin) value += chunk;
@@ -61,20 +69,17 @@ async function readStdin() {
   }
 }
 
-const args = parseArgs(process.argv);
+const args = parseCliArgs(process.argv.slice(2));
 const input = await readStdin();
-const provider = args.provider === "auto"
-  ? process.env.PLUGIN_ROOT
-    ? "codex"
-    : process.env.CLAUDE_PLUGIN_ROOT
-      ? "claude"
-      : process.env.GEMINI_SESSION_ID
-        ? "gemini"
-        : "unknown"
-  : args.provider || "unknown";
+const mode = args.mode || "session";
+const providerValue = typeof args.provider === "string" ? args.provider.toLowerCase() : "";
+const provider = new Set(["codex", "claude", "gemini"]).has(providerValue)
+  ? providerValue
+  : "unknown";
 const cwd = workspaceRoot(path.resolve(input.cwd || process.cwd()));
 const stateRoot = path.join(cwd, ".agrimap-agent");
 const sessionId = safeSessionId(input.session_id || input.sessionId || input.conversation_id || input.conversationId);
+const hookSessionKey = sessionId || safeSessionId(path.basename(input.transcript_path || input.transcriptPath || ""));
 const identity = sessionId
   ? await readJson(path.join(stateRoot, "runtime", "sessions", `${sessionId}.json`))
   : null;
@@ -87,11 +92,23 @@ const projectMemory = await readText(path.join(stateRoot, "memory", "project.md"
 const currentTaskMemory = activeTask?.taskId
   ? await readText(path.join(stateRoot, "memory", "current", `${activeTask.taskId}.md`))
   : "";
+const taskFingerprint = fingerprint(JSON.stringify({
+  requestedBy,
+  execution,
+  activeTask,
+  currentTaskMemory,
+}));
+const hookStatePath = hookSessionKey && (projectMemory || identity || activeTask)
+  ? path.join(stateRoot, "runtime", "hooks", `${safeSessionId(provider)}-${hookSessionKey}.json`)
+  : "";
+const previousHookState = mode === "task" && hookStatePath
+  ? await readJson(hookStatePath)
+  : null;
 
 const context = [
   "AgriMap Agent Skills context:",
   `- Provider: ${provider}`,
-  `- Hook mode: ${args.mode || "session"}`,
+  `- Hook mode: ${mode}`,
   sessionId ? `- Session: ${sessionId}` : "- Session ID is unavailable. Create a stable local conversation ID before substantive task work.",
   requestedBy
     ? `- Requested by: ${requestedBy}`
@@ -108,7 +125,7 @@ if (activeTask?.taskId) {
   context.push(`- Active task: ${activeTask.taskId} (${activeTask.operation || "unspecified"}).`);
 }
 
-if (args.mode === "subagent") {
+if (mode === "subagent") {
   context.push(
     "- Inherit requestedBy from the Leader handoff/session and identify model, role, agent, and provider separately.",
     "- Read workspace_need before any write. Verify the required mode, base commit, visibility, ownership, and integration-return method; report unsupported isolation and use only the named fallback.",
@@ -118,17 +135,33 @@ if (args.mode === "subagent") {
   );
 }
 
-if (projectMemory) context.push("\nCurrent project memory:\n", projectMemory);
+if (mode !== "task" && projectMemory) context.push("\nCurrent project memory:\n", projectMemory);
 if (currentTaskMemory) context.push("\nCurrent task memory:\n", currentTaskMemory);
 
 const hookEventName = input.hook_event_name || input.hookEventName || "SessionStart";
+let additionalContext = context.join("\n");
+
+if (mode === "task") {
+  if (previousHookState?.taskFingerprint === taskFingerprint) {
+    additionalContext = "";
+  } else {
+    await writeJson(hookStatePath, { version: 1, taskFingerprint });
+  }
+} else if (mode === "session") {
+  await writeJson(hookStatePath, { version: 1, taskFingerprint });
+}
+
+const output = {
+  continue: true,
+  suppressOutput: true,
+};
+if (additionalContext) {
+  output.hookSpecificOutput = {
+    hookEventName,
+    additionalContext,
+  };
+}
+
 process.stdout.write(
-  JSON.stringify({
-    continue: true,
-    suppressOutput: true,
-    hookSpecificOutput: {
-      hookEventName,
-      additionalContext: context.join("\n"),
-    },
-  }),
+  JSON.stringify(output),
 );

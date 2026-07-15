@@ -10,6 +10,8 @@ const operations = JSON.parse(await read("config/operations.json")).operations;
 const usage = await read("docs/USAGE.md");
 const canonical = await read("skills/agrimap-agent-skills/SKILL.md");
 const rootIgnore = await read(".gitignore");
+const claudeHooks = await read("plugins/agrimap-agent-skills/hooks/hooks.json");
+const geminiHooks = await read("hooks/hooks.json");
 const refactorModes = [...(await read("skills/agrimap-agent-skills/references/refactor-modes.md")).matchAll(/^## `([^`]+)`/gm)].map((match) => match[1]);
 
 assert.match(canonical, /AgriMap skill active/);
@@ -20,6 +22,9 @@ assert.match(usage, /Attachments, pointed files, directories, and exact lines/);
 assert.match(usage, /Automated smoke test vs\. live-provider check/);
 assert.ok(rootIgnore.split(/\r?\n/).includes(".agrimap-agent/"));
 assert.equal(await read("plugins/agrimap-agent-skills/docs/USAGE.md"), usage);
+assert.doesNotMatch(claudeHooks, /--provider auto/);
+assert.equal(claudeHooks.match(/--provider claude/g)?.length, 3);
+assert.equal(geminiHooks.match(/--provider gemini/g)?.length, 2);
 
 const aliasCases = [];
 for (const item of operations) {
@@ -64,6 +69,7 @@ process.stdout.write(`${JSON.stringify({
     "activation receipt contract present",
     "every published alias routes to the umbrella operation",
     "every published alias has a minimal runnable example",
+    "Claude and Gemini hooks pass explicit provider names",
     "all FE, BE, and SQL creation/test target cases documented",
     "all supported refactor modes documented and enum-checked",
     "large-text file and bounded-paste guidance present",

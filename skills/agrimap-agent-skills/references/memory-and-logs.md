@@ -94,7 +94,7 @@ Append one JSON object per line:
   "role": "leader|executor|qa|reviewer|analyst",
   "agent": "primary|fe|be|sql|designer|qa|custom-label",
   "provider": "codex|claude|gemini|unknown",
-  "event": "created|changed|verified|decision|blocked|completed",
+  "event": "created|changed|verified|decision|qa-failed|blocked|cancelled|completed",
   "summary": "concise action",
   "reason": "problem addressed",
   "files": ["path"],
@@ -102,10 +102,13 @@ Append one JSON object per line:
 }
 ```
 
+The canonical event enum is defined in `scripts/log-events.mjs`. `qa-failed` is a task outcome event; keep the QA status `failed` in `qa.md` rather than writing `failed` as a log event.
+
 ## Retention
 
 - Clamp recent-memory retention to 10-30 days.
 - Prune only `memory/recent/` entries older than the configured value.
+- If `config.json` is missing or invalid, remove nothing and return a structured skipped/error result instead of throwing.
 - Keep current memory, durable knowledge, decisions, task results, prompts, and logs unless the owner explicitly changes the retention policy.
 
 ## New-task transition

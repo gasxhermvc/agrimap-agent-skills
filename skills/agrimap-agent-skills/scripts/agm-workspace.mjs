@@ -12,18 +12,8 @@ import {
   writeFile,
 } from "node:fs/promises";
 import path from "node:path";
-
-function parseArgs(argv) {
-  const values = {};
-  for (let index = 3; index < argv.length; index += 1) {
-    if (!argv[index].startsWith("--")) continue;
-    const key = argv[index].slice(2);
-    const next = argv[index + 1];
-    values[key] = next && !next.startsWith("--") ? next : true;
-    if (values[key] !== true) index += 1;
-  }
-  return values;
-}
+import { parseCliArgs } from "./cli-args.mjs";
+import { isLogEvent, logEventError } from "./log-events.mjs";
 
 function workspaceRoot(cwd) {
   try {
@@ -216,6 +206,11 @@ async function gitStatus(root) {
 }
 
 async function appendLog(state, event) {
+  if (!isLogEvent(event.event)) {
+    const error = new TypeError(logEventError(event.event).message);
+    error.code = "INVALID_LOG_EVENT";
+    throw error;
+  }
   const month = now().slice(0, 7);
   const directory = path.join(state, "logs", month);
   await mkdir(directory, { recursive: true });
@@ -318,10 +313,12 @@ function listValue(value) {
 }
 
 async function checkpoint(root, args) {
-  const state = await ensureLayout(root);
   const taskId = safeTaskId(args.task);
   const summary = String(args.summary || "").trim();
   if (!taskId || !summary) return { ok: false, message: "--task and --summary are required." };
+  const event = String(args.event || "changed").trim();
+  if (!isLogEvent(event)) return logEventError(event);
+  const state = await ensureLayout(root);
 
   const activeMatch = await findActiveForTask(state, taskId, safeSessionId(args.session));
   const taskPath = path.join(state, "tasks", taskId);
@@ -341,7 +338,7 @@ async function checkpoint(root, args) {
     taskId,
     requestedBy,
     ...execution,
-    event: String(args.event || "changed"),
+    event,
     summary,
     reason: String(args.reason || "Atomic task checkpoint."),
     files,
@@ -499,7 +496,7 @@ async function closeTask(root, args) {
     taskId,
     requestedBy,
     ...execution,
-    event: status === "qa-failed" ? "failed" : status,
+    event: status,
     summary: `Task closed as ${status}; it did not pass the completion gate.`,
     reason: String(args.reason || "Closed without claiming completion."),
     files: [],
@@ -518,7 +515,56 @@ async function closeTask(root, args) {
 
 async function prune(root) {
   const state = path.join(root, ".agrimap-agent");
-  const config = await readJson(path.join(state, "config.json"));
+  const configPath = path.join(state, "config.json");
+  if (!(await exists(configPath))) {
+    return {
+      ok: true,
+      pruned: false,
+      reason: "config-missing",
+      retentionDays: null,
+      removed: [],
+      logsPreserved: true,
+    };
+  }
+
+  let config;
+  try {
+    config = await readJson(configPath);
+  } catch (error) {
+    if (error?.code === "ENOENT") {
+      return {
+        ok: true,
+        pruned: false,
+        reason: "config-missing",
+        retentionDays: null,
+        removed: [],
+        logsPreserved: true,
+      };
+    }
+    const code = error instanceof SyntaxError ? "INVALID_CONFIG" : "CONFIG_READ_FAILED";
+    return {
+      ok: false,
+      pruned: false,
+      code,
+      message: code === "INVALID_CONFIG"
+        ? ".agrimap-agent/config.json is not valid JSON."
+        : ".agrimap-agent/config.json could not be read.",
+      retentionDays: null,
+      removed: [],
+      logsPreserved: true,
+    };
+  }
+  if (!config || typeof config !== "object" || Array.isArray(config)) {
+    return {
+      ok: false,
+      pruned: false,
+      code: "INVALID_CONFIG",
+      message: ".agrimap-agent/config.json must contain a JSON object.",
+      retentionDays: null,
+      removed: [],
+      logsPreserved: true,
+    };
+  }
   const retentionDays = Math.min(30, Math.max(10, Number(config.retentionDays) || 30));
   const recent = path.join(state, "memory", "recent");
   const threshold = Date.now() - retentionDays * 86_400_000;
@@ -531,11 +577,11 @@ async function prune(root) {
       removed.push(file);
     }
   }
-  return { ok: true, retentionDays, removed, logsPreserved: true };
+  return { ok: true, pruned: true, retentionDays, removed, logsPreserved: true };
 }
 
 const command = process.argv[2];
-const args = parseArgs(process.argv);
+const args = parseCliArgs(process.argv.slice(3));
 const root = workspaceRoot(args.cwd || process.cwd());
 let result;
 

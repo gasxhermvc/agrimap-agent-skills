@@ -64,7 +64,7 @@ const pluginHooks = {
         hooks: [
           {
             type: "command",
-            command: "node \"${CLAUDE_PLUGIN_ROOT}/skills/agrimap-agent-skills/scripts/hook-context.mjs\" --provider auto --mode session",
+            command: "node \"${CLAUDE_PLUGIN_ROOT}/skills/agrimap-agent-skills/scripts/hook-context.mjs\" --provider claude --mode session",
             statusMessage: "Loading AgriMap task memory",
           },
         ],
@@ -75,7 +75,7 @@ const pluginHooks = {
         hooks: [
           {
             type: "command",
-            command: "node \"${CLAUDE_PLUGIN_ROOT}/skills/agrimap-agent-skills/scripts/hook-context.mjs\" --provider auto --mode task",
+            command: "node \"${CLAUDE_PLUGIN_ROOT}/skills/agrimap-agent-skills/scripts/hook-context.mjs\" --provider claude --mode task",
             statusMessage: "Refreshing AgriMap task context",
           },
         ],
@@ -86,7 +86,7 @@ const pluginHooks = {
         hooks: [
           {
             type: "command",
-            command: "node \"${CLAUDE_PLUGIN_ROOT}/skills/agrimap-agent-skills/scripts/hook-context.mjs\" --provider auto --mode subagent",
+            command: "node \"${CLAUDE_PLUGIN_ROOT}/skills/agrimap-agent-skills/scripts/hook-context.mjs\" --provider claude --mode subagent",
             statusMessage: "Loading AgriMap handoff contract",
           },
         ],

@@ -46,6 +46,10 @@ task_profiles:
   mechanical_or_fully_specified:
     capability: execution_light
 
+display_label_policy:
+  mode: sparse_overrides
+  fallback: model_key
+
 display_labels:
   claude:
     fable: Fable 5

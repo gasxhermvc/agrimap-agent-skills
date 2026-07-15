@@ -4,21 +4,10 @@ import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { parseCliArgs } from "./cli-args.mjs";
 
 const SOURCE_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx"]);
 const SKIP_DIRECTORIES = new Set([".git", "bin", "obj", "node_modules", "dist", "coverage", ".angular"]);
-
-function parseArgs(argv) {
-  const values = {};
-  for (let index = 3; index < argv.length; index += 1) {
-    if (!argv[index].startsWith("--")) continue;
-    const key = argv[index].slice(2);
-    const next = argv[index + 1];
-    values[key] = next && !next.startsWith("--") ? next : true;
-    if (values[key] !== true) index += 1;
-  }
-  return values;
-}
 
 function workspaceRoot(cwd) {
   try {
@@ -312,7 +301,7 @@ async function validate(root, indexPath) {
 }
 
 const command = process.argv[2];
-const args = parseArgs(process.argv);
+const args = parseCliArgs(process.argv.slice(3));
 const root = workspaceRoot(args.cwd || process.cwd());
 const indexPath = path.resolve(root, String(args.index || ".agrimap-agent/knowledge/frontend-reuse.jsonl"));
 let result;
