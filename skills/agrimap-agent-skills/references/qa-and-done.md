@@ -40,6 +40,9 @@ Do not say complete unless:
 - Leader reviewed all handoffs and an independent QA model verified the integrated artifact;
 - QA status is `passed` or justified `not-applicable`;
 - result, memory, knowledge/decision updates, and concise logs are written;
+- brief, checklist, QA, and result artifacts contain no unresolved workflow template tokens or standalone scaffold values outside fenced evidence; unrelated domain template syntax such as Angular moustache expressions remains valid;
+- completion fields are semantically final: checklist items exist and are checked, QA evidence is populated, and result outcome is `completed`;
+- a failed gate leaves active task state, current memory, recent memory, and completion logs unchanged;
 - remaining concerns are explicitly separated as follow-up work;
 - effects outside the approved scope are opened as a new task/conversation with a pointer in current memory instead of silently extending the task;
 - the recommended commit boundary is stated.

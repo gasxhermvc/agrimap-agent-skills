@@ -27,7 +27,7 @@ for (const item of operations.operations) {
   await mkdir(aliasDirectory, { recursive: true });
   await writeFile(
     path.join(aliasDirectory, "SKILL.md"),
-    `---\nname: ${item.name}\ndescription: ${item.description}. Use when the requester invokes this AgriMap alias.\n---\n\nActivate and read the sibling \`agrimap-agent-skills\` umbrella skill. Run operation \`${item.operation}\` with the requester's current arguments. Keep the umbrella workflow authoritative; do not add or duplicate rules in this alias.\n`,
+    `---\nname: ${item.name}\ndescription: ${item.description}. Use when the requester invokes this AgriMap alias.\n---\n\nActivate and read the sibling \`agrimap-agent-skills\` umbrella skill. Run operation \`${item.operation}\` with the requester's current arguments. Keep the umbrella workflow authoritative; do not add or duplicate rules in this alias. When the arguments contain a standalone \`-h\` or \`--help\` token, use the umbrella command-help contract and return help without starting a task or writing project state.\n`,
     "utf8",
   );
 }
@@ -103,6 +103,7 @@ for (const item of operations.operations) {
   const prompt = [
     `Activate the agrimap-agent-skills umbrella skill and run operation ${item.operation}.`,
     "Treat the umbrella skill as the workflow source of trust.",
+    "When requester arguments contain a standalone -h or --help token, return umbrella command help without starting a task or writing project state.",
     "Requester arguments:",
     "{{args}}",
   ].join("\n\n");

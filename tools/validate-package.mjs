@@ -82,6 +82,8 @@ const geminiExtension = await parseJson("gemini-extension.json");
 const geminiHooks = await parseJson("hooks/hooks.json");
 const pluginHooks = await parseJson("plugins/agrimap-agent-skills/hooks/hooks.json");
 
+if (!packageManifest?.scripts?.test?.includes("npm run verify:golden")) errors.push("npm test must include golden verification.");
+
 const canonicalSkill = await readFile(path.join(root, "skills", "agrimap-agent-skills", "SKILL.md"), "utf8");
 if (!/^---\r?\nname: agrimap-agent-skills\r?\ndescription: .+\r?\n---/s.test(canonicalSkill)) errors.push("Canonical SKILL.md frontmatter is invalid.");
 if (canonicalSkill.split(/\r?\n/).length > 500) errors.push("Canonical SKILL.md exceeds 500 lines.");
@@ -211,6 +213,24 @@ const canonicalDirectory = path.join(root, "skills", "agrimap-agent-skills");
 const pluginCanonicalDirectory = path.join(root, "plugins", "agrimap-agent-skills", "skills", "agrimap-agent-skills");
 const canonicalFiles = (await filesUnder(canonicalDirectory)).map((file) => path.relative(canonicalDirectory, file)).sort();
 const pluginCanonicalFiles = (await filesUnder(pluginCanonicalDirectory)).map((file) => path.relative(pluginCanonicalDirectory, file)).sort();
+
+for (const relativeFile of canonicalFiles.filter((file) => file.endsWith(".md"))) {
+  const sourcePath = path.join(canonicalDirectory, relativeFile);
+  const content = await readFile(sourcePath, "utf8");
+  for (const match of content.matchAll(/\[[^\]]+\]\(([^)]+)\)/g)) {
+    const rawTarget = match[1].trim();
+    if (/^(?:https?:\/\/|mailto:|#)/i.test(rawTarget)) continue;
+    const target = rawTarget.split("#", 1)[0];
+    const resolvedTarget = path.resolve(path.dirname(sourcePath), target);
+    const relativeTarget = path.relative(canonicalDirectory, resolvedTarget);
+    if (relativeTarget === ".." || relativeTarget.startsWith(`..${path.sep}`) || path.isAbsolute(relativeTarget)) {
+      errors.push(`${path.relative(root, sourcePath)}: relative link escapes the standalone skill root: ${rawTarget}`);
+    } else if (!(await exists(resolvedTarget))) {
+      errors.push(`${path.relative(root, sourcePath)}: relative link target is missing: ${rawTarget}`);
+    }
+  }
+}
+
 if (JSON.stringify(canonicalFiles) !== JSON.stringify(pluginCanonicalFiles)) {
   errors.push("Plugin canonical skill file list differs from the authored umbrella skill; run npm run sync.");
 } else {

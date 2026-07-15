@@ -9,6 +9,7 @@ const read = (relativePath) => readFile(path.join(root, relativePath), "utf8");
 const operations = JSON.parse(await read("config/operations.json")).operations;
 const usage = await read("docs/USAGE.md");
 const canonical = await read("skills/agrimap-agent-skills/SKILL.md");
+const platformSyntax = await read("skills/agrimap-agent-skills/references/platform-syntax.md");
 const rootIgnore = await read(".gitignore");
 const claudeHooks = await read("plugins/agrimap-agent-skills/hooks/hooks.json");
 const geminiHooks = await read("hooks/hooks.json");
@@ -16,10 +17,20 @@ const refactorModes = [...(await read("skills/agrimap-agent-skills/references/re
 
 assert.match(canonical, /AgriMap skill active/);
 assert.match(canonical, /activation receipt/i);
+assert.match(canonical, /standalone `-h` or `--help` token/);
+assert.doesNotMatch(canonical, /\.\.\/\.\.\/docs\/USAGE\.md/);
+assert.doesNotMatch(platformSyntax, /\.\.\/\.\.\/\.\.\/docs\/USAGE\.md/);
+assert.match(platformSyntax, /umbrella-only standalone: `\/agrimap-agent-skills operation=analyze -h`/);
 assert.match(usage, /Larger text \/ ข้อความยาว/);
 assert.match(usage, /รูปภาพและ visual reference/);
 assert.match(usage, /Attachments, pointed files, directories, and exact lines/);
 assert.match(usage, /Automated smoke test vs\. live-provider check/);
+assert.match(usage, /\$agm-analyze -h/);
+assert.match(usage, /\/agrimap-agent-skills:agm-analyze -h/);
+assert.match(usage, /\/agrimap-agent-skills operation=analyze -h/);
+assert.match(usage, /Start-Process "https:\/\/github\.com\/gasxhermvc\/agrimap-agent-skills\/blob\/main\/docs\/USAGE\.md"/);
+assert.match(usage, /code \.\\docs\\USAGE\.md/);
+assert.match(usage, /notepad \.\\docs\\USAGE\.md/);
 assert.ok(rootIgnore.split(/\r?\n/).includes(".agrimap-agent/"));
 assert.equal(await read("plugins/agrimap-agent-skills/docs/USAGE.md"), usage);
 assert.doesNotMatch(claudeHooks, /--provider auto/);
@@ -32,7 +43,9 @@ for (const item of operations) {
   const geminiCommand = await read(`commands/${item.name}.toml`);
   assert.match(aliasSkill, /Activate and read the sibling `agrimap-agent-skills` umbrella skill/);
   assert.ok(aliasSkill.includes(`Run operation \`${item.operation}\``));
+  assert.match(aliasSkill, /standalone `-h` or `--help` token/);
   assert.ok(geminiCommand.includes(`run operation ${item.operation}`));
+  assert.match(geminiCommand, /standalone -h or --help token/);
   assert.ok(usage.includes(`\`${item.name}\``));
   assert.ok(usage.includes(`$${item.name} `));
   aliasCases.push({ alias: item.name, operation: item.operation, route: "verified" });
@@ -66,6 +79,9 @@ process.stdout.write(`${JSON.stringify({
   aliases: aliasCases.length,
   cases: [
     "Codex, Claude, and Gemini invocation syntax documented",
+    "-h and --help short-circuit task state across generated aliases",
+    "Windows browser, VS Code, and Notepad guide commands documented",
+    "standalone umbrella usage does not depend on plugin alias folders",
     "activation receipt contract present",
     "every published alias routes to the umbrella operation",
     "every published alias has a minimal runnable example",

@@ -1,2 +1,2 @@
 description = "Refactor frontend code using an explicit behavior mode"
-prompt = "Activate the agrimap-agent-skills umbrella skill and run operation refactor-fe.\n\nTreat the umbrella skill as the workflow source of trust.\n\nRequester arguments:\n\n{{args}}"
+prompt = "Activate the agrimap-agent-skills umbrella skill and run operation refactor-fe.\n\nTreat the umbrella skill as the workflow source of trust.\n\nWhen requester arguments contain a standalone -h or --help token, return umbrella command help without starting a task or writing project state.\n\nRequester arguments:\n\n{{args}}"

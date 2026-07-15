@@ -11,14 +11,16 @@ Successful routing must produce an activation receipt containing `AgriMap skill 
 - Codex uses skill mentions rather than portable slash commands.
 - Managed worktrees are surface-dependent. Do not treat a spawned local subagent as worktree-isolated unless the current environment proves it.
 - Example: `$agm-analyze requested_by=Billy target_files=src/app.ts objective="Find the root cause; do not edit"`
+- Help: `$agm-analyze -h`
 
 ## Claude Code
 
 - Installed plugin canonical: `/agrimap-agent-skills:agrimap-agent-skills`
 - Thin aliases: `/agrimap-agent-skills:agm-analyze`, `/agrimap-agent-skills:agm-plan`, and related commands.
-- Standalone project copies may expose `/agm-*` without the plugin namespace.
+- A standalone copy containing only the umbrella skill uses `/agrimap-agent-skills operation=<operation>`. It exposes `/agm-*` only when the corresponding alias skill directories are installed too.
 - When supported, start a session with `claude --worktree <name>` or set a custom subagent's `isolation: worktree`. Without isolation, a normal subagent starts in the main session's current working directory.
 - Example: `/agrimap-agent-skills:agm-analyze requested_by=Billy target_files=src/app.ts objective="Find the root cause; do not edit"`
+- Help: `/agrimap-agent-skills:agm-analyze -h`; umbrella-only standalone: `/agrimap-agent-skills operation=analyze -h`.
 
 ## Gemini CLI
 
@@ -26,6 +28,7 @@ Successful routing must produce an activation receipt containing `AgriMap skill 
 - Thin custom commands: `/agm-analyze`, `/agm-plan`, `/agm-review`, and related `/agm-*` commands.
 - Gemini may request native skill activation consent; do not add another approval layer.
 - Example: `/agm-analyze requested_by=Billy target_files=src/app.ts objective="Find the root cause; do not edit"`
+- Help: `/agm-analyze -h`
 
 ## Alias contract
 
@@ -36,4 +39,6 @@ Each alias must contain only:
 3. an instruction to activate/read the umbrella skill;
 4. no copied workflow rules.
 
-For large text, images, attachments, multiple files, and line-specific references, use [../../../docs/USAGE.md](../../../docs/USAGE.md). Attachments use the host's native attachment control; the request itself must provide a stable label, intent, priority, and expected coverage rather than depend on an invented cross-provider attachment token.
+An alias receiving `-h` or `--help` routes to the umbrella help contract without starting a task or writing project state.
+
+For large text, images, attachments, multiple files, and line-specific references, use [input-and-scope.md](input-and-scope.md). Attachments use the host's native attachment control; the request itself must provide a stable label, intent, priority, and expected coverage rather than depend on an invented cross-provider attachment token.

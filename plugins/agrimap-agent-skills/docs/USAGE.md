@@ -10,7 +10,8 @@
 | --- | --- |
 | Codex | `$<alias> <arguments>` |
 | Claude Code plugin | `/agrimap-agent-skills:<alias> <arguments>` |
-| Claude standalone skill | `/<alias> <arguments>` |
+| Claude standalone — umbrella only | `/agrimap-agent-skills operation=<operation> <arguments>` |
+| Claude standalone — umbrella + alias folders | `/<alias> <arguments>` |
 | Gemini CLI | `/<alias> <arguments>` |
 
 ตัวอย่างเดียวกันสามค่าย:
@@ -22,9 +23,14 @@ $agm-analyze requested_by=Billy target_files=src/app.ts objective="Find the root
 # Claude Code plugin
 /agrimap-agent-skills:agm-analyze requested_by=Billy target_files=src/app.ts objective="Find the root cause; do not edit"
 
+# Claude standalone — copied only skills/agrimap-agent-skills
+/agrimap-agent-skills operation=analyze requested_by=Billy target_files=src/app.ts objective="Find the root cause; do not edit"
+
 # Gemini CLI
 /agm-analyze requested_by=Billy target_files=src/app.ts objective="Find the root cause; do not edit"
 ```
+
+การคัดลอกเฉพาะ umbrella skill จะยังไม่มี thin aliases เช่น `/agm-analyze`; ต้องติดตั้ง alias folders เพิ่มก่อนจึงใช้รูปแบบ `/<alias>` ได้.
 
 หาก alias ไม่ปรากฏหลังติดตั้ง ให้เปิด session ใหม่ก่อน หากยังไม่พบ ให้เรียก umbrella โดยตรงและระบุ `operation=analyze`:
 
@@ -34,6 +40,40 @@ $agrimap-agent-skills operation=analyze requested_by=Billy objective="Find the r
 
 # Claude Code plugin
 /agrimap-agent-skills:agrimap-agent-skills operation=analyze requested_by=Billy objective="Find the root cause; do not edit"
+```
+
+## Help แบบสั้นด้วย `-h`
+
+ถ้าต้องการดูวิธีใช้ ให้เติม `-h` หรือ `--help` โดยไม่ต้องเริ่ม task หรือสร้าง memory ก่อน:
+
+```text
+# Codex
+$agm-analyze -h
+
+# Claude Code plugin
+/agrimap-agent-skills:agm-analyze -h
+
+# Claude standalone ที่ติดตั้ง alias folder แล้ว
+/agm-analyze -h
+
+# Claude standalone ที่คัดลอกเฉพาะ umbrella skill
+/agrimap-agent-skills operation=analyze -h
+
+# Gemini CLI
+/agm-analyze -h
+```
+
+Help ต้องแสดง command, purpose, required/conditional inputs และ minimal example ของ operation นั้น. หากต้องการเปิดคู่มือฉบับเต็มบน Windows ให้รันจาก PowerShell; เลือกอย่างใดอย่างหนึ่ง:
+
+```powershell
+# Browser — เปิดฉบับล่าสุดบน GitHub
+Start-Process "https://github.com/gasxhermvc/agrimap-agent-skills/blob/main/docs/USAGE.md"
+
+# VS Code — รันจาก repository root
+code .\docs\USAGE.md
+
+# Notepad — รันจาก repository root
+notepad .\docs\USAGE.md
 ```
 
 ## 2. หลักฐานว่า Skill active แล้ว

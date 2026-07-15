@@ -9,6 +9,12 @@ Treat this skill as the workflow source of trust across models and providers. Do
 
 เจตนาหลัก: เข้าใจปัญหาและผลกระทบก่อนลงมือ แก้ปัญหาเดิมให้จบด้วยการเปลี่ยนแปลงที่เล็กแต่ครบถ้วน ให้มนุษย์ตัดสินใจเฉพาะ trade-off ที่มีนัยสำคัญ และห้ามปิดงานถ้า checklist, QA, memory หรือ logs ยังไม่ครบ
 
+## Command help / วิธีใช้คำสั่ง
+
+When the requester arguments contain a standalone `-h` or `--help` token, return command help and stop before the normal task lifecycle. Do not resolve a requester, create a task, write project memory or logs, emit an activation receipt, delegate, or run QA for a help-only request. Session context already supplied by a provider hook may remain available, but help must not turn it into task state.
+
+Return concise help containing the provider-specific command, operation and purpose, required and conditional inputs, and one minimal example. Read [platform-syntax.md](references/platform-syntax.md) for invocation syntax and [workflows.md](references/workflows.md) for operation-specific inputs. If the umbrella skill is invoked without an operation, list the available `agm-*` aliases and show how to request help for one operation.
+
 ## Start every task / เริ่มงาน
 
 1. Resolve the target project root. Never use the global Skill/plugin installation directory as a state root. Read, when present:
@@ -44,7 +50,7 @@ Stop and discuss only when an unresolved choice can change business logic, publi
 5. For logic-affecting or complex work, ask whether to add unit tests or test cases before implementation unless the owner already decided.
 6. Produce a pre-work checklist and explain why each planned change is necessary.
 
-Read [workflows.md](references/workflows.md) for task routing, [roles.md](references/roles.md) for role-specific responsibilities, and [../../docs/USAGE.md](../../docs/USAGE.md) for provider invocation and runnable input examples.
+Read [workflows.md](references/workflows.md) for task routing, [roles.md](references/roles.md) for role-specific responsibilities, and [platform-syntax.md](references/platform-syntax.md) for provider invocation. Use command help for a runnable example without depending on files outside this skill.
 
 ## Execute to close the original problem / แก้ปัญหาเดิมให้จบ
 

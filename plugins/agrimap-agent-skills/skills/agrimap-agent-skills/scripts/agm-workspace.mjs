@@ -357,6 +357,84 @@ async function filesUnder(directory) {
   return files;
 }
 
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function markdownField(content, label) {
+  return content.match(new RegExp(`^\\s*-\\s*${escapeRegExp(label)}:\\s*(.*?)\\s*$`, "im"))?.[1]?.trim() || "";
+}
+
+function plainMarkdownValue(value) {
+  const normalized = String(value || "").trim();
+  return normalized.startsWith("`") && normalized.endsWith("`")
+    ? normalized.slice(1, -1).trim()
+    : normalized;
+}
+
+function placeholderValueReason(value) {
+  const normalized = plainMarkdownValue(value);
+  if (!normalized) return "missing";
+  if (unresolvedTemplateTokens(normalized).length > 0) return "template-placeholder";
+  if (/^<[^<>\r\n]+>$/.test(normalized)) return "angle-placeholder";
+  if (/^(?:todo|tbd|tbc|fixme)\.?$/i.test(normalized)) return "todo-placeholder";
+  if (/^define before implementation\.?$/i.test(normalized)) return "scaffold-placeholder";
+  if (/^[a-z][a-z0-9-]*(?:\|[a-z][a-z0-9-]*)+$/i.test(normalized)) return "unresolved-choice";
+  return null;
+}
+
+function markdownSection(content, heading) {
+  const lines = String(content || "").split(/\r?\n/);
+  const expected = new RegExp(`^##\\s+${escapeRegExp(heading)}\\s*$`, "i");
+  const start = lines.findIndex((line) => expected.test(line));
+  if (start < 0) return "";
+  let end = lines.length;
+  for (let index = start + 1; index < lines.length; index += 1) {
+    if (/^#{1,6}\s+/.test(lines[index])) {
+      end = index;
+      break;
+    }
+  }
+  return lines.slice(start + 1, end).join("\n").trim();
+}
+
+const completionTemplateTokenNames = new Set([
+  "task_id", "requested_by", "actual_model_or_unknown", "role", "agent_name", "provider", "operation",
+  "objective", "scope", "non_goals", "target_kind", "backend_profile", "logic_impact", "workspace_mode",
+  "integration_owner", "branch_name", "file_ownership", "input_manifest", "approved_decisions",
+  "service_ids_from_canonical_ownership_file_or_not_applicable", "open_concerns", "model",
+  "implementation_model_role_agent_provider", "prompt_path", "requirement_to_evidence", "verification",
+  "executor_claims_reopened_and_rerun", "regression_checks", "limitations", "findings_only_no_edits",
+  "qa_status", "owner_approved_decisions", "files_behavior_and_evidence", "checklist_status",
+  "memory_and_log_updates", "remaining_concerns", "commit_recommendation", "new_prompt_path_or_not_applicable",
+]);
+
+function unresolvedTemplateTokens(content) {
+  return [...new Set(String(content || "").match(/\{\{[^{}\r\n]+\}\}/g) || [])]
+    .filter((token) => completionTemplateTokenNames.has(token.slice(2, -2).trim()));
+}
+
+function standaloneScaffoldReasons(content) {
+  const reasons = new Set();
+  let inFence = false;
+  for (const rawLine of String(content || "").split(/\r?\n/)) {
+    if (/^\s*(?:```|~~~)/.test(rawLine)) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) continue;
+
+    let line = rawLine.trim();
+    line = line.replace(/^(?:>\s*)+/, "");
+    line = line.replace(/^(?:[-*+]|\d+[.)])\s+/, "");
+    line = line.replace(/^\[[ xX]\]\s*/, "");
+    if (!line) continue;
+    const reason = placeholderValueReason(line);
+    if (reason) reasons.add(reason);
+  }
+  return [...reasons];
+}
+
 async function taskRequester(taskPath) {
   const brief = await readFile(path.join(taskPath, "brief.md"), "utf8").catch(() => "");
   return brief.match(/^\s*- Requested by:\s*(.+?)\s*$/im)?.[1]?.trim() || null;
@@ -373,11 +451,76 @@ async function validate(root, args) {
     if (!(await exists(path.join(taskPath, file)))) missing.push(file);
   }
 
-  const checklist = await readFile(path.join(taskPath, "checklist.md"), "utf8").catch(() => "");
+  const artifacts = {};
+  for (const file of required) {
+    artifacts[file] = await readFile(path.join(taskPath, file), "utf8").catch(() => "");
+  }
+  const brief = artifacts["brief.md"];
+  const checklist = artifacts["checklist.md"];
+  const qa = artifacts["qa.md"];
+  const result = artifacts["result.md"];
+  const placeholderFailures = [];
+  for (const [file, content] of Object.entries(artifacts)) {
+    for (const token of unresolvedTemplateTokens(content)) placeholderFailures.push({ file, token });
+  }
+
+  const contentFailures = [];
+  const requireField = (file, content, label) => {
+    const value = markdownField(content, label);
+    const reason = placeholderValueReason(value);
+    if (reason) contentFailures.push({ file, field: label, reason });
+    return plainMarkdownValue(value);
+  };
+  const requireSection = (file, content, heading) => {
+    const value = markdownSection(content, heading);
+    if (!value) {
+      contentFailures.push({ file, field: heading, reason: "missing" });
+    } else {
+      for (const reason of standaloneScaffoldReasons(value)) {
+        contentFailures.push({ file, field: heading, reason });
+      }
+    }
+    return value;
+  };
+
+  const requestedBy = requireField("brief.md", brief, "Requested by");
+  for (const label of ["Objective", "Scope", "Non-goals"]) requireField("brief.md", brief, label);
+
+  const checklistItems = checklist.split(/\r?\n/)
+    .map((line) => line.match(/^\s*- \[([ xX])\]\s*(.*?)\s*$/))
+    .filter(Boolean);
   const unchecked = checklist.split(/\r?\n/).filter((line) => /^\s*- \[ \]/.test(line));
-  const qa = await readFile(path.join(taskPath, "qa.md"), "utf8").catch(() => "");
-  const qaAccepted = /^\s*(?:-\s*)?Status:\s*(passed|not-applicable)\s*$/im.test(qa);
-  const requestedBy = await taskRequester(taskPath);
+  if (checklistItems.length === 0) contentFailures.push({ file: "checklist.md", field: "checkboxes", reason: "missing" });
+  for (const item of checklistItems) {
+    const reason = placeholderValueReason(item[2]);
+    if (reason) contentFailures.push({ file: "checklist.md", field: "checkbox", reason });
+  }
+
+  const qaStatus = requireField("qa.md", qa, "Status").toLowerCase();
+  const qaAccepted = qaStatus === "passed" || qaStatus === "not-applicable";
+  if (!qaAccepted) contentFailures.push({ file: "qa.md", field: "Status", reason: "not-accepted" });
+  const qaReadOnly = requireField("qa.md", qa, "Read-only").toLowerCase() === "true";
+  if (!qaReadOnly) contentFailures.push({ file: "qa.md", field: "Read-only", reason: "must-be-true" });
+  if (qaStatus === "passed") {
+    requireSection("qa.md", qa, "Requirement evidence");
+    requireSection("qa.md", qa, "Commands and observed results");
+  } else if (qaStatus === "not-applicable") {
+    requireSection("qa.md", qa, "Limitations");
+  }
+
+  const resultOutcome = requireField("result.md", result, "Outcome").toLowerCase();
+  if (resultOutcome !== "completed") contentFailures.push({ file: "result.md", field: "Outcome", reason: "must-be-completed" });
+  const resultRequester = requireField("result.md", result, "Requested by");
+  if (requestedBy && resultRequester && requestedBy !== resultRequester) {
+    contentFailures.push({ file: "result.md", field: "Requested by", reason: "requester-mismatch" });
+  }
+  const resultQaStatus = requireField("result.md", result, "QA status").toLowerCase();
+  if (!qaAccepted || resultQaStatus !== qaStatus) {
+    contentFailures.push({ file: "result.md", field: "QA status", reason: "qa-status-mismatch" });
+  }
+  requireSection("result.md", result, "Changes and verification");
+  requireSection("result.md", result, "Checklist and memory");
+
   const memoryRecorded = await exists(path.join(state, "memory", "current", `${taskId}.md`))
     || await exists(path.join(state, "memory", "recent", `${taskId}.md`));
   const logFiles = (await filesUnder(path.join(state, "logs"))).filter((file) => file.endsWith(".jsonl"));
@@ -395,10 +538,20 @@ async function validate(root, args) {
   }
 
   return {
-    ok: missing.length === 0 && unchecked.length === 0 && qaAccepted && taskLogged && Boolean(requestedBy) && memoryRecorded,
+    ok: missing.length === 0
+      && unchecked.length === 0
+      && placeholderFailures.length === 0
+      && contentFailures.length === 0
+      && qaAccepted
+      && taskLogged
+      && Boolean(requestedBy)
+      && memoryRecorded,
     taskId,
     missing,
     unchecked,
+    checklistItems: checklistItems.length,
+    placeholderFailures,
+    contentFailures,
     qaAccepted,
     taskLogged,
     requesterRecorded: Boolean(requestedBy),

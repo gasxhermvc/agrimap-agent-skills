@@ -273,14 +273,61 @@ try {
   assert.match(subagentHook.hookSpecificOutput.additionalContext, /base commit/);
 
   const taskADirectory = path.join(temp, ".agrimap-agent", "tasks", "task-a");
-  await writeFile(path.join(taskADirectory, "checklist.md"), "# Checklist\n\n- [x] Scope inspected.\n- [x] Work verified.\n- [x] Memory and logs updated.\n", "utf8");
-  await writeFile(path.join(taskADirectory, "qa.md"), "# QA\n\n- Status: passed\n", "utf8");
-  await writeFile(path.join(taskADirectory, "result.md"), "# Result\n\nTask A passed.\n", "utf8");
+  const taskAActivePath = path.join(temp, ".agrimap-agent", "runtime", "active", "session-a.json");
+  const taskAMemoryPath = path.join(temp, ".agrimap-agent", "memory", "current", "task-a.md");
+  const taskARecentPath = path.join(temp, ".agrimap-agent", "memory", "recent", "task-a.md");
+  const taskAActiveBeforePlaceholder = await readFile(taskAActivePath, "utf8");
+  const taskAMemoryBeforePlaceholder = await readFile(taskAMemoryPath, "utf8");
+  const taskALogBeforePlaceholder = JSON.stringify(await readTaskLog("task-a"));
+  await writeFile(path.join(taskADirectory, "brief.md"), "# Task brief\n\n- Requested by: {{requested_by}}\n- Objective: Define before implementation.\n- Scope: <scope>\n- Non-goals: TODO\n", "utf8");
+  await writeFile(path.join(taskADirectory, "checklist.md"), "# Checklist\n\n- [x] {{checklist_status}}\n- [x] <remaining-check>\n", "utf8");
+  await writeFile(path.join(taskADirectory, "qa.md"), "# QA\n\n- Status: `passed|failed|blocked|not-applicable`\n- Read-only: <true>\n\n## Requirement evidence\n\n{{requirement_to_evidence}}\n\n## Commands and observed results\n\n{{verification}}\n", "utf8");
+  await writeFile(path.join(taskADirectory, "result.md"), "# Result\n\n- Outcome: `completed|qa-failed|blocked|cancelled`\n- Requested by: {{requested_by}}\n- QA status: `passed|failed|blocked|not-applicable`\n\n## Changes and verification\n\n{{files_behavior_and_evidence}}\n\n## Checklist and memory\n\n{{checklist_status}}\n", "utf8");
+  const placeholderCompletion = spawnSync(process.execPath, [
+    workspaceScript, "complete", "--cwd", temp, "--session", "session-a", "--task", "task-a",
+  ], { encoding: "utf8" });
+  assert.equal(placeholderCompletion.status, 1);
+  const placeholderValidation = JSON.parse(placeholderCompletion.stdout);
+  assert.equal(placeholderValidation.ok, false);
+  assert.deepEqual(
+    [...new Set(placeholderValidation.placeholderFailures.map((failure) => failure.file))].sort(),
+    ["brief.md", "checklist.md", "qa.md", "result.md"],
+  );
+  assert.equal(placeholderValidation.contentFailures.some((failure) => failure.reason === "scaffold-placeholder"), true);
+  assert.equal(placeholderValidation.contentFailures.some((failure) => failure.reason === "angle-placeholder"), true);
+  assert.equal(placeholderValidation.contentFailures.some((failure) => failure.reason === "todo-placeholder"), true);
+  assert.equal(placeholderValidation.contentFailures.some((failure) => failure.reason === "unresolved-choice"), true);
+  assert.equal(await readFile(taskAActivePath, "utf8"), taskAActiveBeforePlaceholder);
+  assert.equal(await readFile(taskAMemoryPath, "utf8"), taskAMemoryBeforePlaceholder);
+  assert.equal(JSON.stringify(await readTaskLog("task-a")), taskALogBeforePlaceholder);
+  await assert.rejects(readFile(taskARecentPath, "utf8"), { code: "ENOENT" });
+
+  await writeFile(path.join(taskADirectory, "brief.md"), "# Task brief\n\n- Task ID: `task-a`\n- Requested by: Alice\n- Objective: Analyze Angular {{orderStatus}} behavior.\n- Scope: Task A artifacts and evidence.\n- Non-goals: Unrelated task changes.\n", "utf8");
+  await writeFile(path.join(taskADirectory, "checklist.md"), "# Checklist\n\n- [x] Scope and Angular {{orderStatus}} behavior inspected.\n- [x] Work verified.\n- [x] Memory and logs updated.\n", "utf8");
+  await writeFile(path.join(taskADirectory, "qa.md"), "# QA\n\n- Status: passed\n- Requested by: Alice\n- Read-only: true\n\n## Requirement evidence\n\nTODO\n\n## Commands and observed results\n\n- Targeted inspection passed.\n", "utf8");
+  await writeFile(path.join(taskADirectory, "result.md"), "# Result\n\n- Outcome: completed\n- Requested by: Alice\n- QA status: passed\n\n## Changes and verification\n\n<files_behavior_and_evidence>\n\n## Checklist and memory\n\nDefine before implementation.\n", "utf8");
+  const sectionScaffoldCompletion = spawnSync(process.execPath, [
+    workspaceScript, "complete", "--cwd", temp, "--session", "session-a", "--task", "task-a",
+  ], { encoding: "utf8" });
+  assert.equal(sectionScaffoldCompletion.status, 1);
+  const sectionScaffoldValidation = JSON.parse(sectionScaffoldCompletion.stdout);
+  assert.equal(sectionScaffoldValidation.ok, false);
+  assert.deepEqual(sectionScaffoldValidation.placeholderFailures, []);
+  assert.equal(sectionScaffoldValidation.contentFailures.some((failure) => failure.field === "Requirement evidence" && failure.reason === "todo-placeholder"), true);
+  assert.equal(sectionScaffoldValidation.contentFailures.some((failure) => failure.field === "Changes and verification" && failure.reason === "angle-placeholder"), true);
+  assert.equal(sectionScaffoldValidation.contentFailures.some((failure) => failure.field === "Checklist and memory" && failure.reason === "scaffold-placeholder"), true);
+  assert.equal(await readFile(taskAActivePath, "utf8"), taskAActiveBeforePlaceholder);
+  assert.equal(await readFile(taskAMemoryPath, "utf8"), taskAMemoryBeforePlaceholder);
+  assert.equal(JSON.stringify(await readTaskLog("task-a")), taskALogBeforePlaceholder);
+  await assert.rejects(readFile(taskARecentPath, "utf8"), { code: "ENOENT" });
+
+  await writeFile(path.join(taskADirectory, "qa.md"), "# QA\n\n- Status: passed\n- Requested by: Alice\n- Read-only: true\n\n## Requirement evidence\n\n- Task A requirements map to inspected Angular {{orderStatus}} evidence.\n\n## Commands and observed results\n\n- Targeted inspection passed.\n", "utf8");
+  await writeFile(path.join(taskADirectory, "result.md"), "# Result\n\n- Outcome: completed\n- Requested by: Alice\n- QA status: passed\n\n## Changes and verification\n\nTask A passed targeted inspection, including Angular {{orderStatus}} interpolation.\n\n## Checklist and memory\n\nChecklist, memory, and logs are complete.\n", "utf8");
   assert.equal(run(workspaceScript, ["validate", "--cwd", temp, "--task", "task-a"]).ok, true);
   assert.equal(run(workspaceScript, ["complete", "--cwd", temp, "--session", "session-a", "--task", "task-a"]).ok, true);
   await assert.rejects(readFile(path.join(temp, ".agrimap-agent", "runtime", "active", "session-a.json"), "utf8"));
   assert.equal(JSON.parse(await readFile(path.join(temp, ".agrimap-agent", "runtime", "active", "session-b.json"), "utf8")).taskId, "task-b");
-  assert.match(await readFile(path.join(temp, ".agrimap-agent", "memory", "recent", "task-a.md"), "utf8"), /Task A passed/);
+  assert.match(await readFile(taskARecentPath, "utf8"), /Task A passed targeted inspection/);
 
   const taskC = run(workspaceScript, ["start", "--cwd", temp, "--session", "session-a", "--task", "task-c", "--operation", "create-feature"]);
   assert.equal(taskC.activeTask.requestedBy, "Alice");
@@ -350,6 +397,8 @@ try {
       "checkpoint logs use structured execution identity without actor composites",
       "log events reject undocumented values and preserve memory/log state",
       "completion gate archives only its own session task",
+      "completion gate rejects unresolved placeholders without mutating task state",
+      "completion gate rejects section scaffolds while allowing non-workflow moustache syntax",
       "QA failure closes without completion and requires a separate next-task prompt",
       "non-complete task outcomes use documented log events",
       "workspace initializes the canonical service ownership source of trust",
