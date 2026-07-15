@@ -73,6 +73,17 @@ const canonicalSkill = await readFile(path.join(root, "skills", "agrimap-agent-s
 if (!/^---\r?\nname: agrimap-agent-skills\r?\ndescription: .+\r?\n---/s.test(canonicalSkill)) errors.push("Canonical SKILL.md frontmatter is invalid.");
 if (canonicalSkill.split(/\r?\n/).length > 500) errors.push("Canonical SKILL.md exceeds 500 lines.");
 
+const ownerExampleStatus = "missing-owner-example";
+for (const relativePath of [
+  "README.md",
+  "skills/agrimap-agent-skills/references/patterns/conflict-resolution.md",
+  "skills/agrimap-agent-skills/references/patterns/pattern-status.md",
+]) {
+  const content = await readFile(path.join(root, relativePath), "utf8");
+  if (!content.includes(ownerExampleStatus)) errors.push(`${relativePath}: canonical owner-example status is missing`);
+  if (content.includes("needs-owner-example")) errors.push(`${relativePath}: obsolete owner-example status found`);
+}
+
 const conflictReference = "references/patterns/conflict-resolution.md";
 if (!canonicalSkill.includes(conflictReference)) errors.push("Canonical skill does not route golden evidence through conflict-resolution.md.");
 for (const relativePath of [

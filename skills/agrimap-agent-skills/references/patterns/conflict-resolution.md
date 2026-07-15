@@ -14,11 +14,13 @@ When two current-project sources disagree, show the evidence and trade-off to th
 
 ## Statuses
 
+These resolution statuses apply to individual conflict-matrix rows. For catalog authority statuses, use [pattern-status.md](pattern-status.md). `missing-owner-example` is shared by both taxonomies with the same meaning.
+
 - `resolved-defect`: a compile, name, format, or redundant-code defect; never reproduce it.
 - `canonical-v1`: safe structural guidance for new work; preserve existing public contracts unless change is approved.
 - `project-dependent`: inspect the active project and follow its proven convention.
 - `owner-decision-required`: behavior, data, or logical semantics need an explicit owner choice.
-- `needs-owner-example`: evidence is insufficient; collect the requested example before establishing a shared convention.
+- `missing-owner-example`: evidence is insufficient; collect the requested example before establishing a shared convention.
 
 ## Frontend main conflict matrix
 
@@ -41,7 +43,7 @@ The AgriMap baseline remains `Feature UI -> Facade -> Signal Store and/or Genera
 | `002-1-presentation-controller-examples.cs`, `003-1-presentation-controller-examples.cs` | Duplicate import and duplicate placeholder method signatures. | Remove duplicate imports in real code; never copy mutually exclusive template variants into one class. | `resolved-defect` |
 | `007-*` through `010-*` | Task-returning method names mix suffix and non-suffix forms. | Preserve existing public contracts. For new APIs, apply the active project's async naming consistently across interface, implementation, and caller; prefer `Async` when no project rule exists. | `project-dependent` |
 | `009-4-1-repository-interface.cs` | Repository port is under Infrastructure and consumes Presentation DTOs. | For new boundaries, map Presentation DTOs to inward Application/Domain inputs before the repository port. Locate the port in the project's established inward layer. Do not silently relocate legacy types during a feature fix. | `canonical-v1` |
-| `017-5-domain-example.cs` | A model labeled Domain contains external uppercase JSON field mappings. | Classify by meaning: invariant/business concept belongs inward; procedure/external projection belongs in Infrastructure and maps inward. This example is unclassified until the owner tour. | `needs-owner-example` |
+| `017-5-domain-example.cs` | A model labeled Domain contains external uppercase JSON field mappings. | Classify by meaning: invariant/business concept belongs inward; procedure/external projection belongs in Infrastructure and maps inward. This example is unclassified until the owner tour. | `missing-owner-example` |
 | `010-4-2-repository-implementation.cs` | Incomplete surrounding declarations and redundant `await Task.FromResult(...)`. | Supply real dependencies from the target class and return an already-computed value directly. | `resolved-defect` |
 | `025-*` through `029-*` | Files use `.json` but contain comments/placeholders/multiple illustrative roots. | Treat them as response-shape notes, never JSON fixtures or parser inputs. | `resolved-defect` |
 | Controller examples | Route styles and response envelopes differ. | Preserve the deployed API contract and follow neighboring controllers; a change requires compatibility analysis and owner approval. | `project-dependent` |

@@ -1,5 +1,7 @@
 # Pattern status
 
+These catalog statuses describe pattern authority. Conflict-matrix rows use the resolution statuses in [conflict-resolution.md](conflict-resolution.md). `missing-owner-example` is shared by both taxonomies with the same meaning.
+
 Use these statuses:
 
 - `verified`: owner or current project confirms the pattern is authoritative.
