@@ -63,6 +63,8 @@ Use these names in the generated prompt manifest:
 - `workspace_mode`: `shared-workspace`, `isolated-worktree`, `isolated-sandbox`, or `unknown`
 - `workspace_need`: required contract containing `isolation`, `requested_mode`, `base_ref`, `base_commit`, `provider_instruction`, `visibility_check`, `integration_return`, and `fallback_mode`
 - `integration_owner`
+- `display_label`: descriptive native agent label/nickname for delegated work
+- `progress_channel`: native app/CLI/IDE agent thread by default; fallback JSONL path only when native activity is unavailable
 - `branch_name`
 - `file_ownership`
 - `required_skills`
@@ -88,7 +90,7 @@ Allow the decision owner to override `model_label` in the generated prompt file.
 4. Reject `agmws` or `agmbo` as `target_kind`. Require one as `backend_profile` for every `be-main` target.
 5. Select a model profile from `model-capability-matrix.yaml`.
 6. Split work only when tasks are independent; use at most five active subagents.
-7. Define `workspace_need` before delegation. State whether isolation is required/preferred/not-needed, the requested mode, base ref and exact base commit containing the required state, provider-specific instruction, visibility check, integration return, and safe fallback.
+7. Define `workspace_need` before delegation. State whether isolation is required/preferred/not-needed, the requested mode, base ref and exact base commit containing the required state, provider-specific instruction, visibility check, integration return, and safe fallback. Assign a descriptive native display label and state how the requester inspects progress; never leave the main thread in an unexplained multi-minute wait.
 8. Verify the real workspace mode. Do not assume sandbox commits, branches, worktrees, or uncommitted parent changes are visible to the Leader.
 9. Build a file/logical-contract ownership map. One writer model owns a file or contract per integration wave; combine or sequence overlapping tasks.
 10. Assign branch/worktree names only when the selected workspace mode supports them. If required state is uncommitted and absent from the base commit, use shared/sequential work or obtain an explicit decision-owner-approved commit boundary; never pretend an isolated worker can see it.
@@ -179,7 +181,7 @@ Carry the normalized input manifest into the prompt. For large text, list read c
 4. Authorized decision-owner decisions and trade-offs
 5. Inputs, evidence ledger, and source of trust
 6. Scope and non-goals
-7. Workspace need, verified mode, base commit, integration owner, and branch/worktree when applicable
+7. Workspace need, verified mode, base commit, integration owner, native display label/progress channel, and branch/worktree when applicable
 8. File/logical-contract ownership and forbidden overlap
 9. Target files, lines, and anchors
 10. Ordered execution steps

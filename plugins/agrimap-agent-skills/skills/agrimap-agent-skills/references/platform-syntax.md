@@ -1,6 +1,6 @@
 # Provider syntax
 
-The umbrella skill is `agrimap-agent-skills`. Provider aliases route to it and pass `operation` plus raw requester arguments; authority fields remain distinct.
+The umbrella skill is `agrimap-agent-skills`. Generated aliases pass the operation and raw requester arguments through the compact runtime core plus one operation entrypoint; authority fields remain distinct. They do not load the umbrella during a normal alias invocation.
 
 ## Provider detection (do this first)
 
@@ -16,6 +16,7 @@ Successful routing must produce an activation receipt containing `AgriMap skill 
 - Thin aliases: `$agm-analyze`, `$agm-plan`, `$agm-review`, and the other generated `$agm-*` skills.
 - Codex uses skill mentions rather than portable slash commands. There is no plugin-prefixed form: `/agrimap-agent-skills:agm-review` and `$agrimap-agent-skills:agm-review` are both invalid — type the alias skill directly (`$agm-review ...`).
 - Managed worktrees are surface-dependent. Do not treat a spawned local subagent as worktree-isolated unless the current environment proves it.
+- Current Codex releases enable subagent workflows by default. Inspect app agent threads directly, use `/agent` in CLI, or expand the IDE background-agent panel; the Leader must announce labels/tasks before spawn and may not wait silently for more than 60 seconds.
 - Example: `$agm-analyze requested_by=Billy target_files=src/app.ts objective="Find the root cause; do not edit"`
 - Help: `$agm-analyze -h`
 
@@ -38,13 +39,14 @@ Successful routing must produce an activation receipt containing `AgriMap skill 
 
 ## Alias contract
 
-Each alias must contain only:
+Each generated alias must contain only:
 
 1. the requested operation;
 2. the raw arguments;
-3. an instruction to activate/read the umbrella skill;
-4. no copied workflow rules.
+3. exact relative paths to `runtime-core.md`, `glossary.md`, and its generated `operations/<operation>.md` entrypoint;
+4. an explicit instruction not to read the umbrella during the normal path;
+5. no copied workflow rules.
 
-An alias receiving `-h` or `--help` routes to the umbrella help contract without starting a task or writing project state.
+An alias receiving `-h` or `--help` returns purpose, required/conditional inputs, and the minimal example from its compact operation entrypoint without starting a task or writing project state. The umbrella is fallback only for direct/unknown operations or a missing/corrupt compact entrypoint.
 
 For large text, images, attachments, multiple files, and line-specific references, use [input-and-scope.md](input-and-scope.md). Attachments use the host's native attachment control; the request itself must provide a stable label, intent, priority, and expected coverage rather than depend on an invented cross-provider attachment token.

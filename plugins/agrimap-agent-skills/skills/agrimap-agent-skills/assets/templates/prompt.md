@@ -53,6 +53,8 @@
 - Visibility check: {{workspace_visibility_check}}
 - Unsupported-mode fallback: {{workspace_fallback}}
 - Integration owner: {{integration_owner}}
+- Subagent display label: {{display_label_or_not_applicable}}
+- Progress channel: {{native_thread_or_explicit_fallback_path}}
 - Branch/worktree: {{branch_or_not_applicable}}
 - File/logical-contract ownership: {{file_ownership}}
 - Forbidden files/contracts: {{forbidden_overlap}}

@@ -203,18 +203,21 @@ if (mode !== "task" && activeTask?.taskId) {
 if (mode === "subagent") {
   context.push(
     "- Inherit requestedBy and authority fields from the Leader handoff/session; record configurable modelLabel separately from actual model, role, agent, and provider.",
-    "- First action before any work: append your identity line to .agrimap-agent/runtime/progress/<task-id>.jsonl, then one heartbeat line per ordered step and a finished/blocked line on exit (see subagents-and-branches.md). The requester can watch this file while the UI shows only 'Waiting for subagent…'.",
+    "- Native agent-thread activity is the primary progress channel. Keep the delegated display label and bounded task visible in your thread; the requester can inspect it from the app thread, CLI /agent, or IDE background-agent panel on current Codex releases.",
+    "- Write .agrimap-agent/runtime/progress/<task-id>.jsonl only when the handoff explicitly declares it as a fallback because native activity is unavailable; then write started, one line per ordered step, and finished/blocked.",
     "- Read workspace_need before any write. Verify the required mode, base commit, visibility, ownership, and integration-return method; report unsupported isolation and use only the named fallback.",
     "- Write only the files and logical contract assigned to you. One writer owns them per integration wave; stop and report overlap not resolved by the Leader.",
     "- Do not assume a sandbox branch or commit is visible. Return the requested integration artifact for the verified workspace mode.",
-    "- Return a structured handoff: status, requestedBy, requesterAuthority, decisionOwner, modelLabel, actual model, role, agent, provider, summary, files_changed, behavior_changed, decisions_and_reasons, commands_and_tests, remaining_risks, memory_facts, integration_artifact, and branch/commit when applicable.",
+    "- Return a structured handoff: status, requestedBy, requesterAuthority, decisionOwner, displayLabel, nativeThreadId, progressChannel, modelLabel, actual model, role, agent, provider, summary, files_changed, behavior_changed, decisions_and_reasons, commands_and_tests, remaining_risks, memory_facts, integration_artifact, and branch/commit when applicable.",
   );
 }
 
 if (mode !== "task") {
   context.push(
-    "- Read the umbrella skill before using an agm workflow.",
+    "- For a generated agm alias, read compact runtime-core.md, glossary.md, and its operations/<operation>.md entrypoint; do not load the umbrella unless directly invoked or the compact route is missing/corrupt.",
     "- Do not add permission gates. Discuss only material logic/contract/data/architecture trade-offs.",
+    "- Current Codex releases enable subagents by default. Before spawning, announce each descriptive agent label, bounded task, expected output, and inspection path (app thread, CLI /agent, or IDE background-agent panel).",
+    "- Never wait silently for minutes: continue safe work or inspect status in intervals no longer than 60 seconds and report running/completed/blocked with agent/task detail. Native threads are primary; use a progress JSONL file only as an explicit fallback.",
     "- Update memory and concise logs after every glossary-defined durable state transition; do not claim completion with unchecked items.",
     "- Memory loading policy: this one-time load (plus the pending-work summary above) is the memory context for the whole session. It is not re-injected on later prompts; reopen the memory files yourself only after context compaction or an on-disk change notice.",
   );

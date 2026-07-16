@@ -8,6 +8,13 @@ import {
   replaceTaskArtifactSchemaDocs,
   taskArtifactSchemaIssues,
 } from "../skills/agrimap-agent-skills/scripts/task-artifact-schema.mjs";
+import {
+  operationConfigIssues,
+  operationEntrypointPath,
+  renderAliasSkill,
+  renderGeminiCommandPrompt,
+  renderOperationEntrypoint,
+} from "./operation-entrypoints.mjs";
 
 const root = process.cwd();
 const canonicalSkill = path.join(root, "skills", "agrimap-agent-skills");
@@ -19,6 +26,14 @@ if (typeof packageVersion !== "string" || !/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9
   throw new Error("package.json version must be a valid semantic version.");
 }
 const operations = JSON.parse(await readFile(path.join(root, "config", "operations.json"), "utf8"));
+const operationIssues = operationConfigIssues(operations);
+if (operationIssues.length) throw new Error(`Invalid operation config:\n- ${operationIssues.join("\n- ")}`);
+const operationEntrypointsDirectory = path.join(canonicalSkill, "references", "operations");
+await rm(operationEntrypointsDirectory, { recursive: true, force: true });
+await mkdir(operationEntrypointsDirectory, { recursive: true });
+for (const item of operations.operations) {
+  await writeFile(operationEntrypointPath(canonicalSkill, item), renderOperationEntrypoint(item), "utf8");
+}
 const taskArtifactSchema = await loadTaskArtifactSchema(canonicalSkill);
 const schemaIssues = taskArtifactSchemaIssues(taskArtifactSchema);
 if (schemaIssues.length) throw new Error(`Invalid task artifact schema:\n- ${schemaIssues.join("\n- ")}`);
@@ -42,7 +57,7 @@ for (const item of operations.operations) {
   await mkdir(aliasDirectory, { recursive: true });
   await writeFile(
     path.join(aliasDirectory, "SKILL.md"),
-    `---\nname: ${item.name}\ndescription: ${item.description}. Use when the requester invokes this AgriMap alias.\n---\n\nActivate the umbrella skill: read \`../agrimap-agent-skills/SKILL.md\` **relative to this file** (the umbrella directory sits next to this alias directory inside the same installed plugin — do not search elsewhere for it). Run operation \`${item.operation}\` with the requester's current arguments. Follow the umbrella's routing and read-economy rules: load only the reference/pattern files its routing section selects for this operation and scope, never the whole reference tree. Keep the umbrella workflow authoritative; do not add or duplicate rules in this alias. When the arguments contain a standalone \`-h\` or \`--help\` token, use the umbrella command-help contract (provider-native syntax only) and return help without starting a task or writing project state.\n`,
+    renderAliasSkill(item),
     "utf8",
   );
 }
@@ -137,13 +152,7 @@ await writeFile(
 await rm(path.join(root, "commands"), { recursive: true, force: true });
 await mkdir(path.join(root, "commands"), { recursive: true });
 for (const item of operations.operations) {
-  const prompt = [
-    `Activate the agrimap-agent-skills umbrella skill and run operation ${item.operation}.`,
-    "Treat the umbrella skill as the workflow source of trust.",
-    "When requester arguments contain a standalone -h or --help token, return umbrella command help without starting a task or writing project state.",
-    "Requester arguments:",
-    "{{args}}",
-  ].join("\n\n");
+  const prompt = renderGeminiCommandPrompt(item);
   await writeFile(
     path.join(root, "commands", `${item.name}.toml`),
     `description = ${JSON.stringify(item.description)}\nprompt = ${JSON.stringify(prompt)}\n`,

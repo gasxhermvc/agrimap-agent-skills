@@ -7,6 +7,8 @@
 - Added a normative workflow glossary separating requester from decision-owner authority and defining substantive work, checkpoint units, material/complex/small work, proportional verification, verification-only QA, the exact two-fast-then-full QA counter, and configured versus actual model identity.
 - Centralized task artifact fields, required sections, QA/full-release rules, templates, generated documentation, and completion validation in `assets/task-artifact-schema.json`.
 - Added historical QA-counter enforcement, independent QA identity checks, workflow-write/product-read-only evidence, and schema/template/docs contract tests.
+- Replaced stale Codex subagent fallback guidance with the current native app/CLI/IDE workflow, including `/agent`, inspectable threads, descriptive labels, and a mandatory non-silent 60-second status cadence.
+- Changed generated aliases and Gemini commands from umbrella reloads to compact runtime-core + glossary + operation-specific entrypoints generated from `config/operations.json`.
 - Bumped the package version so provider-hook fixes replace cached `0.1.1` installations.
 
 ## 0.1.1 - 2026-07-16

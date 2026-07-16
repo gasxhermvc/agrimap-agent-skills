@@ -10,6 +10,7 @@
 |---|---|---|
 | `agm:skill` | `SKILL.md` | ทุก task (umbrella lifecycle) |
 | `agm:glossary` | `glossary.md` | นิยาม authority, work boundary, task size, QA, model identity |
+| `agm:runtime-core` | `runtime-core.md` | compact common contract สำหรับ generated operation aliases |
 | `agm:workflows` | `workflows.md` | เลือก operation / lifecycle 6 กระบวนการ / write boundary |
 | `agm:roles` | `roles.md` | เลือก/สวมบทบาท |
 | `agm:qa-and-done` | `qa-and-done.md` | QA scope, sequence, completion gate |

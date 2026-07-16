@@ -10,6 +10,13 @@ import {
   taskArtifactRequiredSections,
   taskArtifactSchemaIssues,
 } from "../skills/agrimap-agent-skills/scripts/task-artifact-schema.mjs";
+import {
+  operationConfigIssues,
+  operationEntrypointPath,
+  renderAliasSkill,
+  renderGeminiCommandPrompt,
+  renderOperationEntrypoint,
+} from "./operation-entrypoints.mjs";
 
 const root = process.cwd();
 const errors = [];
@@ -67,6 +74,7 @@ for (const required of [
   "skills/agrimap-agent-skills/references/patterns/conflict-resolution.md",
   "skills/agrimap-agent-skills/references/analysis-discipline.md",
   "skills/agrimap-agent-skills/references/glossary.md",
+  "skills/agrimap-agent-skills/references/runtime-core.md",
   "skills/agrimap-agent-skills/references/backend-engineer.md",
   "skills/agrimap-agent-skills/references/service-ownership.md",
   "skills/agrimap-agent-skills/scripts/log-events.mjs",
@@ -89,6 +97,7 @@ for (const required of [
   "tests/integration/workspace/cases/completion.mjs",
   "tests/integration/workspace/cases/history.mjs",
   "tests/integration/workspace/cases/frontend-reuse.mjs",
+  "tools/operation-entrypoints.mjs",
   "docs/USAGE.md",
   "plugins/agrimap-agent-skills/docs/USAGE.md",
   "examples/inputs/LONG-REQUEST.md",
@@ -114,6 +123,27 @@ const codexHooks = await parseJson("plugins/agrimap-agent-skills/hooks/codex-hoo
 const claudeHooks = await parseJson("plugins/agrimap-agent-skills/hooks/claude-hooks.json");
 const taskArtifactSchema = await parseJson("skills/agrimap-agent-skills/assets/task-artifact-schema.json");
 
+if (operations) {
+  for (const issue of operationConfigIssues(operations)) errors.push(`Operation config: ${issue}`);
+  for (const item of operations.operations || []) {
+    const entrypointPath = operationEntrypointPath(path.join(root, "skills", "agrimap-agent-skills"), item);
+    if (!(await exists(entrypointPath))) {
+      errors.push(`${path.relative(root, entrypointPath)}: compact operation entrypoint missing; run npm run sync.`);
+    } else if (await readFile(entrypointPath, "utf8") !== renderOperationEntrypoint(item)) {
+      errors.push(`${path.relative(root, entrypointPath)}: compact operation entrypoint is stale; run npm run sync.`);
+    }
+    const aliasPath = path.join(root, "plugins", "agrimap-agent-skills", "skills", item.name, "SKILL.md");
+    if (await exists(aliasPath) && await readFile(aliasPath, "utf8") !== renderAliasSkill(item)) {
+      errors.push(`${path.relative(root, aliasPath)}: generated compact alias is stale; run npm run sync.`);
+    }
+    const commandPath = path.join(root, "commands", `${item.name}.toml`);
+    if (await exists(commandPath)) {
+      const expected = `description = ${JSON.stringify(item.description)}\nprompt = ${JSON.stringify(renderGeminiCommandPrompt(item))}\n`;
+      if (await readFile(commandPath, "utf8") !== expected) errors.push(`${path.relative(root, commandPath)}: generated compact Gemini command is stale; run npm run sync.`);
+    }
+  }
+}
+
 if (!packageManifest?.scripts?.test?.includes("npm run verify:golden")) errors.push("npm test must include golden verification.");
 if (!packageManifest?.scripts?.test?.includes("npm run validate")) errors.push("npm test must include package validation before behavioral suites.");
 if (!packageManifest?.scripts?.["test:unit"]?.includes("fe-scenarios.test.mjs")) errors.push("Frontend scenario eval is not wired into the automated unit suite.");
@@ -132,6 +162,8 @@ for (const marker of ["Answer audit/history questions", "conversational recall a
   if (!canonicalSkill.includes(marker)) errors.push(`Canonical audit/history contract missing marker: ${marker}`);
 if (!canonicalSkill.includes("[fe-scenarios.md](references/evals/fe-scenarios.md)")) errors.push("Frontend eval catalog is unreachable from SKILL.md.");
 if (!canonicalSkill.includes("[glossary.md](references/glossary.md)")) errors.push("Normative workflow glossary is unreachable from SKILL.md.");
+for (const marker of ["[runtime-core.md](references/runtime-core.md)", "must not load this umbrella file during a normal alias invocation", "Current Codex releases enable subagent workflows by default", "Never wait silently", "use `/agent` in Codex CLI"])
+  if (!canonicalSkill.includes(marker)) errors.push(`Canonical progressive-disclosure/subagent contract missing marker: ${marker}`);
 
 const glossaryReference = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "glossary.md"), "utf8");
 for (const marker of [
@@ -229,6 +261,12 @@ for (const marker of ["one writer model per wave", "workspace_need", "base commi
   if (!delegationReference.includes(marker)) errors.push(`Delegation contract missing marker: ${marker}`);
 for (const marker of ["verification-only QA", "product_artifacts: read-only", "workflow_writes: qa.md|heartbeat|checkpoint-log", "isolation: worktree", "normal subagent starts in the current working directory"])
   if (!delegationReference.includes(marker)) errors.push(`Delegation/QA isolation contract missing marker: ${marker}`);
+for (const marker of ["Current Codex releases enable subagent workflows by default", "run `/agent`", "background-agent panel", "at least every 60 seconds", "fallback only", "Codex native threads do not require this fallback file"])
+  if (!delegationReference.includes(marker)) errors.push(`Native subagent visibility contract missing marker: ${marker}`);
+
+const runtimeCoreReference = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "runtime-core.md"), "utf8");
+for (const marker of ["one generated file under `operations/`", "Do not read the umbrella", "Current Codex releases enable subagent workflows by default", "report `running|completed|blocked` at least once every 60 seconds", "explicit fallback"])
+  if (!runtimeCoreReference.includes(marker)) errors.push(`Compact runtime core missing marker: ${marker}`);
 
 const workflowReference = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "workflows.md"), "utf8");
 const createFeatureSection = workflowReference.split("## `/agm-create-feature`")[1]?.split("## `/agm-create-prompt`")[0] || "";

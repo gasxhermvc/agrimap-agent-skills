@@ -7,12 +7,13 @@
 - [Branch and worktree](#branch-and-worktree)
 - [Overlap check before dispatch](#overlap-check-before-dispatch)
 - [Delegation packet](#delegation-packet)
-- [Progress heartbeat](#progress-heartbeat--ให้-owner-ดูได้ว่า-subagent-ยังทำงานอยู่และเป็นใคร)
+- [Visible progress](#visible-progress--native-first-no-silent-wait)
 - [Required handoff](#required-handoff)
 
 ## Decompose
 
 - Use at most five active subagents.
+- Current Codex releases enable subagent workflows by default; never route Codex to a sequential fallback merely because an older contract claimed native subagents were unavailable.
 - Delegate only independent, bounded work with a clear integration boundary.
 - Keep unresolved material decisions with the Leader until the recorded decision owner approves them.
 - Before dispatch, map every target and forbidden file to exactly one writer for the integration wave.
@@ -67,7 +68,9 @@ Include:
 - complete `workspace_need`, verified `workspace_mode`, integration owner, and branch/worktree name when applicable;
 - exact `file_ownership` plus other writers' forbidden files;
 - exact target files, current line numbers, and stable symbols;
-- the progress heartbeat file path (`.agrimap-agent/runtime/progress/<task-id>.jsonl`) and the instruction to announce identity first, then one line per step;
+- the primary native progress channel; include `.agrimap-agent/runtime/progress/<task-id>.jsonl` and per-step write instructions only when native activity is genuinely unavailable;
+- a descriptive native display label/nickname, the user-facing one-line task description, expected output, and inspection instructions for the active surface;
+- status cadence: the Leader reports `running|completed|blocked` at dispatch, on a meaningful transition, and at least every 60 seconds while it is otherwise waiting;
 - ordered implementation steps and reason for each;
 - logic/contract/data constraints;
 - tests and acceptance criteria;
@@ -76,22 +79,34 @@ Include:
 
 For a QA packet, replace product write ownership with `product_artifacts: read-only` and `workflow_writes: qa.md|heartbeat|checkpoint-log`, name the integrated artifact/commit/file set to inspect, list claimed checks to sample independently, and require findings only. Do not include an implementation step.
 
-## Progress heartbeat — ให้ owner ดูได้ว่า subagent ยังทำงานอยู่และเป็นใคร
+## Visible progress — native first, no silent wait
 
-The host UI shows only "Waiting for subagent…" while a subagent runs — the owner cannot see whether it is alive or which model it is. The observable channel that works on every provider is a file the owner can open/tail while waiting:
+Current Codex releases enable subagent workflows by default and surface activity in all local clients. Use the native channel first:
 
-`.agrimap-agent/runtime/progress/<task-id>.jsonl` — append-only, one JSON line per signal:
+- **Codex app:** each delegated agent has an inspectable thread; open it from activity in the main task.
+- **Codex CLI:** run `/agent` to inspect and switch between active agent threads.
+- **Codex IDE extension:** expand the background-agent panel above the composer when available, then open an individual thread or stop active agents.
 
-1. **First action of every subagent (before any other work):** append a `started` line announcing self-reported identity — this answers "ใช้ model ไหน" immediately:
-   ```json
-   {"t":"2026-07-16T05:40:12Z","agent":"fe","event":"started","model":"claude-sonnet-5","provider":"claude","role":"executor","step":"0/6","doing":"loading handoff + target files"}
-   ```
-2. **Per ordered step:** append one line when the step begins (`"event":"step"`, `"step":"3/6"`, `"doing":"<one short phrase>"`). One line per step — not per tool call; this is a heartbeat, not a transcript.
-3. **On exit:** append `"event":"finished|blocked"` with the final status before returning the handoff.
+Before calling spawn, the Leader posts a dispatch receipt such as:
 
-The Leader includes this file path in the delegation packet and tells the owner where it is when dispatching ("progress: `.agrimap-agent/runtime/progress/<task-id>.jsonl`"). A subagent silent in this file for its whole run is a handoff-contract violation the Leader reports. The directory lives under ignored runtime state — never tracked, never audit evidence; durable attribution stays in `logs/`.
+```text
+Delegating 2 independent tasks:
+- api-contract-review — inspect route/DTO regressions — returns findings with file references
+- test-gap-scan — inspect missing failure-path coverage — returns proposed tests only
+Inspect: app agent threads | CLI /agent | IDE background-agent panel
+```
 
-Provider notes: on Claude Code the owner can also expand the running task in the UI/transcript view for the raw stream, and the `SubagentStart` hook already fires; the heartbeat file is still required because it is the only channel that is provider-independent and readable outside the UI.
+Use a descriptive task name and, where custom agents are configured, `nickname_candidates` so the UI does not show indistinguishable repeated agent names. While agents run, the Leader continues safe independent work. If it has nothing useful to do, it waits/polls for no more than 60 seconds at a time, inspects live agent state, and posts one concise update with each agent's `running|completed|blocked` status and last known bounded task. A blind 5–7 minute wait or repeated status with no agent/task detail is a workflow defect.
+
+The native thread is the primary detailed trace; do not duplicate every tool call into chat. When a provider/surface genuinely cannot expose native activity, explicitly declare the fallback and use `.agrimap-agent/runtime/progress/<task-id>.jsonl` as append-only workflow runtime state:
+
+```json
+{"t":"2026-07-16T05:40:12Z","agent":"fe","event":"step","step":"3/6","doing":"checking affected consumers"}
+```
+
+For that fallback only, write `started`, one `step` line per ordered step, and `finished|blocked`. The Leader tells the requester how to tail/open the file. It remains ignored runtime state, never durable audit evidence. Codex native threads do not require this fallback file.
+
+Official Codex behavior reference: [Subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents).
 
 ## Required handoff
 
@@ -100,6 +115,7 @@ Every executing subagent returns:
 - `status`: `completed`, `partial`, or `blocked`;
 - `requestedBy` inherited from the Leader handoff;
 - configurable `model_label` plus actual `model`, `role`, `agent`, and `provider` recorded separately;
+- native display label/thread identifier and progress channel used;
 - `summary`;
 - `files_changed` with symbols/lines;
 - `behavior_changed`;

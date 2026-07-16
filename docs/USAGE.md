@@ -1,6 +1,6 @@
 # AgriMap Agent Skills — Usage Guide
 
-คู่มือนี้ใช้หลังติดตั้ง `agrimap-agent-skills` แล้ว จุดประสงค์คือทำให้ผู้ใช้เห็นชัดว่า alias โหลด umbrella skill จริง, ส่ง input ครบ และเขียน memory/logs ลงโปรเจกต์ที่กำลังทำงาน ไม่ใช่ global install directory.
+คู่มือนี้ใช้หลังติดตั้ง `agrimap-agent-skills` แล้ว จุดประสงค์คือทำให้ผู้ใช้เห็นชัดว่า alias โหลด compact runtime core + glossary + operation entrypoint ที่ตรงงานจริง, ส่ง input ครบ และเขียน memory/logs ลงโปรเจกต์ที่กำลังทำงาน ไม่ใช่ global install directory. Normal alias path ไม่โหลด umbrella ทั้งก้อน.
 
 ## 1. เรียก Skill ตามค่าย AI
 
@@ -64,6 +64,8 @@ $agm-analyze -h
 ```
 
 Help ต้องแสดง command, purpose, required/conditional inputs และ minimal example ของ operation นั้น. หากต้องการเปิดคู่มือฉบับเต็มบน Windows ให้รันจาก PowerShell; เลือกอย่างใดอย่างหนึ่ง:
+
+ทุก alias สร้างจาก `config/operations.json` และอ่านเพียงสามชั้นแรก: `references/runtime-core.md`, `references/glossary.md`, และ `references/operations/<operation>.md`. Operation entrypoint จะบอก reference เพิ่มเติมแบบมีเงื่อนไขเอง; ห้ามอ่าน `SKILL.md` umbrella ใน normal alias path. Umbrella ใช้เมื่อเรียกโดยตรง, operation ไม่รู้จัก หรือ compact entrypoint สูญหาย/เสียหายเท่านั้น.
 
 ```powershell
 # Browser — เปิดฉบับล่าสุดบน GitHub
@@ -380,6 +382,16 @@ workspace_need:
 
 ถ้า mode ที่ขอใช้ไม่ได้ ต้องใช้ `fallback_mode` เท่านั้น. หนึ่งไฟล์/หนึ่ง logical contract มี writer model เดียวต่อ integration wave; QA ห้ามแก้ product artifact/finding แต่เขียน `qa.md`, heartbeat และ checkpoint/log ของตัวเองได้.
 
+### ดูว่า subagent กำลังทำอะไร
+
+Codex รุ่นปัจจุบันเปิด subagent workflow โดย default. ก่อน spawn Leader ต้องแสดงรายการ `ชื่อ agent — งานที่ทำ — output ที่จะคืน` และช่องทางดูสถานะ:
+
+- Codex app: เปิด agent thread จาก activity ใน main task;
+- Codex CLI: ใช้ `/agent` เพื่อดู/สลับ active thread;
+- Codex IDE: ขยาย background-agent panel เหนือ composer แล้วเปิด agent ที่ต้องการ.
+
+ถ้า Leader ไม่มีงานอิสระให้ทำระหว่างรอ ต้อง poll ไม่เกินครั้งละ 60 วินาทีและรายงาน `running|completed|blocked` พร้อมชื่อ agent/งาน ห้ามปล่อย “Waiting for subagent…” เปล่า ๆ 5–7 นาที. `.agrimap-agent/runtime/progress/<task-id>.jsonl` ใช้เฉพาะ fallback เมื่อ surface นั้นไม่มี native activity จริง ไม่บังคับบน Codex. ดูเอกสารทางการ [Codex Subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents).
+
 ## 9. Automated smoke test vs. live-provider check
 
 ใน source repository รัน:
@@ -391,4 +403,4 @@ npm test
 npm run validate
 ```
 
-`test:usage` ตรวจครบทุก alias ว่ามี Codex/Claude thin skill, Gemini command, umbrella activation route, documentation case และ multimodal fixtures. มันไม่สามารถพิสูจน์ UI/session ของ provider ที่ไม่ได้ติดตั้งบนเครื่องนั้นได้. หลัง install จึงต้องทำ live check อย่างน้อยหนึ่ง alias และเห็น activation receipt ตามหัวข้อ 2.
+`test:usage` ตรวจครบทุก alias ว่ามี Codex/Claude compact skill, Gemini command, operation-specific entrypoint, ข้อห้ามโหลด umbrella ใน normal path, documentation case และ multimodal fixtures. มันไม่สามารถพิสูจน์ UI/session ของ provider ที่ไม่ได้ติดตั้งบนเครื่องนั้นได้. หลัง install จึงต้องทำ live check อย่างน้อยหนึ่ง alias, เห็น activation receipt ตามหัวข้อ 2 และเมื่อใช้ subagent ต้องเปิดดู native agent thread ได้.

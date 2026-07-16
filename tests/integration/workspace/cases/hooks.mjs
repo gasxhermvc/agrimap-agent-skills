@@ -170,4 +170,8 @@ export async function hooks(harness) {
   assert.match(subagentHook.hookSpecificOutput.additionalContext, /integration artifact/);
   assert.match(subagentHook.hookSpecificOutput.additionalContext, /Read workspace_need before any write/);
   assert.match(subagentHook.hookSpecificOutput.additionalContext, /base commit/);
+  assert.match(subagentHook.hookSpecificOutput.additionalContext, /Native agent-thread activity is the primary progress channel/);
+  assert.match(subagentHook.hookSpecificOutput.additionalContext, /CLI \/agent/);
+  assert.match(subagentHook.hookSpecificOutput.additionalContext, /only when the handoff explicitly declares it as a fallback/);
+  assert.doesNotMatch(subagentHook.hookSpecificOutput.additionalContext, /First action before any work: append your identity line/);
 }

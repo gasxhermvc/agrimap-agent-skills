@@ -7,6 +7,9 @@
 - Role: {{role}}
 - Agent: {{agent_name}}
 - Provider: {{provider}}
+- Display label: {{display_label}}
+- Native thread ID: {{native_thread_id_or_not_exposed}}
+- Progress channel: {{native_thread_or_explicit_fallback_path}}
 - Branch/commit: {{branch_or_commit}}
 
 ## Summary

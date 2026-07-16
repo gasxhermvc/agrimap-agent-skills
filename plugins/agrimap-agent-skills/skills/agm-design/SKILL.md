@@ -3,4 +3,10 @@ name: agm-design
 description: Design a user flow, behavior, and acceptance criteria. Use when the requester invokes this AgriMap alias.
 ---
 
-Activate the umbrella skill: read `../agrimap-agent-skills/SKILL.md` **relative to this file** (the umbrella directory sits next to this alias directory inside the same installed plugin — do not search elsewhere for it). Run operation `design` with the requester's current arguments. Follow the umbrella's routing and read-economy rules: load only the reference/pattern files its routing section selects for this operation and scope, never the whole reference tree. Keep the umbrella workflow authoritative; do not add or duplicate rules in this alias. When the arguments contain a standalone `-h` or `--help` token, use the umbrella command-help contract (provider-native syntax only) and return help without starting a task or writing project state.
+Run operation `design` through the compact progressive-disclosure path. Read exactly these files relative to this alias before routing any conditional discipline:
+
+1. `../agrimap-agent-skills/references/runtime-core.md`
+2. `../agrimap-agent-skills/references/glossary.md`
+3. `../agrimap-agent-skills/references/operations/design.md`
+
+Do **not** read `../agrimap-agent-skills/SKILL.md` during a normal alias invocation. The compact entrypoint is authoritative for this operation and names every additional reference that may be loaded. Pass the requester's current arguments unchanged. If they contain a standalone `-h` or `--help` token, return the compact entrypoint's purpose, required inputs, conditional inputs, and minimal example without starting a task or writing project state. Use the umbrella only as an explicit fallback when a compact file is missing/corrupt or the requester invoked the umbrella directly with an unknown operation.

@@ -25,16 +25,22 @@ async function filesUnder(directory) {
   return files;
 }
 
-test("published aliases route to umbrella operations", async () => {
+test("published aliases use operation-specific progressive-disclosure entrypoints", async () => {
   assert.ok(operations.some((item) => item.name === "agm-history" && item.operation === "history"));
   for (const item of operations) {
     const aliasSkill = await read(`plugins/agrimap-agent-skills/skills/${item.name}/SKILL.md`);
     const geminiCommand = await read(`commands/${item.name}.toml`);
-    assert.match(aliasSkill, /Activate the umbrella skill: read `\.\.\/agrimap-agent-skills\/SKILL\.md`/);
+    assert.match(aliasSkill, /references\/runtime-core\.md/);
+    assert.match(aliasSkill, /references\/glossary\.md/);
+    assert.ok(aliasSkill.includes(`references/operations/${item.operation}.md`));
     assert.ok(aliasSkill.includes(`Run operation \`${item.operation}\``));
+    assert.match(aliasSkill, /Do \*\*not\*\* read `\.\.\/agrimap-agent-skills\/SKILL\.md` during a normal alias invocation/);
     assert.match(aliasSkill, /standalone `-h` or `--help` token/);
-    assert.ok(geminiCommand.includes(`run operation ${item.operation}`));
+    assert.ok(geminiCommand.includes(`operation ${item.operation}`));
+    assert.match(geminiCommand, /compact progressive-disclosure entrypoint/);
+    assert.match(geminiCommand, /do not load the umbrella SKILL\.md during a normal alias invocation/);
     assert.match(geminiCommand, /standalone -h or --help token/);
+    assert.ok((await read(`skills/agrimap-agent-skills/references/operations/${item.operation}.md`)).includes(`Operation: \`${item.operation}\``));
     assert.ok(usage.includes(`\`${item.name}\``));
     assert.ok(usage.includes(`$${item.name} `));
   }
