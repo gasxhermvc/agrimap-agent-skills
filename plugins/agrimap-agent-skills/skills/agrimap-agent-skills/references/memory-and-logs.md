@@ -60,6 +60,34 @@ Use `role=leader` for orchestration/integration. `frontier_analysis` remains a c
 
 Record the actual model exposed by the running surface. If it is unavailable, use `model=unknown`; never present a configured/default model label as observed fact.
 
+## Memory loading policy (owner decision, 2026-07-16)
+
+Writing and loading are asymmetric by design:
+
+- **Write always**: logs are appended at every checkpoint, and memory is updated per the checkpoint rules below — unchanged.
+- **Load once**: memory enters the model context **once per session** — at session start the hook (or the task-start step on providers without hooks) loads project memory plus the current task memory as a *pending-work summary*, alongside the once-per-24h requester confirmation. After that, hooks stay silent: nothing is re-injected into later prompts, so memory never rides along on every model call. The only mid-session signal is a one-line pointer when the memory files change on disk outside the session's own writes; the model then reopens the file itself.
+- **Honest expectation**: session memory is a งานตกค้าง-and-project-facts summary, not deep recall. Cross-session "knowing the owner's mind" is a harness-level capability, not something these rules can or should fake with heavier context injection.
+
+## Pending issues ledger — สมุดงานค้าง (owner decision, 2026-07-16)
+
+Workflow นี้ปิดงานเป็นงาน ๆ แม้ยังมีบัค/issue เหลือ (เปิด task ใหม่แทนการลากงานเดิม) — ledger นี้คือที่อยู่ของ "ข้อที่ยังไม่ทำ" เพื่อไม่ให้หายไปกับ context:
+
+Maintain a `## Pending issues` section inside `.agrimap-agent/memory/project.md` (already loaded once per session by the hook — no extra plumbing). One line per item:
+
+```markdown
+## Pending issues
+- [ ] 2026-07-16 · from 20260716-task-x · map-viewer แสดง layer ผิดลำดับเมื่อ filter ซ้อน · src/app/features/map-viewer/... · severity: med
+- [x] 2026-07-15 · from 20260715-task-y · resolved by 20260716-task-z
+```
+
+**Lifecycle (บังคับสามจังหวะ):**
+
+1. **เจอระหว่างงาน → ทัก + จด, ห้ามทำตอนนั้น**: เมื่อพบปัญหา/บัค/debt นอก scope ปัจจุบัน (รวม `qa-failed` ที่ปิดงานไป) — บอก owner สั้น ๆ ในแชท, append หนึ่งบรรทัดลง ledger, แล้วกลับมางานเดิม. การจดลง ledger คือรูปธรรมของกฎ "record follow-on concerns separately" — ไม่ใช่เขียนไว้ในแชทเฉย ๆ แล้วหาย.
+2. **เริ่มงาน → เตือน + reconcile**: session-start memory load ทำให้ ledger โผล่เอง; ก่อนเริ่มงานให้กวาดดูรายการเปิด — งานปัจจุบันจะแก้ข้อไหนได้ให้บอก, ข้อไหนถูกงานอื่นแก้ไปแล้วให้ mark `[x]` พร้อม task ที่แก้.
+3. **ปิดงาน → สรุปเสมอ**: ทุก result/รายงานปิดงาน ลงท้ายด้วยส่วน **"Outstanding items"** — รายการค้างที่ยังเปิดอยู่ (ของเก่า + ที่เกิดใหม่ในงานนี้) หรือระบุชัดว่า `no pending issues`. ห้ามปิดงานเงียบ ๆ โดยไม่แตะเรื่องนี้.
+
+Ledger เก็บเฉพาะ "ปัญหาที่รอเปิดงาน" — ไม่ใช่ tech-debt catalog ถาวร; ข้อที่ owner ตัดสินใจไม่ทำแล้วให้ลบออกพร้อมหมายเหตุสั้น ๆ.
+
 ## Memory tiers
 
 - `memory/project.md`: current project-wide facts and pointers; update only when the project context changes.

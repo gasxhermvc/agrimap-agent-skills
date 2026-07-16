@@ -80,7 +80,7 @@ Read [workflows.md](references/workflows.md) for task routing, [roles.md](refere
 - Prefer the smallest complete change that fixes the current problem.
 - Continue from existing structure and patterns; do not bolt on a parallel architecture.
 - Finish correctness and behavior first. Refactor or improve only when required for the fix or explicitly requested.
-- Record follow-on concerns separately instead of silently expanding scope.
+- Record follow-on concerns separately instead of silently expanding scope: when you notice a bug, issue, or debt outside the current scope — flag it to the owner in one line, append it to the Pending issues ledger in `memory/project.md` (see [memory-and-logs.md](references/memory-and-logs.md)), and return to the task. Do not fix it now; a new task will pick it up.
 - Use hypothesis -> evidence -> bounded experiment -> observed result for uncertain diagnostics. Do not perform unexplained trial and error.
 - Preserve existing logic unless the selected refactor mode explicitly allows change. Read [refactor-modes.md](references/refactor-modes.md).
 
@@ -128,7 +128,7 @@ Read [memory-and-logs.md](references/memory-and-logs.md) for schemas and retenti
 4. Check every pre-work checklist item.
 5. Do not claim completion while any required checklist item is incomplete.
 6. If QA fails, close the implementation attempt as `qa-failed`, do not fix it in the same task, and have the Leader summarize the evidence plus prepare a proposed prompt for a new owner-approved correction task.
-7. Report completed scope, verification evidence, remaining concerns, memory/log updates, and the recommended commit boundary.
+7. Report completed scope, verification evidence, remaining concerns, memory/log updates, and the recommended commit boundary — and always close with an **Outstanding items** summary: every still-open Pending issues ledger entry plus any new ones from this task, or an explicit `no pending issues`. Reconcile the ledger while doing so (mark entries this task resolved).
 
 Read [qa-and-done.md](references/qa-and-done.md) for the result and done contracts.
 

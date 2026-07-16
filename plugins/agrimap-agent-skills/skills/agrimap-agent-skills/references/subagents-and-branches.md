@@ -57,6 +57,7 @@ Include:
 - complete `workspace_need`, verified `workspace_mode`, integration owner, and branch/worktree name when applicable;
 - exact `file_ownership` plus other writers' forbidden files;
 - exact target files, current line numbers, and stable symbols;
+- the progress heartbeat file path (`.agrimap-agent/runtime/progress/<task-id>.jsonl`) and the instruction to announce identity first, then one line per step;
 - ordered implementation steps and reason for each;
 - logic/contract/data constraints;
 - tests and acceptance criteria;
@@ -64,6 +65,23 @@ Include:
 - handoff format.
 
 For a QA packet, replace write ownership with `read_only: true`, name the integrated artifact/commit/file set to inspect, list claimed checks to sample independently, and require findings only. Do not include an implementation step.
+
+## Progress heartbeat — ให้ owner ดูได้ว่า subagent ยังทำงานอยู่และเป็นใคร
+
+The host UI shows only "Waiting for subagent…" while a subagent runs — the owner cannot see whether it is alive or which model it is. The observable channel that works on every provider is a file the owner can open/tail while waiting:
+
+`.agrimap-agent/runtime/progress/<task-id>.jsonl` — append-only, one JSON line per signal:
+
+1. **First action of every subagent (before any other work):** append a `started` line announcing self-reported identity — this answers "ใช้ model ไหน" immediately:
+   ```json
+   {"t":"2026-07-16T05:40:12Z","agent":"fe","event":"started","model":"claude-sonnet-5","provider":"claude","role":"executor","step":"0/6","doing":"loading handoff + target files"}
+   ```
+2. **Per ordered step:** append one line when the step begins (`"event":"step"`, `"step":"3/6"`, `"doing":"<one short phrase>"`). One line per step — not per tool call; this is a heartbeat, not a transcript.
+3. **On exit:** append `"event":"finished|blocked"` with the final status before returning the handoff.
+
+The Leader includes this file path in the delegation packet and tells the owner where it is when dispatching ("progress: `.agrimap-agent/runtime/progress/<task-id>.jsonl`"). A subagent silent in this file for its whole run is a handoff-contract violation the Leader reports. The directory lives under ignored runtime state — never tracked, never audit evidence; durable attribution stays in `logs/`.
+
+Provider notes: on Claude Code the owner can also expand the running task in the UI/transcript view for the raw stream, and the `SubagentStart` hook already fires; the heartbeat file is still required because it is the only channel that is provider-independent and readable outside the UI.
 
 ## Required handoff
 

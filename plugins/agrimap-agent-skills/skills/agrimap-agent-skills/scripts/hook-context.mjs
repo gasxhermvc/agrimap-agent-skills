@@ -121,7 +121,26 @@ const previousHookState = mode === "task" && hookStatePath
   ? await readJson(hookStatePath)
   : null;
 
-const context = [
+// task mode (fires on every prompt) is silent by design: identity is asked once per
+// 24h at session start, and memory is loaded once per session — never re-injected
+// into every model call. Only two conditions may speak here.
+const context = [];
+
+if (mode === "task") {
+  if (!confirmedIdentity) {
+    context.push(
+      identity?.expired
+        ? `AgriMap: requester confirmation expired (last: ${identity.requestedBy}). Ask the human once for today's requester name, persist it with agm-workspace.mjs identify --session ${effectiveSessionId || "<stable-local-id>"} --owner <name>, then this reminder stops for 24h.`
+        : `AgriMap: session requester is unknown. Ask the human once for today's requester name, persist it with agm-workspace.mjs identify --session ${effectiveSessionId || "<stable-local-id>"} --owner <name>, then this reminder stops for 24h.`,
+    );
+  }
+  if (previousHookState && previousHookState.memoryFingerprint !== memoryFingerprint) {
+    context.push(
+      "AgriMap: task/project memory changed on disk since the last refresh — if you did not write that change yourself, reopen .agrimap-agent/memory/ before continuing.",
+    );
+  }
+} else {
+context.push(
   "AgriMap identity and audit context:",
   `- Hook flavor: ${provider} (the installed hook's configuration flag — NOT proof of the running provider)`,
   `- Hook mode: ${mode}`,
@@ -147,15 +166,17 @@ const context = [
   "- Durable audit rule: every task must record who requested what in its tracked brief and created log; checkpoint each atomic action with an accurate UTC timestamp.",
   "- For audit/history questions, run agm-workspace.mjs history with person/date/task filters; inspect attributionSemantics, auditStorage, invalidLines, and returned brief/result/QA/memory paths. Distinguish requester, workflow executor, claimed files, and Git author; never answer from conversational recall alone.",
   "- Durable project memory is .agrimap-agent/memory/project.md; reopen it when context was compacted or current project facts are needed.",
-];
+);
+}
 
-if (activeTask?.taskId) {
-  context.push(`- Active task: ${activeTask.taskId} (${activeTask.operation || "unspecified"}).`);
+if (mode !== "task" && activeTask?.taskId) {
+  context.push(`- Active task: ${activeTask.taskId} (${activeTask.operation || "unspecified"}) — pending work carried over; reconcile or close it before starting unrelated work.`);
 }
 
 if (mode === "subagent") {
   context.push(
     "- Inherit requestedBy from the Leader handoff/session and identify model, role, agent, and provider separately.",
+    "- First action before any work: append your identity line to .agrimap-agent/runtime/progress/<task-id>.jsonl, then one heartbeat line per ordered step and a finished/blocked line on exit (see subagents-and-branches.md). The owner watches this file while the UI shows only 'Waiting for subagent…'.",
     "- Read workspace_need before any write. Verify the required mode, base commit, visibility, ownership, and integration-return method; report unsupported isolation and use only the named fallback.",
     "- Write only the files and logical contract assigned to you. One writer owns them per integration wave; stop and report overlap not resolved by the Leader.",
     "- Do not assume a sandbox branch or commit is visible. Return the requested integration artifact for the verified workspace mode.",
@@ -168,14 +189,10 @@ if (mode !== "task") {
     "- Read the umbrella skill before using an agm workflow.",
     "- Do not add permission gates. Discuss only material logic/contract/data/architecture trade-offs.",
     "- Update memory and concise logs after every atomic task; do not claim completion with unchecked items.",
+    "- Memory loading policy: this one-time load (plus the pending-work summary above) is the memory context for the whole session. It is not re-injected on later prompts; reopen the memory files yourself only after context compaction or an on-disk change notice.",
   );
   if (projectMemory) context.push("\nCurrent project memory:\n", projectMemory);
-  if (currentTaskMemory) context.push("\nCurrent task memory:\n", currentTaskMemory);
-} else if (currentTaskMemory && previousHookState?.memoryFingerprint !== memoryFingerprint) {
-  if (projectMemory) context.push("\nProject memory (changed since the last hook refresh):\n", projectMemory);
-  context.push("\nCurrent task memory (changed since the last hook refresh):\n", currentTaskMemory);
-} else if (projectMemory && previousHookState?.memoryFingerprint !== memoryFingerprint) {
-  context.push("\nProject memory (changed since the last hook refresh):\n", projectMemory);
+  if (currentTaskMemory) context.push("\nCurrent task memory (pending work to reconcile):\n", currentTaskMemory);
 }
 
 const hookEventName = input.hook_event_name || input.hookEventName || "SessionStart";

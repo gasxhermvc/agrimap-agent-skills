@@ -2,6 +2,25 @@
 
 Select the smallest set of roles that covers the task. The Leader may perform a technical role directly or delegate it, but an implementation writer must not act as its own final QA model.
 
+## Role sitemap — บทบาททั้งหมดในหน้าเดียว
+
+| บทบาท | กลุ่ม | หน้าที่หนึ่งบรรทัด | เขียนโปรเจกต์? | หมายเหตุ |
+|---|---|---|---|---|
+| **Leader / Integrator** | Orchestration | intake, แตกงาน, จ่ายงาน, รวมผล, ส่ง QA, ปิด memory | ✅ (เมื่อทำเองไม่ delegate) | ห้าม QA งานที่ตัวเองเขียน |
+| **Analyst / Problem Solver** | Thinking | หา root/hidden problem + ตัวเลือก + trade-off | ❌ read-only | ผลลัพธ์คือ analysis ไม่ใช่โค้ด |
+| **Architect** | Thinking | boundaries, ownership, contracts, migration → decision record | ❌ read-only | 1 topic = 1 approved record |
+| **Designer** | Thinking | user flow, states, acceptance criteria | ❌ read-only | แยก aesthetic ออกจาก behavior |
+| **Frontend Engineer** | Passive discipline | กติกา FE (detect fe-main/fe-library, facade+signal, reuse) | — (ซ้อนบนบทบาทอื่น) | ติดอัตโนมัติทุกงาน FE ไม่มีคำสั่งแยก |
+| **Backend Engineer** | Passive discipline | กติกา BE (detect agmws/agmbo/library, layer placement) | — (ซ้อนบนบทบาทอื่น) | ติดอัตโนมัติทุกงาน BE ไม่มีคำสั่งแยก |
+| **Database Engineer** | Technical | schema/procedure/query กับ DDL Standard + golden SQL | ✅ ใน write operation | ห้าม invent relationship/index/seed |
+| **Implementation / Dev Engineer** | Execution | แปลง checklist ที่อนุมัติเป็นโค้ดเล็กที่สุดที่ครบ | ✅ ตาม confirmed scope | คืน Result Package ให้ Leader+QA |
+| **QA / Quality Control** | Verification | inspect, find, report — pattern conformance + evidence | ❌ read-only เด็ดขาด | ไม่มี side-effect execution ทุกชนิด |
+
+การซ้อนบทบาท: งานหนึ่งชิ้น = บทบาทหลัก 1 ตัว (แถว Orchestration/Thinking/Execution/Verification)
++ discipline ที่ติดอัตโนมัติตาม scope (FE/BE) — เช่น "แก้ facade ในแอป" = Implementation Engineer
++ Frontend Engineer discipline ส่วน "เขียนโปรเจกต์?" ต้องสอดคล้องกับ Operation write boundary
+ใน [workflows.md](workflows.md) เสมอ — บทบาท read-only ใต้ operation read-only ไม่มีข้อยกเว้น
+
 ## Leader / Integrator
 
 - Use a frontier-capability model for this role when available. `leader` is the role; `frontier_analysis` is a capability profile, not an execution name.
@@ -74,7 +93,7 @@ Select the smallest set of roles that covers the task. The Leader may perform a 
 
 - Run in an independent read-only subagent/context after the implementation handoff is integrated.
 - Load the scope's pattern discipline (router pattern file + selected golden entries) and run its Detect gates — pattern conformance is required QA evidence, not optional context.
-- Keep verification depth proportional: static/parse checks and Detect gates are the default for SQL DDL/procedures; live database execution only on owner request or uncovered data-behavior risk.
+- Keep verification depth proportional: `qa_mode=fast` (Detect gates + parse/typecheck, no test-suite runs) is the default; run `full` (adds proportional build/tests) only on the escalation triggers in [qa-and-done.md](qa-and-done.md) and record the mode used.
 - Derive test evidence from requirements, risk, and the pre-work checklist.
 - Verify the implemented behavior and nearby regression surface.
 - Reopen changed files and independently rerun selected claimed checks; treat a Result Package as testimony, not proof.

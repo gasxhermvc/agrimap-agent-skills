@@ -27,6 +27,28 @@
 
 QA's entire output is its report: findings with severity, file/line, evidence, and impact, written to the task's `qa.md` plus the returned status. Found a problem → record it and return `failed`; cannot verify without a forbidden action → return `blocked` naming the missing evidence — never perform the forbidden action to unblock yourself.
 
+## QA depth modes — `fast` (default) / `full`
+
+รัน test จริงเป็นช่วง ๆ ก็พอ (owner decision 2026-07-16) — ไม่ใช่ทุกรอบ:
+
+| mode | ทำอะไร | เมื่อไร |
+|---|---|---|
+| `fast` (**default**) | pattern Detect gates + parse/typecheck/lint + เปิด diff ตรวจ requirement/contract — **ไม่รัน test suite, ไม่ build เต็ม** | ทุกงานระหว่าง iterate |
+| `full` | ทุกอย่างใน `fast` + build + test suite ที่เกี่ยวข้อง (proportional, non-mutating เช่นเดิม) | ตาม trigger ด้านล่าง |
+
+**Escalate เป็น `full` เมื่อข้อใดข้อหนึ่งจริง:**
+
+- งานกำลังปิดเข้า commit / publish / release boundary (ด่านสุดท้ายก่อนของออกจากมือ);
+- การเปลี่ยนแตะ public contract, data behavior, generated-code regeneration, หรือ migration;
+- QA รอบก่อนของงานเดียวกันคืน `failed` (retest ต้องเต็ม);
+- มี `fast` ผ่านติดกันหลายงานบนพื้นที่โค้ดเดียวกันโดยยังไม่เคยรัน `full` เลย — อย่าปล่อยให้ test ไม่ถูกรันจนถึงวันปล่อยของ;
+- owner สั่ง `qa_mode=full` เอง
+
+กติกาคงเดิมทุกข้อ: `fast` ไม่ลดรั้ว read-only, ไม่ลดมิติที่ตรวจ (pattern conformance ยังบังคับ),
+และ `qa.md` ต้องระบุ mode ที่ใช้ + เหตุผล เสมอ เพื่อให้ history เห็นว่ารอบไหนตรวจลึกแค่ไหน
+`fast` ที่ `passed` ปิด task ได้ตามปกติ แต่ **commit/publish boundary ต้องมี `full` ที่ `passed`
+ครอบพื้นที่นั้นอย่างน้อยหนึ่งครั้ง** ก่อนของออกจริง
+
 ## QA sequence
 
 1. Use an independent read-only QA subagent/context that did not write the implementation. Give it no file ownership and no instruction to fix findings.
@@ -73,7 +95,7 @@ Do not say complete unless:
 - a failed gate leaves active task state, current memory, recent memory, and completion logs unchanged;
 - remaining concerns are explicitly separated as follow-up work;
 - effects outside the approved scope are opened as a new task/conversation with a pointer in current memory instead of silently extending the task;
-- the recommended commit boundary is stated.
+- the recommended commit boundary is stated — and when that boundary is an actual commit/publish/release, the touched area is covered by at least one `passed` `qa_mode=full` run (a chain of `fast`-only passes cannot carry code out the door).
 
 ## Final result fields
 
@@ -84,4 +106,5 @@ Do not say complete unless:
 - checklist status;
 - memory/log updates;
 - concerns and next tasks;
+- **Outstanding items** — open Pending issues ledger entries (carried + new), or explicit `no pending issues`; never omit this field;
 - commit/branch recommendation.
