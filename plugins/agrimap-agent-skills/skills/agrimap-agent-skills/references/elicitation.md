@@ -1,5 +1,15 @@
 # Elicitation and parameter resolution
 
+## สารบัญ
+
+- [Resolution ladder](#resolution-ladder)
+- [Tiers](#tiers)
+- [Batched questions](#batched-questions)
+- [Do not rush](#do-not-rush)
+- [Per-operation resolution](#per-operation-resolution)
+- [Propose-first creation](#propose-first-creation)
+- [Refactor mode menu](#refactor-mode-menu)
+
 Reduce parameter hallucination. An agent must never invent an input value that changes a behavior contract. This discipline defines how every operation resolves its inputs from a short, friendly command, and when and how to ask.
 
 ## Resolution ladder

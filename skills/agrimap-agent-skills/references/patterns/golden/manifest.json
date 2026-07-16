@@ -33,7 +33,7 @@
         "inconsistent async naming",
         "Presentation DTO leakage into repository boundaries",
         "ambiguous Domain versus persistence model placement",
-        "illustrative .json files are not valid JSON fixtures"
+        "legacy response shapes are JSONC examples inside one Markdown reference, not JSON fixtures"
       ]
     },
     "backend-libraries": {

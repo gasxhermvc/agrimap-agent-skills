@@ -7,6 +7,8 @@
 - Leader agent: {{agent_name}}
 - Leader provider: {{provider}}
 - QA status: `{{qa_status}}`
+- QA mode: `{{qa_mode}}`
+- Delivery boundary: `{{delivery_boundary}}`
 
 ## Decisions
 
@@ -27,6 +29,10 @@
 {{remaining_concerns}}
 
 {{commit_recommendation}}
+
+## Outstanding items
+
+{{outstanding_items_or_no_pending_issues}}
 
 ## Next-task prompt when QA failed
 

@@ -22,5 +22,6 @@
     "defaultPrompt": [
       "$agrimap-agent-skills route and execute this engineering task."
     ]
-  }
+  },
+  "hooks": "./hooks/codex-hooks.json"
 }

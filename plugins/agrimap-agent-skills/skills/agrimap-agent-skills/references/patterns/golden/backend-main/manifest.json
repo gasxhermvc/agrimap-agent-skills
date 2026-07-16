@@ -193,44 +193,13 @@
       "sha256": "cf45618c6d8e2c239e07c79dd75f2f02e1546b1364bd58117f72c0b6f6b91a93"
     },
     {
-      "fileName": "024-10-response-structure-reference.json",
+      "fileName": "024-10-response-structure-reference.md",
       "heading": "10) Response Structure Reference",
-      "language": "json",
-      "lineEnd": 1068,
-      "lineStart": 1056,
-      "sha256": "9e43910f27660c6bf4557dd1cf0eb0f19dd08422c93c0cc3328cfc8f5761f468"
-    },
-    {
-      "fileName": "025-10-response-structure-reference.json",
-      "heading": "10) Response Structure Reference",
-      "language": "json",
-      "lineEnd": 1082,
-      "lineStart": 1070,
-      "sha256": "2ad279f6100b3d2e774a2473fb93fff640baafdd0663a866e634a02bc0a5f260"
-    },
-    {
-      "fileName": "026-10-response-structure-reference.json",
-      "heading": "10) Response Structure Reference",
-      "language": "json",
-      "lineEnd": 1093,
-      "lineStart": 1084,
-      "sha256": "978fef84aeef4ecd41e3ec838164381bacffc8e7685aa91d6b1e6ef7fed21969"
-    },
-    {
-      "fileName": "027-10-response-structure-reference.json",
-      "heading": "10) Response Structure Reference",
-      "language": "json",
-      "lineEnd": 1104,
-      "lineStart": 1095,
-      "sha256": "3dca74a6025a8a05c81c60aad4d7184e72f815ccd4ec3a692b046922c078f837"
-    },
-    {
-      "fileName": "028-10-response-structure-reference.json",
-      "heading": "10) Response Structure Reference",
-      "language": "json",
+      "language": "markdown",
       "lineEnd": 1113,
-      "lineStart": 1106,
-      "sha256": "c00ea5cef63db88569390ba4327fe8cec159b436f18d5f5c2b4d382f357ed246"
+      "lineStart": 1056,
+      "note": "Five adjacent raw JSONC response fragments are preserved verbatim inside one Markdown container; this is not a JSON fixture.",
+      "sha256": "594cc8a39d9d35449c54aed574beb7e668ad239feaf8b3a38186c18e66315bae"
     },
     {
       "fileName": "029-12-comment-reference.cs",

@@ -1,0 +1,37 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${PLUGIN_ROOT}/skills/agrimap-agent-skills/scripts/hook-context.mjs\" --provider codex --mode session",
+            "statusMessage": "Loading AgriMap task memory"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${PLUGIN_ROOT}/skills/agrimap-agent-skills/scripts/hook-context.mjs\" --provider codex --mode task",
+            "statusMessage": "Refreshing AgriMap task context"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${PLUGIN_ROOT}/skills/agrimap-agent-skills/scripts/hook-context.mjs\" --provider codex --mode subagent",
+            "statusMessage": "Loading AgriMap handoff contract"
+          }
+        ]
+      }
+    ]
+  }
+}

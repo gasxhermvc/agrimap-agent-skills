@@ -53,6 +53,8 @@ for (const required of [
   "skills/agrimap-agent-skills/SKILL.md",
   "plugins/agrimap-agent-skills/.codex-plugin/plugin.json",
   "plugins/agrimap-agent-skills/.claude-plugin/plugin.json",
+  "plugins/agrimap-agent-skills/hooks/codex-hooks.json",
+  "plugins/agrimap-agent-skills/hooks/claude-hooks.json",
   ".agents/plugins/marketplace.json",
   ".claude-plugin/marketplace.json",
   "gemini-extension.json",
@@ -68,6 +70,7 @@ for (const required of [
   "tests/helpers/harness.mjs",
   "tests/unit/cli-args.test.mjs",
   "tests/unit/extract-code-blocks.test.mjs",
+  "tests/unit/fe-scenarios.test.mjs",
   "tests/unit/verify-golden.test.mjs",
   "tests/integration/package/usage.test.mjs",
   "tests/integration/workspace/workspace.test.mjs",
@@ -98,9 +101,12 @@ const codexMarketplace = await parseJson(".agents/plugins/marketplace.json");
 const claudeMarketplace = await parseJson(".claude-plugin/marketplace.json");
 const geminiExtension = await parseJson("gemini-extension.json");
 const geminiHooks = await parseJson("hooks/hooks.json");
-const pluginHooks = await parseJson("plugins/agrimap-agent-skills/hooks/hooks.json");
+const codexHooks = await parseJson("plugins/agrimap-agent-skills/hooks/codex-hooks.json");
+const claudeHooks = await parseJson("plugins/agrimap-agent-skills/hooks/claude-hooks.json");
 
 if (!packageManifest?.scripts?.test?.includes("npm run verify:golden")) errors.push("npm test must include golden verification.");
+if (!packageManifest?.scripts?.test?.includes("npm run validate")) errors.push("npm test must include package validation before behavioral suites.");
+if (!packageManifest?.scripts?.["test:unit"]?.includes("fe-scenarios.test.mjs")) errors.push("Frontend scenario eval is not wired into the automated unit suite.");
 for (const scriptName of ["test:unit", "test:integration", "test:workspace", "test:usage"]) {
   if (!packageManifest?.scripts?.[scriptName]) errors.push(`package.json script is missing: ${scriptName}`);
 }
@@ -113,6 +119,7 @@ if (!/^---\r?\nname: agrimap-agent-skills\r?\ndescription: .+\r?\n---/s.test(can
 if (canonicalSkill.split(/\r?\n/).length > 500) errors.push("Canonical SKILL.md exceeds 500 lines.");
 for (const marker of ["Answer audit/history questions", "conversational recall alone", "created event must preserve the requested objective"])
   if (!canonicalSkill.includes(marker)) errors.push(`Canonical audit/history contract missing marker: ${marker}`);
+if (!canonicalSkill.includes("[fe-scenarios.md](references/evals/fe-scenarios.md)")) errors.push("Frontend eval catalog is unreachable from SKILL.md.");
 
 const memoryAndLogsReference = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "memory-and-logs.md"), "utf8");
 const documentedLogEvents = memoryAndLogsReference.match(/"event":\s*"([^"]+)"/)?.[1]?.split("|") || [];
@@ -125,6 +132,8 @@ if (!workspaceScriptReference.includes('from "./log-events.mjs"')) {
 }
 for (const marker of ["auditEventIssues", 'case "history"', "REQUEST_OBJECTIVE_REQUIRED", "TASK_ID_EXISTS", "AMBIGUOUS_ACTIVE_TASK"])
   if (!workspaceScriptReference.includes(marker)) errors.push(`Workspace audit implementation missing marker: ${marker}`);
+for (const marker of ['renderAssetTemplate("task-brief.md"', 'renderAssetTemplate("checklist.md"'])
+  if (!workspaceScriptReference.includes(marker)) errors.push(`Workspace scaffold must render canonical assets: ${marker}`);
 
 const syncAdapter = await readFile(path.join(root, "tools", "sync-adapters.mjs"), "utf8");
 if (!syncAdapter.includes("packageManifest.version")) errors.push("Sync adapter does not read the canonical package version.");
@@ -198,6 +207,8 @@ const modelMatrix = await readFile(path.join(root, "skills", "agrimap-agent-skil
 if (modelMatrix.includes("fable5")) errors.push("Fable is duplicated as fable and fable5 instead of one model label.");
 if (!modelMatrix.includes("fable: Fable 5")) errors.push("Fable 5 display label is missing.");
 if (!modelMatrix.includes("mode: sparse_overrides") || !modelMatrix.includes("fallback: model_key")) errors.push("Display-label fallback policy must declare sparse overrides with model-key fallback.");
+if (!/^  gemini:\r?$/m.test(modelMatrix) || !modelMatrix.includes("gemini-cli-default")) errors.push("Gemini model capability routing is missing.");
+if (!promptReference.includes("`codex`, `claude`, or `gemini`") || !promptReference.includes("### Gemini")) errors.push("create-prompt Gemini provider rendering is missing.");
 
 const rootIgnore = await readFile(path.join(root, ".gitignore"), "utf8").catch(() => "");
 if (!rootIgnore.split(/\r?\n/).includes(".agrimap-agent/")) errors.push("Development repository must ignore its entire local .agrimap-agent state.");
@@ -205,6 +216,21 @@ if (!rootIgnore.split(/\r?\n/).includes(".agrimap-agent/")) errors.push("Develop
 const goldenManifest = await parseJson("skills/agrimap-agent-skills/references/patterns/golden/manifest.json");
 if (goldenManifest?.annotation !== "../conflict-resolution.md") errors.push("Golden manifest does not point to the canonical conflict annotation.");
 if (packageManifest?.repository?.url !== "git+https://github.com/gasxhermvc/agrimap-agent-skills.git") errors.push("Package repository URL is invalid.");
+
+const referenceRoot = path.join(root, "skills", "agrimap-agent-skills", "references");
+for (const file of (await filesUnder(referenceRoot)).filter((candidate) => candidate.endsWith(".md") && !candidate.includes(`${path.sep}patterns${path.sep}golden${path.sep}`))) {
+  const content = await readFile(file, "utf8");
+  if (content.split(/\r?\n/).length > 100 && !/^## (?:สารบัญ|Table of contents|Contents)\s*$/m.test(content.split(/\r?\n/).slice(0, 45).join("\n"))) {
+    errors.push(`${path.relative(root, file)}: reference over 100 lines must include a top-level table of contents near the start.`);
+  }
+}
+for (const file of (await filesUnder(path.join(referenceRoot, "patterns", "golden"))).filter((candidate) => candidate.endsWith(".json"))) {
+  try {
+    JSON.parse(await readFile(file, "utf8"));
+  } catch (error) {
+    errors.push(`${path.relative(root, file)}: .json golden file is not strict JSON: ${error.message}`);
+  }
+}
 
 if (await exists(path.join(root, ".agm"))) errors.push("Legacy .agm directory must not exist.");
 if (await exists(path.join(root, ".agrimap-agent", "owner.json"))) errors.push("Shared owner.json must not exist.");
@@ -218,8 +244,14 @@ if (codexMarketplace?.plugins?.[0]?.source?.path !== "./plugins/agrimap-agent-sk
 if (claudeMarketplace?.plugins?.[0]?.source !== "./plugins/agrimap-agent-skills") errors.push("Claude marketplace source path is invalid.");
 if (claudeMarketplace?.plugins?.[0]?.version !== packageManifest?.version) errors.push(`Claude marketplace version differs from package version ${packageManifest?.version}.`);
 if (!geminiHooks?.hooks?.SessionStart || !geminiHooks?.hooks?.BeforeAgent) errors.push("Gemini context hooks are incomplete.");
-if (!pluginHooks?.hooks?.SessionStart || !pluginHooks?.hooks?.UserPromptSubmit || !pluginHooks?.hooks?.SubagentStart) errors.push("Claude context hooks are incomplete.");
-const claudeHookCommands = hookCommands(pluginHooks);
+if (codexPlugin?.hooks !== "./hooks/codex-hooks.json") errors.push("Codex manifest must select the Codex-specific hook file.");
+if (claudePlugin?.hooks !== "./hooks/claude-hooks.json") errors.push("Claude manifest must select the Claude-specific hook file.");
+if (await exists(path.join(root, "plugins", "agrimap-agent-skills", "hooks", "hooks.json"))) errors.push("Ambiguous default plugin hooks/hooks.json must not exist.");
+if (!codexHooks?.hooks?.SessionStart || !codexHooks?.hooks?.UserPromptSubmit || !codexHooks?.hooks?.SubagentStart) errors.push("Codex context hooks are incomplete.");
+if (!claudeHooks?.hooks?.SessionStart || !claudeHooks?.hooks?.UserPromptSubmit || !claudeHooks?.hooks?.SubagentStart) errors.push("Claude context hooks are incomplete.");
+const codexHookCommands = hookCommands(codexHooks);
+if (!codexHookCommands.length || codexHookCommands.some((command) => !command.includes("--provider codex") || !command.includes("${PLUGIN_ROOT}"))) errors.push("Codex hooks must pass an explicit codex provider and use PLUGIN_ROOT.");
+const claudeHookCommands = hookCommands(claudeHooks);
 if (!claudeHookCommands.length || claudeHookCommands.some((command) => !command.includes("--provider claude"))) errors.push("Claude hooks must pass an explicit claude provider.");
 const geminiHookCommands = hookCommands(geminiHooks);
 if (!geminiHookCommands.length || geminiHookCommands.some((command) => !command.includes("--provider gemini"))) errors.push("Gemini hooks must pass an explicit gemini provider.");

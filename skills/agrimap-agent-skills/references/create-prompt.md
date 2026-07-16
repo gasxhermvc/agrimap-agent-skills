@@ -1,5 +1,20 @@
 # Create-prompt workflow
 
+## สารบัญ
+
+- [Staged elicitation contract](#staged-elicitation-contract)
+- [Prompt file naming and lifecycle](#prompt-file-naming-and-lifecycle)
+- [Required input variables](#required-input-variables)
+- [Build the prompt](#build-the-prompt)
+- [Delegation overlap contract](#delegation-overlap-contract)
+- [Workspace-need contract](#workspace-need-contract)
+- [File and step contracts](#file-and-line-contract)
+- [Prompt SoT and deviation contract](#prompt-sot-and-deviation-contract)
+- [Input contract](#input-contract)
+- [Provider rendering](#provider-rendering)
+- [Generated prompt sections](#generated-prompt-sections)
+- [Prompt QA](#prompt-qa)
+
 Generate prompts that a lightweight executor can run without reconstructing the Leader model's reasoning. The approved prompt is the execution source of truth for one task: use plain, direct language while keeping every material contract explicit. Create separate prompts for Leader, executor, and independent read-only QA when implementation is delegated.
 
 ## Staged elicitation contract
@@ -29,7 +44,7 @@ Use these names in the generated prompt manifest:
 - `prompt_role`: `leader`, `executor`, or `qa`
 - `prompt_status`: `draft`, `owner-approved`, `superseded`, or `executed`
 - `task_id`
-- `provider`: `codex` or `claude`
+- `provider`: `codex`, `claude`, or `gemini`
 - `operation`
 - `objective`
 - `non_goals`
@@ -145,6 +160,12 @@ Carry the normalized input manifest into the prompt. For large text, list read c
 - Use `/plugin:skill` or the installed standalone `/skill` syntax.
 - Name the selected Claude model/agent in delegation metadata when supported.
 - Include `$ARGUMENTS` only in thin command adapters, not in generated execution prompts.
+
+### Gemini
+
+- Use the installed `/agm-*` custom command or the umbrella skill name supported by the active Gemini CLI extension; do not emit Codex `$skill-name` or Claude `/plugin:skill` syntax.
+- Record `provider: gemini` and the exact active Gemini model when the host exposes it. If the matrix selects `gemini-cli-default`, resolve that routing label at dispatch and record the actual model in execution identity.
+- Keep generated execution prompts in plain Markdown. Use `{{args}}` only in generated Gemini command adapters, never inside the execution prompt itself.
 
 ## Generated prompt sections
 

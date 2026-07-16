@@ -1,5 +1,15 @@
 # Subagents and branches
 
+## สารบัญ
+
+- [Decompose](#decompose)
+- [Workspace modes](#workspace-modes)
+- [Branch and worktree](#branch-and-worktree)
+- [Overlap check before dispatch](#overlap-check-before-dispatch)
+- [Delegation packet](#delegation-packet)
+- [Progress heartbeat](#progress-heartbeat--ให้-owner-ดูได้ว่า-subagent-ยังทำงานอยู่และเป็นใคร)
+- [Required handoff](#required-handoff)
+
 ## Decompose
 
 - Use at most five active subagents.

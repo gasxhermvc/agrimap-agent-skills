@@ -1,5 +1,16 @@
 # Pattern conflict resolution
 
+## สารบัญ
+
+- [Decision precedence](#decision-precedence)
+- [Statuses](#statuses)
+- [Frontend main conflict matrix](#frontend-main-conflict-matrix)
+- [Frontend libraries conflict matrix](#frontend-libraries-conflict-matrix)
+- [Backend main conflict matrix](#backend-main-conflict-matrix)
+- [SQL conflict matrix](#sql-conflict-matrix)
+- [Copy-readiness gate](#copy-readiness-gate)
+- [Owner tour backlog](#owner-tour-backlog)
+
 Use this file before using any golden material. First read `golden/manifest.json` and the selected collection manifest:
 
 - `evidenceMode=curated-reference`: maintained AgriMap guidance. Correct it together with its manifest hash when the owner updates the standard.

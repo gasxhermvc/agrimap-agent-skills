@@ -1,5 +1,19 @@
 # Workflows
 
+## สารบัญ
+
+- [Task lifecycle](#task-lifecycle--ทุก-operation-วิ่งผ่าน-6-กระบวนการนี้)
+- [Operation write boundary](#operation-write-boundary--รั้วเดียว-ใช้ทุกคำสั่ง)
+- [Problem reporting](#problem-reporting--กระบวนการแจ้งปัญหา-cross-cutting)
+- [Choosing an operation](#choosing-an-operation)
+- [`/agm-analyze` through `/agm-history`](#agm-analyze)
+- [Refactor workflows](#agm-refactor-fe-agm-refactor-be-agm-refactor-sql)
+- [`/agm-qa`](#agm-qa)
+- [`/agm-create-unit-test`](#agm-create-unit-test)
+- [`/agm-create-feature`](#agm-create-feature)
+- [`/agm-create-prompt`](#agm-create-prompt)
+- [`/agm-exec`](#agm-exec)
+
 Use this router after intake and impact analysis. Combine a workflow with the relevant technical role; do not treat command names as permission gates. Automatically compose the passive [Front-end Engineer discipline](frontend-engineer.md) for FE targets and [Back-end Engineer discipline](backend-engineer.md) for BE targets. Resolve missing inputs with [elicitation.md](elicitation.md) before asking anything.
 
 ## Task lifecycle — ทุก operation วิ่งผ่าน 6 กระบวนการนี้

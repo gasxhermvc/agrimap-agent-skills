@@ -1,8 +1,0 @@
-// Complex response structure
-{
-  "data": {
-    "source_info": {...},
-    "widget_list": []
-  },
-  "message": "string"
-}

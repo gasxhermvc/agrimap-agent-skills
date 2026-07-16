@@ -2,6 +2,9 @@
 
 - Task ID: `{{task_id}}`
 - Requested by: {{requested_by}}
+- Requester ID: {{requester_id_or_not_recorded}}
+- Identity source: `{{identity_source}}`
+- Session: `{{session_id}}`
 - Model: `{{actual_model_or_unknown}}`
 - Role: `{{role}}`
 - Agent: `{{agent_name}}`

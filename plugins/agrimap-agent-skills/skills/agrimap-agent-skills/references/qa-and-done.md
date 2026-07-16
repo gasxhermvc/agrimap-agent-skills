@@ -1,5 +1,15 @@
 # QA and done contract
 
+## สารบัญ
+
+- [QA verification scope](#qa-verification-scope--inspect-find-report-nothing-else)
+- [QA depth modes](#qa-depth-modes--fast-default--full)
+- [QA sequence](#qa-sequence)
+- [QA status](#qa-status)
+- [Leader after QA](#leader-after-qa)
+- [Completion gate](#completion-gate)
+- [Final result fields](#final-result-fields)
+
 ## QA verification scope — inspect, find, report; nothing else
 
 **What QA reviews (the whole scope, per task relevance):**
@@ -88,6 +98,7 @@ Do not say complete unless:
 - changed points and impact were inspected;
 - proportional verification passed;
 - Leader reviewed all handoffs and an independent QA model verified the integrated artifact;
+- `qa.md` records `qa_mode=fast|full`, exact loaded pattern files (or a reason none apply), separate QA and implementation identities, and read-only status;
 - QA status is `passed` or justified `not-applicable`;
 - result, memory, knowledge/decision updates, and concise logs are written;
 - brief, checklist, QA, and result artifacts contain no unresolved workflow template tokens or standalone scaffold values outside fenced evidence; unrelated domain template syntax such as Angular moustache expressions remains valid;
@@ -100,6 +111,7 @@ Do not say complete unless:
 ## Final result fields
 
 - outcome;
+- QA status/mode and delivery boundary;
 - owner-approved decisions;
 - files and behavior changed;
 - verification evidence;

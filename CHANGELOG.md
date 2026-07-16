@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.1 - 2026-07-16
+
+- Split Codex and Claude plugin hooks into explicitly selected provider-specific files; Gemini retains its extension hooks.
+- Added Gemini prompt rendering and model-capability routing without inventing a fixed live model name.
+- Enforced QA mode, pattern evidence, separate implementation/QA identity, delivery boundary, and Outstanding items in task completion validation.
+- Updated silent task-hook integration expectations and restored green workspace/package tests.
+- Linked frontend scenario evals from the skill and wired their structural contract into the automated unit suite.
+- Added tables of contents to long operational references for selective loading.
+- Consolidated five non-parseable legacy response-shape `.json` fragments into one clearly labeled Markdown reference.
+
 ## 0.1.0 - 2026-07-14
 
 - Created the `agrimap-agent-skills` umbrella workflow and `/agm-*` provider adapters.

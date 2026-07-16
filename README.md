@@ -135,6 +135,7 @@ Commit `.agrimap-agent/tasks`, `memory/project.md`, task-scoped `memory/current|
 | `agm-create-unit-test` | target-specific tests |
 | `agm-create-feature` | FE/BE/batch/library/SQL feature |
 | `agm-create-prompt` | provider/model-aware delegation prompts |
+| `agm-exec` | execute one owner-approved prompt under task/QA rails |
 
 Audit examples:
 
@@ -180,7 +181,7 @@ Foundation reuses `agrimap.platform` before creating Core infrastructure. Active
 
 ## Model labels and prompt generation
 
-The default capability matrix preserves Billy's configurable labels. Claude reasoning/review uses `fable` (displayed as Fable 5) or `opus4.8`; the same `fable` model is also the hard executor, while standard/light execution uses `sonnet5`, `sonnet4.6`, or `haiku4.5`. Codex reasoning/review uses `GPT-5.6-sol`; execution uses `gpt-5.6-sol`, `gpt-5.4`, or `gpt-5.4-mini`.
+The default capability matrix preserves Billy's configurable labels. Claude reasoning/review uses `fable` (displayed as Fable 5) or `opus4.8`; the same `fable` model is also the hard executor, while standard/light execution uses `sonnet5`, `sonnet4.6`, or `haiku4.5`. Codex reasoning/review uses `GPT-5.6-sol`; execution uses `gpt-5.6-sol`, `gpt-5.4`, or `gpt-5.4-mini`. Gemini uses `gemini-cli-default` as a routing label that must resolve to the actual active model at dispatch.
 
 These are owner-editable routing labels, not hardcoded provider claims. Override model names in `.agrimap-agent/model-capability-matrix.yaml` or the generated prompt without weakening the workflow contract.
 
@@ -193,10 +194,10 @@ Implementation and final QA are separate responsibilities. The Leader integrates
 If QA fails, the Leader records `qa-failed`, summarizes the evidence, and prepares a correction prompt for a new task. It does not edit the failed implementation inside the task under verification:
 
 ```powershell
-node <installed-package>\skills\agrimap-agent-skills\scripts\agm-workspace.mjs close --cwd . --session <session-id> --task <failed-task-id> --status qa-failed --next-prompt .agrimap-agent/prompts/<new-task-id>/executor.md
+node <installed-package>\skills\agrimap-agent-skills\scripts\agm-workspace.mjs close --cwd . --session <session-id> --task <failed-task-id> --status qa-failed --next-prompt .agrimap-agent/prompts/<new-task-id>/executor.prompt.md
 ```
 
-`complete` remains reserved for a checked checklist plus passed or justified not-applicable QA.
+`complete` remains reserved for a checked checklist plus machine-validated QA mode, named patterns, independent QA/implementation identities, delivery boundary, passed or justified not-applicable QA, and an Outstanding items section. Commit/publish/release boundaries require `qa_mode=full`.
 
 ## State and log location
 
@@ -228,14 +229,17 @@ Every delegation prompt states isolation need, requested mode, base ref/commit, 
 
 No license is committed yet. MIT is the recommended license for the skill engine and newly authored documentation, but preserved golden examples must first be confirmed as publishable by their rights holder or sanitized/excluded. A public repository without a license is visible but does not grant general reuse rights.
 
-## Missing pattern examples
+## Remaining pattern-example gaps
 
-The package deliberately does not invent company conventions. These example sets are still needed to promote patterns from `missing-owner-example`:
+The package deliberately does not invent company conventions. Current collections are usable; only targeted gaps should be requested when they can change the active task:
 
-- FE library public API/service/generated API/consumer/test
-- BE library README and Playground
-- `agmbo` `Infrastructure/TaskScheduler.cs`
-- FE/BE/SQL unit-test conventions
+These unresolved rows retain `missing-owner-example` status until owner evidence is added.
+
+- FE library minor/major semver triggers and richer assertions beyond smoke coverage;
+- BE main repository/domain/response choices where neighboring code conflicts, plus representative tests;
+- `agmbo` scheduler/retry/concurrency examples and run commands;
+- BE library compatibility cases and representative tests beyond Playground/smoke paths;
+- project-specific SQL relationship/deployment/test conventions.
 
 See `skills/agrimap-agent-skills/references/patterns/owner-example-intake.md` for the exact files, symbols, naming, comments, and commands to provide. Raw examples stay immutable; annotation and status live separately.
 

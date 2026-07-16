@@ -35,6 +35,7 @@ for (const item of operations.operations) {
 const codexManifestPath = path.join(pluginRoot, ".codex-plugin", "plugin.json");
 const codexManifest = JSON.parse(await readFile(codexManifestPath, "utf8"));
 codexManifest.version = packageVersion;
+codexManifest.hooks = "./hooks/codex-hooks.json";
 await writeFile(codexManifestPath, `${JSON.stringify(codexManifest, null, 2)}\n`, "utf8");
 
 const claudeMarketplacePath = path.join(root, ".claude-plugin", "marketplace.json");
@@ -53,49 +54,65 @@ await writeFile(
     description: "Cross-agent AgriMap engineering workflows, patterns, memory, and QA",
     version: packageVersion,
     author: { name: "Billy" },
+    hooks: "./hooks/claude-hooks.json",
   }, null, 2)}\n`,
   "utf8",
 );
 
-const pluginHooks = {
-  hooks: {
-    SessionStart: [
-      {
-        hooks: [
-          {
-            type: "command",
-            command: "node \"${CLAUDE_PLUGIN_ROOT}/skills/agrimap-agent-skills/scripts/hook-context.mjs\" --provider claude --mode session",
-            statusMessage: "Loading AgriMap task memory",
-          },
-        ],
-      },
-    ],
-    UserPromptSubmit: [
-      {
-        hooks: [
-          {
-            type: "command",
-            command: "node \"${CLAUDE_PLUGIN_ROOT}/skills/agrimap-agent-skills/scripts/hook-context.mjs\" --provider claude --mode task",
-            statusMessage: "Refreshing AgriMap task context",
-          },
-        ],
-      },
-    ],
-    SubagentStart: [
-      {
-        hooks: [
-          {
-            type: "command",
-            command: "node \"${CLAUDE_PLUGIN_ROOT}/skills/agrimap-agent-skills/scripts/hook-context.mjs\" --provider claude --mode subagent",
-            statusMessage: "Loading AgriMap handoff contract",
-          },
-        ],
-      },
-    ],
-  },
-};
-await mkdir(path.join(pluginRoot, "hooks"), { recursive: true });
-await writeFile(path.join(pluginRoot, "hooks", "hooks.json"), `${JSON.stringify(pluginHooks, null, 2)}\n`, "utf8");
+function providerHooks(provider, pluginRootToken) {
+  const script = `node \"${pluginRootToken}/skills/agrimap-agent-skills/scripts/hook-context.mjs\"`;
+  return {
+    hooks: {
+      SessionStart: [
+        {
+          hooks: [
+            {
+              type: "command",
+              command: `${script} --provider ${provider} --mode session`,
+              statusMessage: "Loading AgriMap task memory",
+            },
+          ],
+        },
+      ],
+      UserPromptSubmit: [
+        {
+          hooks: [
+            {
+              type: "command",
+              command: `${script} --provider ${provider} --mode task`,
+              statusMessage: "Refreshing AgriMap task context",
+            },
+          ],
+        },
+      ],
+      SubagentStart: [
+        {
+          hooks: [
+            {
+              type: "command",
+              command: `${script} --provider ${provider} --mode subagent`,
+              statusMessage: "Loading AgriMap handoff contract",
+            },
+          ],
+        },
+      ],
+    },
+  };
+}
+
+const hooksDirectory = path.join(pluginRoot, "hooks");
+await rm(hooksDirectory, { recursive: true, force: true });
+await mkdir(hooksDirectory, { recursive: true });
+await writeFile(
+  path.join(hooksDirectory, "codex-hooks.json"),
+  `${JSON.stringify(providerHooks("codex", "${PLUGIN_ROOT}"), null, 2)}\n`,
+  "utf8",
+);
+await writeFile(
+  path.join(hooksDirectory, "claude-hooks.json"),
+  `${JSON.stringify(providerHooks("claude", "${CLAUDE_PLUGIN_ROOT}"), null, 2)}\n`,
+  "utf8",
+);
 
 await rm(path.join(root, "commands"), { recursive: true, force: true });
 await mkdir(path.join(root, "commands"), { recursive: true });

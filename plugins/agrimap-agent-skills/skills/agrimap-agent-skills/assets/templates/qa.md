@@ -1,13 +1,18 @@
 # QA
 
 - Status: `passed|failed|blocked|not-applicable`
+- QA mode: `fast|full`
+- Patterns: {{loaded_pattern_files_or_none_with_reason}}
 - Requested by: {{requested_by}}
 - QA model: {{model}}
 - QA role: `qa`
 - QA agent: {{agent_name}}
 - QA provider: {{provider}}
 - Read-only: `true`
-- Implementation identity: {{implementation_model_role_agent_provider}}
+- Implementation model: {{implementation_model}}
+- Implementation role: {{implementation_role}}
+- Implementation agent: {{implementation_agent}}
+- Implementation provider: {{implementation_provider}}
 - Execution prompt SoT: {{prompt_path}}
 
 ## Requirement evidence

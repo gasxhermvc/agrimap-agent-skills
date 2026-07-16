@@ -13,6 +13,7 @@ import {
   writeFile,
 } from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { parseCliArgs } from "./cli-args.mjs";
 import {
   confirmationExpiry,
@@ -27,6 +28,7 @@ import { isLogEvent, logEventError } from "./log-events.mjs";
 const AUDIT_SCHEMA_VERSION = 2;
 const SUPPORTED_AUDIT_SCHEMA_VERSIONS = new Set([1, AUDIT_SCHEMA_VERSION]);
 const TERMINAL_AUDIT_EVENTS = new Set(["qa-failed", "blocked", "cancelled", "completed"]);
+const skillRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 function workspaceRoot(cwd) {
   try {
@@ -90,6 +92,14 @@ async function readJson(filePath) {
 async function writeJson(filePath, value) {
   await mkdir(path.dirname(filePath), { recursive: true });
   await writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+}
+
+async function renderAssetTemplate(fileName, replacements = {}) {
+  let content = await readFile(path.join(skillRoot, "assets", "templates", fileName), "utf8");
+  for (const [key, value] of Object.entries(replacements)) {
+    content = content.replaceAll(`{{${key}}}`, String(value));
+  }
+  return content.endsWith("\n") ? content : `${content}\n`;
 }
 
 function now() {
@@ -464,14 +474,26 @@ async function start(root, args) {
   if (!(await exists(path.join(taskPath, "brief.md")))) {
     await writeFile(
       path.join(taskPath, "brief.md"),
-      `# Task brief\n\n- Task ID: \`${taskId}\`\n- Requested by: ${requestedBy}\n- Requester ID: ${confirmedIdentity.requesterId || "Not recorded"}\n- Identity source: \`${confirmedIdentity.identitySource}\`\n- Session: \`${sessionId}\`\n- Model: \`${execution.model}\`\n- Role: \`${execution.role}\`\n- Agent: \`${execution.agent}\`\n- Provider: \`${execution.provider}\`\n- Operation: \`${operation}\`\n- Objective: ${objective}\n- Scope: Define before implementation.\n- Non-goals: Define before implementation.\n`,
+      await renderAssetTemplate("task-brief.md", {
+        task_id: taskId,
+        requested_by: requestedBy,
+        requester_id_or_not_recorded: confirmedIdentity.requesterId || "Not recorded",
+        identity_source: confirmedIdentity.identitySource,
+        session_id: sessionId,
+        actual_model_or_unknown: execution.model,
+        role: execution.role,
+        agent_name: execution.agent,
+        provider: execution.provider,
+        operation,
+        objective,
+      }),
       "utf8",
     );
   }
   if (!(await exists(path.join(taskPath, "checklist.md")))) {
     await writeFile(
       path.join(taskPath, "checklist.md"),
-      "# Checklist\n\n- [ ] Scope and impacts inspected.\n- [ ] Owner trade-offs resolved when material.\n- [ ] Implementation or analysis completed.\n- [ ] Verification completed.\n- [ ] Independent read-only QA completed.\n- [ ] Memory and logs updated.\n",
+      await renderAssetTemplate("checklist.md"),
       "utf8",
     );
   }
@@ -704,13 +726,16 @@ function markdownSection(content, heading) {
 
 const completionTemplateTokenNames = new Set([
   "task_id", "requested_by", "actual_model_or_unknown", "role", "agent_name", "provider", "operation",
+  "requester_id_or_not_recorded", "identity_source", "session_id",
   "objective", "scope", "non_goals", "target_kind", "backend_profile", "logic_impact", "workspace_mode",
   "integration_owner", "branch_name", "file_ownership", "input_manifest", "approved_decisions",
   "service_ids_from_canonical_ownership_file_or_not_applicable", "open_concerns", "model",
-  "implementation_model_role_agent_provider", "prompt_path", "requirement_to_evidence", "verification",
+  "loaded_pattern_files_or_none_with_reason", "implementation_model", "implementation_role", "implementation_agent",
+  "implementation_provider", "prompt_path", "requirement_to_evidence", "verification",
   "executor_claims_reopened_and_rerun", "regression_checks", "limitations", "findings_only_no_edits",
-  "qa_status", "owner_approved_decisions", "files_behavior_and_evidence", "checklist_status",
+  "qa_status", "qa_mode", "delivery_boundary", "owner_approved_decisions", "files_behavior_and_evidence", "checklist_status",
   "memory_and_log_updates", "remaining_concerns", "commit_recommendation", "new_prompt_path_or_not_applicable",
+  "outstanding_items_or_no_pending_issues",
 ]);
 
 function unresolvedTemplateTokens(content) {
@@ -814,6 +839,23 @@ async function validate(root, args) {
   const qaStatus = requireField("qa.md", qa, "Status").toLowerCase();
   const qaAccepted = qaStatus === "passed" || qaStatus === "not-applicable";
   if (!qaAccepted) contentFailures.push({ file: "qa.md", field: "Status", reason: "not-accepted" });
+  const qaMode = requireField("qa.md", qa, "QA mode").toLowerCase();
+  if (!["fast", "full"].includes(qaMode)) contentFailures.push({ file: "qa.md", field: "QA mode", reason: "invalid-enum" });
+  requireField("qa.md", qa, "Patterns");
+  const qaRequester = requireField("qa.md", qa, "Requested by");
+  if (requestedBy && qaRequester && requestedBy !== qaRequester) contentFailures.push({ file: "qa.md", field: "Requested by", reason: "requester-mismatch" });
+  const qaModel = requireField("qa.md", qa, "QA model");
+  const qaRole = requireField("qa.md", qa, "QA role").toLowerCase();
+  if (qaRole !== "qa") contentFailures.push({ file: "qa.md", field: "QA role", reason: "must-be-qa" });
+  const qaAgent = requireField("qa.md", qa, "QA agent");
+  requireField("qa.md", qa, "QA provider");
+  const implementationModel = requireField("qa.md", qa, "Implementation model");
+  requireField("qa.md", qa, "Implementation role");
+  const implementationAgent = requireField("qa.md", qa, "Implementation agent");
+  requireField("qa.md", qa, "Implementation provider");
+  if (qaStatus === "passed" && qaModel && qaAgent && qaModel.toLowerCase() === implementationModel.toLowerCase() && qaAgent.toLowerCase() === implementationAgent.toLowerCase()) {
+    contentFailures.push({ file: "qa.md", field: "QA identity", reason: "not-independent" });
+  }
   const qaReadOnly = requireField("qa.md", qa, "Read-only").toLowerCase() === "true";
   if (!qaReadOnly) contentFailures.push({ file: "qa.md", field: "Read-only", reason: "must-be-true" });
   if (qaStatus === "passed") {
@@ -833,8 +875,17 @@ async function validate(root, args) {
   if (!qaAccepted || resultQaStatus !== qaStatus) {
     contentFailures.push({ file: "result.md", field: "QA status", reason: "qa-status-mismatch" });
   }
+  const resultQaMode = requireField("result.md", result, "QA mode").toLowerCase();
+  if (resultQaMode !== qaMode) contentFailures.push({ file: "result.md", field: "QA mode", reason: "qa-mode-mismatch" });
+  const deliveryBoundary = requireField("result.md", result, "Delivery boundary").toLowerCase();
+  if (!["task", "commit", "publish", "release"].includes(deliveryBoundary)) {
+    contentFailures.push({ file: "result.md", field: "Delivery boundary", reason: "invalid-enum" });
+  } else if (deliveryBoundary !== "task" && qaMode !== "full") {
+    contentFailures.push({ file: "result.md", field: "Delivery boundary", reason: "requires-full-qa" });
+  }
   requireSection("result.md", result, "Changes and verification");
   requireSection("result.md", result, "Checklist and memory");
+  requireSection("result.md", result, "Outstanding items");
 
   const memoryRecorded = await exists(path.join(state, "memory", "current", `${taskId}.md`))
     || await exists(path.join(state, "memory", "recent", `${taskId}.md`));

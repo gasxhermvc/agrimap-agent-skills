@@ -1,6 +1,0 @@
-// error response structure
-{
-  "status_code": 404,
-  "code": "string",
-  "message": "string"
-}

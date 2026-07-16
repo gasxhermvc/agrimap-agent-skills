@@ -1,5 +1,16 @@
 # Back-end Engineer discipline
 
+## สารบัญ
+
+- [Required classification](#required-classification)
+- [Profile detection](#profile-detection--resolve-from-repo-evidence-before-asking)
+- [Host profiles](#host-profiles)
+- [Structure over logic](#structure-over-logic-owner-stance-2026-07-16)
+- [Phase 1: foundation](#phase-1-foundation)
+- [Phase 2: active-development](#phase-2-active-development)
+- [Error/message reconciliation](#errormessage-reconciliation)
+- [Phase 3: stabilization](#phase-3-stabilization)
+
 Apply this passive discipline whenever `target_kind` is `be-main` or `be-library`, including analysis, architecture, feature work, refactor, review, tests, QA, and prompt generation. Do not expose a separate Back-end Engineer command.
 
 ## Required classification

@@ -1,5 +1,17 @@
 # Front-end Engineer
 
+## สารบัญ
+
+- [Required classification](#required-classification)
+- [Target detection](#target-detection--resolve-from-repo-evidence-before-asking)
+- [Structure over logic](#structure-over-logic-owner-stance-2026-07-16)
+- [Design source of trust](#design-source-of-trust)
+- [Reuse-first decision](#reuse-first-decision)
+- [Reuse index](#reuse-index)
+- [Phase 1: foundation](#phase-1-foundation)
+- [Phase 2: active-development](#phase-2-active-development)
+- [Phase 3: stabilization](#phase-3-stabilization)
+
 Frontend code is usually broad rather than algorithmically difficult. Control technical debt by making reuse visible, keeping project patterns searchable, and changing the quality emphasis by delivery phase.
 
 This is a passive discipline layer, not a standalone workflow or alias. Apply it automatically whenever `target_kind` is `fe-main` or `fe-library`, including analysis, design, architecture, feature work, refactor, review, unit tests, QA, and prompt generation.

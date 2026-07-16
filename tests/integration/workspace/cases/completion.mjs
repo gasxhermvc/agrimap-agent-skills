@@ -50,13 +50,20 @@ export async function completion(harness) {
   assert.equal(sectionScaffoldValidation.contentFailures.some((failure) => failure.field === "Requirement evidence" && failure.reason === "todo-placeholder"), true);
   assert.equal(sectionScaffoldValidation.contentFailures.some((failure) => failure.field === "Changes and verification" && failure.reason === "angle-placeholder"), true);
   assert.equal(sectionScaffoldValidation.contentFailures.some((failure) => failure.field === "Checklist and memory" && failure.reason === "scaffold-placeholder"), true);
+  assert.equal(sectionScaffoldValidation.contentFailures.some((failure) => failure.field === "QA mode" && failure.reason === "missing"), true);
+  assert.equal(sectionScaffoldValidation.contentFailures.some((failure) => failure.field === "Patterns" && failure.reason === "missing"), true);
+  assert.equal(sectionScaffoldValidation.contentFailures.some((failure) => failure.field === "Outstanding items" && failure.reason === "missing"), true);
   assert.equal(await readFile(taskAActivePath, "utf8"), taskAActiveBeforePlaceholder);
   assert.equal(await readFile(taskAMemoryPath, "utf8"), taskAMemoryBeforePlaceholder);
   assert.equal(JSON.stringify(await readTaskLog("task-a")), taskALogBeforePlaceholder);
   await assert.rejects(readFile(taskARecentPath, "utf8"), { code: "ENOENT" });
 
-  await writeFile(path.join(taskADirectory, "qa.md"), "# QA\n\n- Status: passed\n- Requested by: Alice\n- Read-only: true\n\n## Requirement evidence\n\n- Task A requirements map to inspected Angular {{orderStatus}} evidence.\n\n## Commands and observed results\n\n- Targeted inspection passed.\n", "utf8");
-  await writeFile(path.join(taskADirectory, "result.md"), "# Result\n\n- Outcome: completed\n- Requested by: Alice\n- QA status: passed\n\n## Changes and verification\n\nTask A passed targeted inspection, including Angular {{orderStatus}} interpolation.\n\n## Checklist and memory\n\nChecklist, memory, and logs are complete.\n", "utf8");
+  await writeFile(path.join(taskADirectory, "qa.md"), "# QA\n\n- Status: passed\n- QA mode: fast\n- Patterns: patterns/frontend.md\n- Requested by: Alice\n- QA model: gemini-cli-default\n- QA role: qa\n- QA agent: qa\n- QA provider: gemini\n- Read-only: true\n- Implementation model: gpt-5.6-sol\n- Implementation role: leader\n- Implementation agent: primary\n- Implementation provider: codex\n\n## Requirement evidence\n\n- Task A requirements map to inspected Angular {{orderStatus}} evidence.\n\n## Commands and observed results\n\n- Targeted inspection passed.\n", "utf8");
+  await writeFile(path.join(taskADirectory, "result.md"), "# Result\n\n- Outcome: completed\n- Requested by: Alice\n- QA status: passed\n- QA mode: fast\n- Delivery boundary: release\n\n## Changes and verification\n\nTask A passed targeted inspection, including Angular {{orderStatus}} interpolation.\n\n## Checklist and memory\n\nChecklist, memory, and logs are complete.\n\n## Outstanding items\n\nno pending issues\n", "utf8");
+  const releaseBoundaryCompletion = spawn(workspaceScript, ["complete", "--cwd", temp, "--session", "session-a", "--task", "task-a"]);
+  assert.equal(releaseBoundaryCompletion.status, 1);
+  assert.equal(JSON.parse(releaseBoundaryCompletion.stdout).contentFailures.some((failure) => failure.field === "Delivery boundary" && failure.reason === "requires-full-qa"), true);
+  await writeFile(path.join(taskADirectory, "result.md"), "# Result\n\n- Outcome: completed\n- Requested by: Alice\n- QA status: passed\n- QA mode: fast\n- Delivery boundary: task\n\n## Changes and verification\n\nTask A passed targeted inspection, including Angular {{orderStatus}} interpolation.\n\n## Checklist and memory\n\nChecklist, memory, and logs are complete.\n\n## Outstanding items\n\nno pending issues\n", "utf8");
   assert.equal(run(workspaceScript, ["validate", "--cwd", temp, "--task", "task-a"]).ok, true);
   assert.equal(run(workspaceScript, ["complete", "--cwd", temp, "--session", "session-a", "--task", "task-a"]).ok, true);
   await assert.rejects(readFile(path.join(temp, ".agrimap-agent", "runtime", "active", "session-a.json"), "utf8"));

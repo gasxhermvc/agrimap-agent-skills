@@ -1,5 +1,16 @@
 # SQL patterns
 
+## สารบัญ
+
+- [Source priority](#source-priority)
+- [Do not invent](#do-not-invent)
+- [Table work](#table-work)
+- [DDL Standard](#ddl-standard--canonical-format-for-new-table-scripts-owner-approved-2026-07-16)
+- [Stored procedure work](#stored-procedure-work)
+- [Message collection gate](#message-collection-gate)
+- [Golden examples and conflicts](#golden-examples-and-conflicts)
+- [SQL verification](#sql-verification)
+
 Classify the task as `sql-table`, `sql-procedure`, or `sql-table-and-procedure`. Inspect current schema, callers, existing objects, data behavior, and deployment conventions before writing SQL.
 
 ## Source priority

@@ -1,5 +1,14 @@
 # Frontend Scenario Evals — `agm-fe`
 
+## สารบัญ
+
+- [วิธีให้คะแนน](#วิธีให้คะแนน)
+- [S1–S3: app/library routing and synthesis](#s1--app-ใช้-input-ที่มาจาก-library-situate-app-lane)
+- [S4–S6: generated API, refactor, and tests](#s4--ต้องการ-endpoint-ใหม่ในแอป-gen-code-ไม่ใช่เขียนมือ)
+- [S7–S9: presentation, signals, and assets](#s7--presentational-component-อย่าเติม-facadestore-เกิน)
+- [S10–S12: exceptions, versions, and templates](#s10--ไฟล์-legacy-ที่เป็น-tech-debt-exception-อย่า-แก้ให้ถูก)
+- [สรุป coverage](#สรุป-coverage)
+
 วัด **situational judgment** ของ skill ไม่ใช่ความจำ: agent เจอสถานการณ์จริง แล้วต้อง (ก) รู้ว่า
 ตัวเองอยู่พิกัดไหน (app vs library, consume vs modify) (ข) เลือกเลนถูก (ค) ทำตาม invariant
 แม้ไม่มี pattern ตั้งต้น (ง) รัน verify loop จริง

@@ -10,7 +10,10 @@ const usage = await read("docs/USAGE.md");
 const canonical = await read("skills/agrimap-agent-skills/SKILL.md");
 const platformSyntax = await read("skills/agrimap-agent-skills/references/platform-syntax.md");
 const rootIgnore = await read(".gitignore");
-const claudeHooks = await read("plugins/agrimap-agent-skills/hooks/hooks.json");
+const codexManifest = JSON.parse(await read("plugins/agrimap-agent-skills/.codex-plugin/plugin.json"));
+const claudeManifest = JSON.parse(await read("plugins/agrimap-agent-skills/.claude-plugin/plugin.json"));
+const codexHooks = await read("plugins/agrimap-agent-skills/hooks/codex-hooks.json");
+const claudeHooks = await read("plugins/agrimap-agent-skills/hooks/claude-hooks.json");
 const geminiHooks = await read("hooks/hooks.json");
 const refactorModes = [...(await read("skills/agrimap-agent-skills/references/refactor-modes.md")).matchAll(/^## `([^`]+)`/gm)].map((match) => match[1]);
 
@@ -29,7 +32,7 @@ test("published aliases route to umbrella operations", async () => {
   for (const item of operations) {
     const aliasSkill = await read(`plugins/agrimap-agent-skills/skills/${item.name}/SKILL.md`);
     const geminiCommand = await read(`commands/${item.name}.toml`);
-    assert.match(aliasSkill, /Activate and read the sibling `agrimap-agent-skills` umbrella skill/);
+    assert.match(aliasSkill, /Activate the umbrella skill: read `\.\.\/agrimap-agent-skills\/SKILL\.md`/);
     assert.ok(aliasSkill.includes(`Run operation \`${item.operation}\``));
     assert.match(aliasSkill, /standalone `-h` or `--help` token/);
     assert.ok(geminiCommand.includes(`run operation ${item.operation}`));
@@ -78,6 +81,11 @@ test("usage documentation covers activation, help, and provider syntax", async (
   assert.match(usage, /notepad \.\\docs\\USAGE\.md/);
   assert.ok(rootIgnore.split(/\r?\n/).includes(".agrimap-agent/"));
   assert.equal(await read("plugins/agrimap-agent-skills/docs/USAGE.md"), usage);
+  assert.equal(codexManifest.hooks, "./hooks/codex-hooks.json");
+  assert.equal(claudeManifest.hooks, "./hooks/claude-hooks.json");
+  await assert.rejects(read("plugins/agrimap-agent-skills/hooks/hooks.json"), { code: "ENOENT" });
+  assert.equal(codexHooks.match(/--provider codex/g)?.length, 3);
+  assert.doesNotMatch(codexHooks, /--provider claude/);
   assert.doesNotMatch(claudeHooks, /--provider auto/);
   assert.equal(claudeHooks.match(/--provider claude/g)?.length, 3);
   assert.equal(geminiHooks.match(/--provider gemini/g)?.length, 2);

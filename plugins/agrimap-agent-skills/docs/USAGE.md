@@ -191,7 +191,6 @@ Owner: approve
 | `agm-create-feature` | `$agm-create-feature requested_by=Billy target_kind=be-main backend_profile=agmws phase=active-development objective="Add cancel-order endpoint"` |
 | `agm-create-prompt` | `$agm-create-prompt requested_by=Billy provider=codex objective="Delegate cancel-order implementation" target_kind=be-main backend_profile=agmws phase=active-development` |
 | `agm-exec` | `$agm-exec requested_by=Billy prompt=.agrimap-agent/prompts/<task-id>/executor.prompt.md` |
-| `agm-history` | `$agm-history requested_by=Billy --requester Billy --days 7` |
 
 งาน FE/BE จะ compose discipline ให้อัตโนมัติ ไม่มี `/agm-fe-engineer` หรือ `/agm-be-engineer`. `agmws|agmbo` เป็น `backend_profile` ของ `be-main`, ไม่ใช่ `target_kind`.
 
