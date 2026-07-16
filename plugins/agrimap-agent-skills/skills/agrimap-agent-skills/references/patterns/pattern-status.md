@@ -20,7 +20,7 @@ Evidence mode is separate from authority:
 | Pattern | Status | Notes |
 | --- | --- | --- |
 | FE main architecture, generated API, and mandatory store/facade tests | `current` | Use `golden/frontend-main`; match the active Angular version and deployed contracts. |
-| FE library public API, naming, generated API, Playground, and smoke-test baseline | `current` | Use `golden/frontend-libraries`; richer assertions and full semver rules remain owner gaps. |
+| FE library public API, naming, generated API, Playground, and smoke-test baseline | `current` | Use `golden/frontend-libraries`; richer assertions and full semver rules remain decision-owner evidence gaps. |
 | BE new boundary placement | `verified` | Map transport DTOs before inward repository ports; classify models by meaning. Do not silently migrate legacy code. |
 | BE main with `backend_profile=agmws` examples | `legacy-compatible` | Layer flow is useful; exact port location, route/response conventions, and Domain versus persistence examples still need owner evidence. |
 | BE main with `backend_profile=agmbo` scheduler | `missing-owner-example` | Requires `TaskScheduler.cs`, registration, retry, and concurrency examples. |

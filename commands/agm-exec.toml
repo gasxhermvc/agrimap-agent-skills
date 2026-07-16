@@ -1,2 +1,2 @@
-description = "Execute one owner-approved generated prompt as the execution source of truth with checkpoints, deviation stops, and a Result Package"
+description = "Execute one decision-owner-approved generated prompt as the execution source of truth with checkpoints, deviation stops, and a Result Package"
 prompt = "Activate the agrimap-agent-skills umbrella skill and run operation execute.\n\nTreat the umbrella skill as the workflow source of trust.\n\nWhen requester arguments contain a standalone -h or --help token, return umbrella command help without starting a task or writing project state.\n\nRequester arguments:\n\n{{args}}"

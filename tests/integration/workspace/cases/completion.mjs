@@ -5,6 +5,118 @@ import { LOG_EVENTS } from "../../../../skills/agrimap-agent-skills/scripts/log-
 
 const logEventSet = new Set(LOG_EVENTS);
 
+function validBrief() {
+  return `# Task brief
+
+- Task ID: \`task-a\`
+- Requested by: Alice
+- Identity source: \`manual-confirmed\`
+- Requester authority: \`owner\`
+- Decision owner: Alice
+- Authority evidence: Confirmed by Alice in this session.
+- Model label: GPT-5.6-sol
+- Actual model: \`gpt-5.6-sol-runtime\`
+- Role: \`leader\`
+- Agent: \`primary\`
+- Provider: \`codex\`
+- Operation: \`analyze\`
+- Objective: Analyze Angular {{orderStatus}} behavior.
+- Scope: Task A artifacts and evidence.
+- Non-goals: Unrelated task changes.
+
+## File and logical-contract ownership
+
+Task A workflow artifacts; no product artifacts changed.
+
+## Inputs
+
+The active task state and Angular {{orderStatus}} evidence.
+
+## Authorized decisions and trade-offs
+
+Alice authorized the stated task-only scope.
+
+## Service ownership references
+
+Not applicable; no service boundary changed.
+
+## Concerns
+
+None.
+`;
+}
+
+function validQa({ mode = "fast", fastSequence = "1" } = {}) {
+  return `# QA
+
+- Status: passed
+- QA mode: ${mode}
+- QA mode reason: ${mode === "full" ? "Release boundary requires full QA." : "Task-only closure within the fast-QA allowance."}
+- Coverage key: src/angular-order-status
+- Fast sequence: ${fastSequence}
+- Patterns: patterns/frontend.md
+- Requested by: Alice
+- Decision owner: Alice
+- QA model label: gemini-cli-default
+- QA actual model: gemini-runtime-model
+- QA role: qa
+- QA agent: qa-independent
+- QA provider: gemini
+- Product artifacts modified: false
+- Workflow artifacts written: qa.md and QA checkpoint log
+- Implementation model label: GPT-5.6-sol
+- Implementation actual model: gpt-5.6-sol-runtime
+- Implementation role: leader
+- Implementation agent: primary
+- Implementation provider: codex
+
+## Requirement evidence
+
+- Task A requirements map to inspected Angular {{orderStatus}} evidence.
+
+## Commands and observed results
+
+- Targeted inspection passed.
+`;
+}
+
+function validResult({ mode = "fast", boundary = "task" } = {}) {
+  return `# Result
+
+- Outcome: completed
+- Requested by: Alice
+- Decision owner: Alice
+- Leader model label: GPT-5.6-sol
+- Leader actual model: gpt-5.6-sol-runtime
+- Leader role: leader
+- Leader agent: primary
+- Leader provider: codex
+- QA status: passed
+- QA mode: ${mode}
+- Delivery boundary: ${boundary}
+
+## Authorized decisions
+
+Alice authorized the task-only scope and verification boundary.
+
+## Changes and verification
+
+Task A passed targeted inspection, including Angular {{orderStatus}} interpolation.
+
+## Checklist and memory
+
+Checklist, memory, and logs are complete.
+
+## Concerns and commit boundary
+
+${boundary === "task" ? "No concerns; no commit, publish, or release boundary requested." : `No concerns; the ${boundary} boundary is covered by the recorded QA mode.`}
+
+## Outstanding items
+
+no pending issues
+`;
+}
+
 export async function completion(harness) {
   const { temp, run, spawn, readTaskLog } = harness;
   const workspaceScript = harness.scripts.workspace;
@@ -19,7 +131,7 @@ export async function completion(harness) {
 
   await writeFile(path.join(taskADirectory, "brief.md"), "# Task brief\n\n- Requested by: {{requested_by}}\n- Objective: Define before implementation.\n- Scope: <scope>\n- Non-goals: TODO\n", "utf8");
   await writeFile(path.join(taskADirectory, "checklist.md"), "# Checklist\n\n- [x] {{checklist_status}}\n- [x] <remaining-check>\n", "utf8");
-  await writeFile(path.join(taskADirectory, "qa.md"), "# QA\n\n- Status: `passed|failed|blocked|not-applicable`\n- Read-only: <true>\n\n## Requirement evidence\n\n{{requirement_to_evidence}}\n\n## Commands and observed results\n\n{{verification}}\n", "utf8");
+  await writeFile(path.join(taskADirectory, "qa.md"), "# QA\n\n- Status: `passed|failed|blocked|not-applicable`\n- Product artifacts modified: <false>\n- Workflow artifacts written: {{qa_workflow_artifacts_written}}\n\n## Requirement evidence\n\n{{requirement_to_evidence}}\n\n## Commands and observed results\n\n{{verification}}\n", "utf8");
   await writeFile(path.join(taskADirectory, "result.md"), "# Result\n\n- Outcome: `completed|qa-failed|blocked|cancelled`\n- Requested by: {{requested_by}}\n- QA status: `passed|failed|blocked|not-applicable`\n\n## Changes and verification\n\n{{files_behavior_and_evidence}}\n\n## Checklist and memory\n\n{{checklist_status}}\n", "utf8");
   const placeholderCompletion = spawn(workspaceScript, ["complete", "--cwd", temp, "--session", "session-a", "--task", "task-a"]);
   assert.equal(placeholderCompletion.status, 1);
@@ -40,7 +152,7 @@ export async function completion(harness) {
 
   await writeFile(path.join(taskADirectory, "brief.md"), "# Task brief\n\n- Task ID: `task-a`\n- Requested by: Alice\n- Objective: Analyze Angular {{orderStatus}} behavior.\n- Scope: Task A artifacts and evidence.\n- Non-goals: Unrelated task changes.\n", "utf8");
   await writeFile(path.join(taskADirectory, "checklist.md"), "# Checklist\n\n- [x] Scope and Angular {{orderStatus}} behavior inspected.\n- [x] Work verified.\n- [x] Memory and logs updated.\n", "utf8");
-  await writeFile(path.join(taskADirectory, "qa.md"), "# QA\n\n- Status: passed\n- Requested by: Alice\n- Read-only: true\n\n## Requirement evidence\n\nTODO\n\n## Commands and observed results\n\n- Targeted inspection passed.\n", "utf8");
+  await writeFile(path.join(taskADirectory, "qa.md"), "# QA\n\n- Status: passed\n- Requested by: Alice\n- Product artifacts modified: false\n- Workflow artifacts written: qa.md\n\n## Requirement evidence\n\nTODO\n\n## Commands and observed results\n\n- Targeted inspection passed.\n", "utf8");
   await writeFile(path.join(taskADirectory, "result.md"), "# Result\n\n- Outcome: completed\n- Requested by: Alice\n- QA status: passed\n\n## Changes and verification\n\n<files_behavior_and_evidence>\n\n## Checklist and memory\n\nDefine before implementation.\n", "utf8");
   const sectionScaffoldCompletion = spawn(workspaceScript, ["complete", "--cwd", temp, "--session", "session-a", "--task", "task-a"]);
   assert.equal(sectionScaffoldCompletion.status, 1);
@@ -58,12 +170,74 @@ export async function completion(harness) {
   assert.equal(JSON.stringify(await readTaskLog("task-a")), taskALogBeforePlaceholder);
   await assert.rejects(readFile(taskARecentPath, "utf8"), { code: "ENOENT" });
 
-  await writeFile(path.join(taskADirectory, "qa.md"), "# QA\n\n- Status: passed\n- QA mode: fast\n- Patterns: patterns/frontend.md\n- Requested by: Alice\n- QA model: gemini-cli-default\n- QA role: qa\n- QA agent: qa\n- QA provider: gemini\n- Read-only: true\n- Implementation model: gpt-5.6-sol\n- Implementation role: leader\n- Implementation agent: primary\n- Implementation provider: codex\n\n## Requirement evidence\n\n- Task A requirements map to inspected Angular {{orderStatus}} evidence.\n\n## Commands and observed results\n\n- Targeted inspection passed.\n", "utf8");
-  await writeFile(path.join(taskADirectory, "result.md"), "# Result\n\n- Outcome: completed\n- Requested by: Alice\n- QA status: passed\n- QA mode: fast\n- Delivery boundary: release\n\n## Changes and verification\n\nTask A passed targeted inspection, including Angular {{orderStatus}} interpolation.\n\n## Checklist and memory\n\nChecklist, memory, and logs are complete.\n\n## Outstanding items\n\nno pending issues\n", "utf8");
+  await writeFile(path.join(taskADirectory, "brief.md"), validBrief(), "utf8");
+  await writeFile(path.join(taskADirectory, "qa.md"), validQa(), "utf8");
+  await writeFile(path.join(taskADirectory, "result.md"), validResult({ boundary: "release" }), "utf8");
   const releaseBoundaryCompletion = spawn(workspaceScript, ["complete", "--cwd", temp, "--session", "session-a", "--task", "task-a"]);
   assert.equal(releaseBoundaryCompletion.status, 1);
   assert.equal(JSON.parse(releaseBoundaryCompletion.stdout).contentFailures.some((failure) => failure.field === "Delivery boundary" && failure.reason === "requires-full-qa"), true);
-  await writeFile(path.join(taskADirectory, "result.md"), "# Result\n\n- Outcome: completed\n- Requested by: Alice\n- QA status: passed\n- QA mode: fast\n- Delivery boundary: task\n\n## Changes and verification\n\nTask A passed targeted inspection, including Angular {{orderStatus}} interpolation.\n\n## Checklist and memory\n\nChecklist, memory, and logs are complete.\n\n## Outstanding items\n\nno pending issues\n", "utf8");
+
+  await writeFile(path.join(taskADirectory, "qa.md"), validQa({ fastSequence: "3" }), "utf8");
+  const overFastLimitProcess = spawn(workspaceScript, ["validate", "--cwd", temp, "--task", "task-a"]);
+  assert.equal(overFastLimitProcess.status, 1);
+  const overFastLimit = JSON.parse(overFastLimitProcess.stdout);
+  assert.equal(overFastLimit.ok, false);
+  assert.equal(overFastLimit.contentFailures.some((failure) => failure.field === "Fast sequence" && failure.reason === "invalid-enum"), true);
+
+  const nonIndependentQa = validQa()
+    .replace("gemini-runtime-model", "gpt-5.6-sol-runtime")
+    .replace("qa-independent", "primary")
+    .replace("- QA provider: gemini", "- QA provider: codex");
+  await writeFile(path.join(taskADirectory, "qa.md"), nonIndependentQa, "utf8");
+  const nonIndependentProcess = spawn(workspaceScript, ["validate", "--cwd", temp, "--task", "task-a"]);
+  assert.equal(nonIndependentProcess.status, 1);
+  const nonIndependent = JSON.parse(nonIndependentProcess.stdout);
+  assert.equal(nonIndependent.ok, false);
+  assert.equal(nonIndependent.contentFailures.some((failure) => failure.field === "QA identity" && failure.reason === "not-independent"), true);
+
+  await writeFile(path.join(taskADirectory, "qa.md"), validQa({ mode: "full", fastSequence: "0" }), "utf8");
+  await writeFile(path.join(taskADirectory, "result.md"), validResult({ mode: "full", boundary: "release" }), "utf8");
+  assert.equal(run(workspaceScript, ["validate", "--cwd", temp, "--task", "task-a"]).ok, true);
+
+  const priorCounterEvents = [];
+  for (const [index, taskId] of ["prior-fast-1", "prior-fast-2"].entries()) {
+    const priorDirectory = path.join(temp, ".agrimap-agent", "tasks", taskId);
+    await mkdir(priorDirectory, { recursive: true });
+    await writeFile(path.join(priorDirectory, "qa.md"), validQa({ fastSequence: String(index + 1) }), "utf8");
+    priorCounterEvents.push({
+      schemaVersion: 2,
+      timestamp: new Date(Date.now() - (2 - index) * 60_000).toISOString(),
+      taskId,
+      requestedBy: "Alice",
+      requesterId: null,
+      identitySource: "manual-confirmed",
+      model: "gpt-5.6-sol-runtime",
+      modelLabel: "GPT-5.6-sol",
+      role: "leader",
+      agent: "primary",
+      provider: "codex",
+      event: "completed",
+      summary: "Prior fast-QA task completed.",
+      reason: "Historical QA counter fixture.",
+      files: [],
+      verification: ["completion gate passed"],
+      gitHead: null,
+      gitDirty: null,
+    });
+  }
+  const counterLogPath = path.join(temp, ".agrimap-agent", "logs", new Date().toISOString().slice(0, 7), "prior-fast-counter.jsonl");
+  await writeFile(counterLogPath, `${priorCounterEvents.map((event) => JSON.stringify(event)).join("\n")}\n`, { encoding: "utf8", flag: "a" });
+  await writeFile(path.join(taskADirectory, "qa.md"), validQa({ fastSequence: "1" }), "utf8");
+  await writeFile(path.join(taskADirectory, "result.md"), validResult(), "utf8");
+  const thirdFastClosureProcess = spawn(workspaceScript, ["validate", "--cwd", temp, "--task", "task-a"]);
+  assert.equal(thirdFastClosureProcess.status, 1);
+  const thirdFastClosure = JSON.parse(thirdFastClosureProcess.stdout);
+  assert.equal(thirdFastClosure.ok, false);
+  assert.equal(thirdFastClosure.qaCounter.priorConsecutiveFast, 2);
+  assert.equal(thirdFastClosure.contentFailures.some((failure) => failure.field === "QA mode" && failure.reason === "historical-full-required"), true);
+
+  await writeFile(path.join(taskADirectory, "qa.md"), validQa({ mode: "full", fastSequence: "0" }), "utf8");
+  await writeFile(path.join(taskADirectory, "result.md"), validResult({ mode: "full" }), "utf8");
   assert.equal(run(workspaceScript, ["validate", "--cwd", temp, "--task", "task-a"]).ok, true);
   assert.equal(run(workspaceScript, ["complete", "--cwd", temp, "--session", "session-a", "--task", "task-a"]).ok, true);
   await assert.rejects(readFile(path.join(temp, ".agrimap-agent", "runtime", "active", "session-a.json"), "utf8"));
@@ -107,12 +281,12 @@ export async function completion(harness) {
   await writeFile(taskCLogPath, `${JSON.stringify(invalidTaskCFileClaim)}\n${JSON.stringify(legacyTaskCFileClaim)}\n`, { encoding: "utf8", flag: "a" });
   await writeFile(path.join(taskCDirectory, "qa.md"), "# QA\n\n- Status: failed\n\nReproducible defect.\n", "utf8");
   await writeFile(path.join(taskCDirectory, "result.md"), "# Result\n\n- Outcome: `qa-failed`\n", "utf8");
-  const nextPrompt = path.join(temp, ".agrimap-agent", "prompts", "task-c-fix", "executor.md");
+  const nextPrompt = path.join(temp, ".agrimap-agent", "prompts", "task-c-fix", "executor.prompt.md");
   await mkdir(path.dirname(nextPrompt), { recursive: true });
   await writeFile(nextPrompt, "# Proposed correction prompt\n", "utf8");
   const closedC = run(workspaceScript, [
     "close", "--cwd", temp, "--session", "session-a", "--task", "task-c", "--status", "qa-failed",
-    "--next-prompt", ".agrimap-agent/prompts/task-c-fix/executor.md",
+    "--next-prompt", ".agrimap-agent/prompts/task-c-fix/executor.prompt.md",
   ]);
   assert.equal(closedC.complete, false);
   assert.equal(closedC.status, "qa-failed");

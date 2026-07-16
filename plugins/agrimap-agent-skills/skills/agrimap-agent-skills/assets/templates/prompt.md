@@ -13,9 +13,13 @@
 ## Requester and assignment
 
 - `requested_by`: {{requested_by}}
+- `requester_authority`: `{{requester_authority}}`
+- `decision_owner`: {{decision_owner_or_not_required}}
+- `authority_evidence`: {{authority_evidence_or_not_required}}
 - `provider`: {{provider}}
 - `model_profile`: {{model_profile}}
-- `model_name`: {{model_name_owner_editable}}
+- `model_label`: {{configurable_model_label}}
+- `actual_model`: `unresolved-until-dispatch`
 - `role`: {{leader_executor_qa_reviewer_or_analyst}}
 - `agent_name`: {{primary_fe_be_sql_designer_qa_or_custom}}
 - `target_kind`: {{target_kind}}
@@ -32,9 +36,9 @@
 
 - Service ownership references: {{service_ids_or_not_applicable}}
 
-## Owner decisions and inputs
+## Authorized decisions and requester inputs
 
-{{owner_approved_tradeoffs_and_input_manifest}}
+{{authorized_decisions_and_requester_input_manifest}}
 
 ## Scope and non-goals
 
@@ -79,7 +83,7 @@ Continue through routine choices that preserve this contract and record them. If
 
 {{constraints_tests}}
 
-- QA is a separate read-only model/agent: {{qa_execution_identity_and_prompt}}
+- QA is a separate verification-only model/agent with product artifacts read-only and workflow-evidence writes only: {{qa_execution_identity_and_prompt}}
 - Claims QA should independently sample: {{qa_claims_to_rerun}}
 
 ## Memory checkpoint and Result Package

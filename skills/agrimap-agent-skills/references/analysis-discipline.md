@@ -6,7 +6,7 @@ Use this discipline for analysis, diagnosis, planning, architecture, review, and
 
 Label important statements so an executor and QA model can tell what is known:
 
-- `FACT`: directly observed in owner input, current code, tests, runtime output, contracts, or verified project knowledge. Include the source pointer.
+- `FACT`: directly observed in requester input, decision-owner-approved references, current code, tests, runtime output, contracts, or verified project knowledge. Include the source pointer.
 - `INFERENCE`: a conclusion supported by named facts. State the reasoning and confidence.
 - `HYPOTHESIS`: a testable explanation not yet proven. State the bounded check that would confirm or reject it.
 - `UNKNOWN`: missing evidence that may change scope, logic, ownership, or the selected solution.
@@ -34,7 +34,7 @@ Return:
 - evidence ledger using the labels above;
 - hidden/root problem and impact surface;
 - solution options with trade-offs and recommendation when materially different choices exist;
-- owner decisions and unresolved unknowns;
+- authorized decision-owner decisions and unresolved unknowns;
 - smallest complete execution checklist;
 - verification and QA evidence required to close the task.
 

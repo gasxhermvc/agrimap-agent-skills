@@ -1,16 +1,16 @@
 # Input and scope contract
 
-Normalize all owner input before analysis.
+Normalize all requester input before analysis. Preserve decision-owner authority metadata separately.
 
 ## Input manifest
 
 Record each item with:
 
 - `id`
-- `kind`: `text`, `large-text`, `image`, `attachment`, `file`, `directory`, `url`, or `owner-note`
+- `kind`: `text`, `large-text`, `image`, `attachment`, `file`, `directory`, `url`, or `requester-note`
 - `source`
 - `priority`
-- `owner_intent`
+- `requester_intent`
 - `loaded`: `full`, `chunked`, `visual-inspection`, `metadata-only`, or `unavailable`
 - `hash` when available
 - `facts`
@@ -18,7 +18,7 @@ Record each item with:
 
 ## Host mentions and free text
 
-Normalize host-native references (`@file`, attach, drag-drop) into manifest entries with the observed `kind` and `priority: required`. When it is unclear whether a mentioned file is the primary target or supporting context, or when free-text arguments carry no key, state the chosen interpretation in the activation receipt and proceed for read-only work; confirm first when acting on the wrong interpretation would edit files or change scope. Resolve every remaining parameter with [elicitation.md](elicitation.md); never guess a never-guess input.
+Normalize host-native references (`@file`, attach, drag-drop) into manifest entries with the observed `kind` and `priority: required`. When it is unclear whether a mentioned file is the primary target or supporting context, or when free-text arguments carry no key, state the chosen interpretation in the activation receipt and proceed for product-read-only work; confirm first when acting on the wrong interpretation would edit product artifacts or change scope. Resolve every remaining parameter with [elicitation.md](elicitation.md); never guess a never-guess input.
 
 ## Large text
 
@@ -31,14 +31,14 @@ Normalize host-native references (`@file`, attach, drag-drop) into manifest entr
 
 - Use the platform's visual/file tools rather than treating binary content as text.
 - Separate visible facts from interpretation.
-- Preserve owner annotations and spatial references.
+- Preserve requester annotations and spatial references; mark decision-owner-approved material separately.
 - If the model or tool cannot inspect the file, state that limitation and ask for a supported representation.
 
 ## Pointed files and directories
 
 - Validate the path and scope before reading.
 - Respect ignore files and the configured binary skip list.
-- If the owner explicitly points to a normally skipped binary, use a suitable inspector; do not dump raw binary into context.
+- If the requester explicitly points to a normally skipped binary, use a suitable inspector; do not dump raw binary into context.
 
 ## Default skip list
 
@@ -51,4 +51,4 @@ Do not turn this list into a security policy. It is context hygiene only.
 
 ## Scope ledger
 
-Before implementation, record objective, deliverables, non-goals, affected systems, logic/contract/data impact, tests, owner decisions, and unresolved concerns. For cross-service scope, point to the relevant `service_id` in `.agrimap-agent/knowledge/service-ownership.yaml`; do not copy a second ownership map. Update the ledger when the owner adds requirements.
+Before implementation, record objective, deliverables, non-goals, affected systems, logic/contract/data impact, tests, authorized decision-owner decisions, and unresolved concerns. For cross-service scope, point to the relevant `service_id` in `.agrimap-agent/knowledge/service-ownership.yaml`; do not copy a second ownership map. Update the ledger when the requester adds requirements, and do not treat a new material requirement as authorized until its decision authority is recorded.

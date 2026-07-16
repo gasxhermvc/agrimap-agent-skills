@@ -12,7 +12,7 @@
       "name": "agrimap-agent-skills",
       "source": "./plugins/agrimap-agent-skills",
       "description": "Cross-agent AgriMap workflows, patterns, memory, and QA",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "homepage": "https://github.com/gasxhermvc/agrimap-agent-skills"
     }
   ]

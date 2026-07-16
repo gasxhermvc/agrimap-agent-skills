@@ -7,6 +7,8 @@ description: Cross-agent AgriMap engineering workflow for analysis, deep diagnos
 
 Treat this skill as the workflow source of trust across models and providers. Do not load or recreate legacy `.agm` governance. Use platform-native permissions and safety controls; do not add a second permission system.
 
+Use [glossary.md](references/glossary.md) for every normative workflow term. Do not locally reinterpret requester/decision-owner authority, substantive work, checkpoint units, material/complex/small work, proportional verification, verification-only QA, QA counters, or model labels.
+
 เจตนาหลัก: เข้าใจปัญหาและผลกระทบก่อนลงมือ แก้ปัญหาเดิมให้จบด้วยการเปลี่ยนแปลงที่เล็กแต่ครบถ้วน ให้มนุษย์ตัดสินใจเฉพาะ trade-off ที่มีนัยสำคัญ และห้ามปิดงานถ้า checklist, QA, memory หรือ logs ยังไม่ครบ
 
 ## Command help / วิธีใช้คำสั่ง
@@ -33,7 +35,7 @@ History lookup is read-only: it does not require identifying the person asking t
    - `.agrimap-agent/memory/project.md`
    - `.agrimap-agent/memory/current/<active-task-id>.md` when a task is active
    - the active task under `.agrimap-agent/tasks/`
-2. Resolve the requester for this session/task. If unknown or the 24-hour confirmation has expired, ask before substantive work and persist it under ignored session runtime. A Git user name may be offered only as an unconfirmed suggestion. Never use one shared active-owner file in a multi-person project. Copy the requester, optional requester ID, and identity source into the task brief and durable events; the created event must preserve the requested objective. Record executing `model`, `role`, `agent`, and `provider` separately — **from your own runtime identity**: you always know your model family and host CLI (a Claude model in Claude Code records `provider: claude`; a GPT/Codex model in Codex CLI records `provider: codex`; Gemini likewise, with the most specific model name you know for `model`). Hook-injected "flavor" or previously recorded identity lines are configuration hints, not proof — never copy them over your own identity, and never record `model: unknown` or a provider you are not actually running under when you can name your own.
+2. Resolve the requester for this session/task. If unknown or the 24-hour confirmation has expired, ask before substantive work as defined in the glossary and persist it under ignored session runtime. Preparatory inspection may locate the project/task state first; target-code reading or task-specific diagnostics may not. Record requester authority, decision owner, and authority evidence separately—never treat requester identity as decision authority by default. A Git user name may be offered only as an unconfirmed suggestion. Never use one shared active-owner file in a multi-person project. Copy the requester, optional requester ID, and identity source into the task brief and durable events; the created event must preserve the requested objective. Record executing `model`, `role`, `agent`, and `provider` separately — **from your own runtime identity**: you always know your model family and host CLI (a Claude model in Claude Code records `provider: claude`; a GPT/Codex model in Codex CLI records `provider: codex`; Gemini likewise, with the most specific actual model name you know for `model`). A configurable model label or previously recorded identity is not runtime proof; never copy it over actual execution identity, and never record `model: unknown` or a provider you are not actually running under when you can name your own.
 3. If a previous task ended and Git has uncommitted changes, remind the requester to commit before starting the next task, then continue the explicit request. Do not auto-commit; stop only for unsafe overlap with dirty changes.
 4. Normalize text, large text, images, attachments, URLs, and pointed file paths using [input-and-scope.md](references/input-and-scope.md). Never silently truncate an input.
 5. Resolve missing parameters with [elicitation.md](references/elicitation.md): infer from evidence and declare it, apply fixed defaults, and ask remaining never-guess inputs in one batched question. Never invent `target_kind`, `backend_profile`, `refactor_mode`, a provider, or an artifact name without direct evidence.
@@ -69,8 +71,8 @@ Stop and discuss only when an unresolved choice can change business logic, publi
 1. Inspect the target and enough callers, consumers, contracts, tests, configuration, and data flow to understand the likely impact.
 2. Identify the hidden/root problem before proposing a solution.
 3. Separate `FACT`, `INFERENCE`, `HYPOTHESIS`, and `UNKNOWN` with source pointers and bounded checks. Read [analysis-discipline.md](references/analysis-discipline.md).
-4. Offer multiple viable solutions before implementation when more than one materially different solution exists. Include owner trade-offs and a recommendation.
-5. For logic-affecting or complex work, ask whether to add unit tests or test cases before implementation unless the owner already decided.
+4. Offer multiple viable solutions before implementation when more than one materially different solution exists under the glossary test. Include decision-owner trade-offs and a recommendation.
+5. For logic-affecting or complex work under the glossary criteria, ask whether to add unit tests or test cases before implementation unless an authorized decision already exists.
 6. Produce a pre-work checklist and explain why each planned change is necessary.
 
 Read [workflows.md](references/workflows.md) for task routing, [roles.md](references/roles.md) for role-specific responsibilities, and [platform-syntax.md](references/platform-syntax.md) for provider invocation. Use command help for a runnable example without depending on files outside this skill.
@@ -98,19 +100,19 @@ Read `references/patterns/golden/manifest.json` and the selected collection mani
 
 ## Delegate deliberately
 
-**Delegation is proportional.** A small task — one artifact or a few files, one writer, no cross-contract integration — runs as a single agent plus one independent read-only QA pass; do not spawn planner/executor subagents, parallel researchers, or extra review waves for it. Fan-out exists for multi-file integration with distinct ownership, not as a default ceremony; burning millions of tokens on a one-file deliverable is a workflow defect, not thoroughness.
+**Delegation follows the glossary size test.** A small task—at most three product artifacts, one logical contract, one writer, and none of the excluded material boundaries—runs as a single agent plus one independent verification-only QA pass; do not spawn planner/executor subagents, parallel researchers, or extra review waves for it. Fan-out exists for complex work with distinct ownership, not as a default ceremony; file count alone never justifies delegation.
 
 **Work with the harness, not against it.** Each spawned subagent starts with an empty context — if its prompt says "read the umbrella skill and references", every subagent re-pays the full reading cost. Instead, inline into the handoff prompt the specific rules, pattern excerpts, and file/line targets that subagent needs; a subagent must not reload the skill or reference tree beyond its assignment. When the active provider surface genuinely has no callable subagent capability, run Leader → executor → QA as **sequential passes in one session**: do not re-read unchanged references between passes; QA independence there means re-opening only the changed artifacts and re-running the verification commands, not rebuilding context from zero. Do not replicate what the harness already provides (permission prompts, todo tracking, session transcripts) with extra workflow steps.
 
-Assign the Leader role to the frontier-capability model responsible for decomposition, final integration, QA dispatch, evidence synthesis, and memory closure. For implementation tasks, assign final verification to an independent read-only QA subagent/context; the Leader must not QA its own implementation or edit a QA finding inside the task being verified. Use no more than five active subagents. Before delegation, specify and verify `workspace_need` and create a file-ownership map. In one integration wave, one file and one logical contract have one writer model; QA agents may read but never edit. Assign each subagent a bounded task, model profile, execution identity, workspace need, required skill references, file/line targets, forbidden files, verification steps, and structured result contract.
+Assign the Leader role to a model that resolves to the required capability profile on the active host. Before delegation, resolve the configurable model label and record the actual model separately. For implementation tasks, assign final verification to an independent verification-only QA subagent/context; the Leader must not QA its own implementation or edit a QA finding inside the task being verified. Use no more than five active subagents. Before delegation, specify and verify `workspace_need` and create a file-ownership map. In one integration wave, one file and one logical contract have one writer model; QA may not modify product artifacts but may write only its assigned workflow evidence. Assign each subagent a bounded task, model profile, model label, actual execution identity, workspace need, required skill references, file/line targets, forbidden files, verification steps, and structured result contract.
 
 Read [subagents-and-branches.md](references/subagents-and-branches.md) and [model-capability-matrix.yaml](references/model-capability-matrix.yaml). A project override at `.agrimap-agent/model-capability-matrix.yaml` wins for model names only; it cannot weaken this workflow.
 
 For prompt generation, read [create-prompt.md](references/create-prompt.md) and follow its staged elicitation contract; prompt generation never starts execution — running an approved prompt is the separate `agm-exec` operation. Treat each approved generated prompt as the execution SoT for that task. Use simple language but include explicit file names, current line numbers plus stable symbol anchors, ordered steps, tests, constraints, deviation handling, and expected handoff fields so a lightweight model does not need to reinterpret the plan.
 
-## Checkpoint every atomic task
+## Checkpoint every durable state transition
 
-After each Leader task or delegated subtask:
+After each glossary-defined checkpoint unit—and not after each read, tool call, heartbeat, or unchanged retry:
 
 1. Write a concise result or handoff.
 2. Update `.agrimap-agent/memory/current/<task-id>.md` immediately; update `memory/project.md` only for project-wide facts.
@@ -123,8 +125,8 @@ Read [memory-and-logs.md](references/memory-and-logs.md) for schemas and retenti
 ## Verify and close / ตรวจสอบก่อนปิดงาน
 
 1. Inspect every changed point and its nearby impact surface.
-2. Run proportional tests, static checks, builds, SQL validation, or targeted manual checks.
-3. Have the Leader review all executor handoffs, then dispatch the QA workflow to an independent read-only QA subagent/context. QA must reopen the artifacts and rerun selected claims rather than trust the handoff.
+2. Select and record the glossary-defined proportional verification tier; run every check required by the changed risks.
+3. Have the Leader review all executor handoffs, then dispatch the QA workflow to an independent verification-only QA subagent/context. QA must reopen product artifacts and rerun selected claims rather than trust the handoff; it may write only `qa.md`, its heartbeat, and its checkpoint/log evidence.
 4. Check every pre-work checklist item.
 5. Do not claim completion while any required checklist item is incomplete.
 6. If QA fails, close the implementation attempt as `qa-failed`, do not fix it in the same task, and have the Leader summarize the evidence plus prepare a proposed prompt for a new owner-approved correction task.

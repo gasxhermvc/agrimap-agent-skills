@@ -91,16 +91,22 @@ Restart Gemini CLI after installation. Invoke `/agm-create-feature`, `/agm-plan`
 gemini extensions link .
 ```
 
+## Provider hook isolation
+
+Provider identity is host-specific: Codex selects `plugins/agrimap-agent-skills/hooks/codex-hooks.json`, Claude selects `claude-hooks.json`, and Gemini alone uses the repository-root `hooks/hooks.json`. The shared Codex/Claude plugin root must not contain a default `hooks/hooks.json`, because both hosts can auto-discover it. Release `0.1.2` also corrects a stale cross-loaded Codex/Claude hook from the host-provided plugin environment and must replace cached `0.1.1` installations before the next session.
+
 Gemini may show its native consent prompt when activating a skill or fingerprinting a hook. The package does not add a second approval gate.
 
 ## First use in a project
 
 At the first chat/session interaction, the Leader must resolve who is requesting the work. In a multi-person project there is no shared `owner.json`.
 
+Requester identity and decision authority are separate. Every task records requester authority (`owner|delegated|requester-only|unknown`), the decision owner, and authority evidence; a requester without owner/delegated authority cannot approve a material trade-off. The normative definitions of substantive work, checkpoint units, material/complex/small work, proportional verification, verification-only QA, QA counters, and model identity live in [`glossary.md`](skills/agrimap-agent-skills/references/glossary.md).
+
 - ignored live identity: `.agrimap-agent/runtime/sessions/<session-id>.json`, confirmed for a bounded window (24 hours by default)
 - ignored active task: `.agrimap-agent/runtime/active/<session-id>.json`
 - tracked attribution: who requested what in the task brief and versioned task-scoped JSONL events with exact UTC timestamps
-- execution attribution: `model`, `role`, `agent`, and `provider` are separate; `requestedBy` remains the human
+- execution attribution: actual `model`, optional configurable `modelLabel`, `role`, `agent`, and `provider` are separate; `requestedBy` remains the human
 - change context: schema-v2 events always record explicit `gitHead`/`gitDirty` context (`null` outside Git), and `changed` checkpoints require at least one nonblank claimed affected file
 
 This is workflow attribution, not proof of the physical editor or commit author. Use `$agm-history` for requester/executor/task chronology and Git log/blame separately for actual commit authorship. `recordedFiles` contains only valid versioned non-terminal claims; any `legacyClaimedFiles` are diagnostic and are not promoted into that attribution. Check `auditStorage` before relying on the result across machines: ignored or untracked logs are local-only. JSONL is not cryptographically tamper-evident; use an external immutable audit system if that threat model applies.
@@ -111,8 +117,8 @@ Manual bootstrap or diagnostics:
 
 ```powershell
 node <installed-package>\skills\agrimap-agent-skills\scripts\agm-workspace.mjs init --cwd .
-node <installed-package>\skills\agrimap-agent-skills\scripts\agm-workspace.mjs identify --cwd . --session <session-id> --owner "Billy" --model "gpt-5.6-sol" --role leader --agent primary --provider codex
-node <installed-package>\skills\agrimap-agent-skills\scripts\agm-workspace.mjs start --cwd . --session <session-id> --operation create-feature --title "Build shared table"
+node <installed-package>\skills\agrimap-agent-skills\scripts\agm-workspace.mjs identify --cwd . --session <session-id> --requested-by "Billy" --model-label "GPT-5.6-sol" --model "<host-reported-model>" --role leader --agent primary --provider codex
+node <installed-package>\skills\agrimap-agent-skills\scripts\agm-workspace.mjs start --cwd . --session <session-id> --operation create-feature --title "Build shared table" --requester-authority owner --decision-owner "Billy" --authority-evidence "confirmed in this session"
 node <installed-package>\skills\agrimap-agent-skills\scripts\agm-workspace.mjs checkpoint --cwd . --session <session-id> --task <task-id> --summary "Reuse scan completed" --files "src/a.ts,src/b.ts" --verification "typecheck passed"
 ```
 
@@ -131,11 +137,11 @@ Commit `.agrimap-agent/tasks`, `memory/project.md`, task-scoped `memory/current|
 | `agm-review` | evidence-backed findings |
 | `agm-history` | read-only requester/task history by person, date, task, or event |
 | `agm-refactor-fe/be/sql` | explicit refactor behavior mode |
-| `agm-qa` | independent read-only requirements-to-evidence verification |
+| `agm-qa` | independent verification-only QA; product artifacts read-only, QA workflow evidence writable |
 | `agm-create-unit-test` | target-specific tests |
 | `agm-create-feature` | FE/BE/batch/library/SQL feature |
 | `agm-create-prompt` | provider/model-aware delegation prompts |
-| `agm-exec` | execute one owner-approved prompt under task/QA rails |
+| `agm-exec` | execute one decision-owner-approved prompt under task/QA rails |
 
 Audit examples:
 
@@ -181,15 +187,15 @@ Foundation reuses `agrimap.platform` before creating Core infrastructure. Active
 
 ## Model labels and prompt generation
 
-The default capability matrix preserves Billy's configurable labels. Claude reasoning/review uses `fable` (displayed as Fable 5) or `opus4.8`; the same `fable` model is also the hard executor, while standard/light execution uses `sonnet5`, `sonnet4.6`, or `haiku4.5`. Codex reasoning/review uses `GPT-5.6-sol`; execution uses `gpt-5.6-sol`, `gpt-5.4`, or `gpt-5.4-mini`. Gemini uses `gemini-cli-default` as a routing label that must resolve to the actual active model at dispatch.
+The default capability matrix preserves configurable model labels. Claude reasoning/review uses labels `fable` (displayed as Fable 5) or `opus4.8`; `fable` is also the hard-executor label, while standard/light execution uses `sonnet5`, `sonnet4.6`, or `haiku4.5`. Codex reasoning/review uses label `GPT-5.6-sol`; execution uses labels `gpt-5.6-sol`, `gpt-5.4`, or `gpt-5.4-mini`. Gemini uses `gemini-cli-default`. None of these labels proves that the current host exposes a model with that name.
 
-These are owner-editable routing labels, not hardcoded provider claims. Override model names in `.agrimap-agent/model-capability-matrix.yaml` or the generated prompt without weakening the workflow contract.
+These are decision-owner/project-editable routing labels, not actual-model claims. At dispatch, resolve the label against models available on the active host and record both `modelLabel` and the actual host-reported `model`; do not silently present a configured label as the running model. Override labels in `.agrimap-agent/model-capability-matrix.yaml` or the generated prompt without weakening the workflow contract.
 
-An owner-approved generated prompt is the execution SoT for exactly one task. It keeps the problem, end state, evidence, owner decisions, file/contract ownership, ordered steps, verification, deviation policy, and Result Package together. Plain language is preferred; missing contracts are not.
+A decision-owner-approved generated prompt is the execution SoT for exactly one task. It keeps the problem, end state, evidence, authorized decisions, file/contract ownership, ordered steps, verification, deviation policy, and Result Package together. Plain language is preferred; missing contracts are not.
 
 ## QA separation and task closure
 
-Implementation and final QA are separate responsibilities. The Leader integrates executor handoffs, then dispatches an independent read-only QA subagent/context. QA reopens the actual artifact and reruns selected claims; it never fixes findings and never returns a conditional pass.
+Implementation and final QA are separate responsibilities. The Leader integrates executor handoffs, then dispatches an independent verification-only QA subagent/context. QA reopens product artifacts read-only and reruns selected claims; it may write only `qa.md`, its heartbeat, and its checkpoint/log evidence. It never fixes findings and never returns a conditional pass.
 
 If QA fails, the Leader records `qa-failed`, summarizes the evidence, and prepares a correction prompt for a new task. It does not edit the failed implementation inside the task under verification:
 
@@ -198,6 +204,34 @@ node <installed-package>\skills\agrimap-agent-skills\scripts\agm-workspace.mjs c
 ```
 
 `complete` remains reserved for a checked checklist plus machine-validated QA mode, named patterns, independent QA/implementation identities, delivery boundary, passed or justified not-applicable QA, and an Outstanding items section. Commit/publish/release boundaries require `qa_mode=full`.
+
+The task-artifact contract below is generated from `skills/agrimap-agent-skills/assets/task-artifact-schema.json`; edit the schema and templates, then run `npm run sync` instead of editing this table.
+
+<!-- BEGIN GENERATED TASK ARTIFACT SCHEMA -->
+<!-- Generated by npm run sync from skills/agrimap-agent-skills/assets/task-artifact-schema.json. -->
+| Artifact | Template | Purpose | Required fields | Required sections |
+| --- | --- | --- | --- | --- |
+| `brief.md` | `task-brief.md` | Requester, authority, execution identity, objective, scope, ownership, and decisions. | `Task ID`<br>`Requested by`<br>`Identity source`<br>`Requester authority`<br>`Decision owner`<br>`Authority evidence`<br>`Model label`<br>`Actual model`<br>`Role`<br>`Agent`<br>`Provider`<br>`Operation`<br>`Objective`<br>`Scope`<br>`Non-goals` | `File and logical-contract ownership`<br>`Inputs`<br>`Authorized decisions and trade-offs`<br>`Service ownership references`<br>`Concerns` |
+| `checklist.md` | `checklist.md` | Checked completion ledger derived from the task contract. | — | — |
+| `qa.md` | `qa.md` | Independent verification-only QA evidence with product artifacts read-only. | `Status`<br>`QA mode`<br>`QA mode reason`<br>`Coverage key`<br>`Fast sequence`<br>`Patterns`<br>`Requested by`<br>`Decision owner`<br>`QA model label`<br>`QA actual model`<br>`QA role`<br>`QA agent`<br>`QA provider`<br>`Product artifacts modified`<br>`Workflow artifacts written`<br>`Implementation model label`<br>`Implementation actual model`<br>`Implementation role`<br>`Implementation agent`<br>`Implementation provider` | `Requirement evidence`<br>`Commands and observed results`<br>`Limitations` |
+| `result.md` | `result.md` | Leader closure result, QA boundary, verification, memory, and outstanding work. | `Outcome`<br>`Requested by`<br>`Decision owner`<br>`Leader model label`<br>`Leader actual model`<br>`Leader role`<br>`Leader agent`<br>`Leader provider`<br>`QA status`<br>`QA mode`<br>`Delivery boundary` | `Authorized decisions`<br>`Changes and verification`<br>`Checklist and memory`<br>`Concerns and commit boundary`<br>`Outstanding items` |
+
+Completion cross-artifact gates:
+
+- Accepted completion QA statuses: `passed`<br>`not-applicable`.
+- `Requested by` and `Decision owner` must match across brief, QA, and result.
+- QA identity (`QA actual model`<br>`QA agent`<br>`QA provider`) must be independent from implementation identity (`Implementation actual model`<br>`Implementation agent`<br>`Implementation provider`).
+- Delivery boundaries `commit`<br>`publish`<br>`release` require `QA mode: full`.
+- A full run records `Fast sequence: 0`; fast runs may record only `1`<br>`2`, and historical completed QA evidence determines the next value.
+
+Full QA is mandatory when any schema trigger applies:
+
+1. commit, publish, or release boundary
+2. public contract, data behavior, generated-code regeneration, or migration
+3. retest after failed QA
+4. third consecutive passed-fast closure for the same coverage key
+5. authorized decision-owner request
+<!-- END GENERATED TASK ARTIFACT SCHEMA -->
 
 ## State and log location
 
@@ -221,7 +255,7 @@ The Leader must define `workspace_need` and verify whether executors share a wor
 - shared registration/export/route/DI/schema files belong to one executor or the Leader;
 - overlapping work is combined or executed sequentially;
 - isolated work returns a visible commit SHA, portable patch, or complete changed artifacts;
-- the Leader integrates, dispatches independent QA, and synthesizes evidence, so the human owner is not left to collect agent fragments.
+- the Leader integrates, dispatches independent QA, and synthesizes evidence, so neither requester nor decision owner is left to collect agent fragments.
 
 Every delegation prompt states isolation need, requested mode, base ref/commit, provider instruction, visibility check, integration return, and fallback. Claude Code can use custom subagent `isolation: worktree` when the installed version supports it; Codex managed worktrees are surface-dependent. Unsupported or unknown modes use only the named shared/sequential fallback. Uncommitted parent changes are never assumed visible in an isolated worktree.
 
@@ -233,7 +267,7 @@ No license is committed yet. MIT is the recommended license for the skill engine
 
 The package deliberately does not invent company conventions. Current collections are usable; only targeted gaps should be requested when they can change the active task:
 
-These unresolved rows retain `missing-owner-example` status until owner evidence is added.
+The current FE-library architecture, naming, generated API, environment, Playground, and smoke-test baseline are already usable `current` guidance. Only the narrower gaps below retain `missing-owner-example` until decision-owner evidence is added.
 
 - FE library minor/major semver triggers and richer assertions beyond smoke coverage;
 - BE main repository/domain/response choices where neighboring code conflicts, plus representative tests;

@@ -2,6 +2,12 @@
 
 import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
+import {
+  loadTaskArtifactSchema,
+  renderTaskArtifactSchemaDocs,
+  replaceTaskArtifactSchemaDocs,
+  taskArtifactSchemaIssues,
+} from "../skills/agrimap-agent-skills/scripts/task-artifact-schema.mjs";
 
 const root = process.cwd();
 const canonicalSkill = path.join(root, "skills", "agrimap-agent-skills");
@@ -13,6 +19,15 @@ if (typeof packageVersion !== "string" || !/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9
   throw new Error("package.json version must be a valid semantic version.");
 }
 const operations = JSON.parse(await readFile(path.join(root, "config", "operations.json"), "utf8"));
+const taskArtifactSchema = await loadTaskArtifactSchema(canonicalSkill);
+const schemaIssues = taskArtifactSchemaIssues(taskArtifactSchema);
+if (schemaIssues.length) throw new Error(`Invalid task artifact schema:\n- ${schemaIssues.join("\n- ")}`);
+const generatedTaskArtifactDocs = renderTaskArtifactSchemaDocs(taskArtifactSchema);
+for (const relativePath of ["README.md", path.join("docs", "USAGE.md")]) {
+  const filePath = path.join(root, relativePath);
+  const content = await readFile(filePath, "utf8");
+  await writeFile(filePath, replaceTaskArtifactSchemaDocs(content, generatedTaskArtifactDocs), "utf8");
+}
 
 await rm(pluginSkills, { recursive: true, force: true });
 await mkdir(pluginSkills, { recursive: true });
@@ -101,6 +116,11 @@ function providerHooks(provider, pluginRootToken) {
 }
 
 const hooksDirectory = path.join(pluginRoot, "hooks");
+// This directory is shared by the Codex and Claude packages. Never generate
+// hooks/hooks.json here: both hosts auto-discover that default path, which can
+// cross-load the other host's provider flag. Their manifests select only the
+// provider-specific files below. Gemini uses the repository-root extension
+// hooks/hooks.json and is therefore outside this plugin root.
 await rm(hooksDirectory, { recursive: true, force: true });
 await mkdir(hooksDirectory, { recursive: true });
 await writeFile(

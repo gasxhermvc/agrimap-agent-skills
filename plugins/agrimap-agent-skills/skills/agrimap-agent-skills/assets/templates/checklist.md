@@ -1,14 +1,14 @@
 # Checklist
 
-- [ ] Requester, objective, scope, and non-goals recorded.
+- [ ] Requester, requester authority, decision owner, authority evidence, objective, scope, and non-goals recorded.
 - [ ] Relevant code, callers, contracts, tests, and impact inspected.
 - [ ] Material statements labeled as fact, inference, hypothesis, or unknown with evidence.
-- [ ] Material solution choices and trade-offs resolved.
+- [ ] Material solution choices and trade-offs resolved by the decision owner.
 - [ ] Workspace visibility and integration method verified before delegation.
 - [ ] File/logical-contract ownership has no concurrent writers.
 - [ ] Reason for every planned change recorded.
 - [ ] Smallest complete implementation/analysis finished.
 - [ ] Changed points and nearby regressions checked.
-- [ ] Proportional verification passed.
-- [ ] Independent read-only QA reopened the artifact, sampled claimed checks, and passed.
+- [ ] Glossary-defined proportional-verification tier recorded and passed.
+- [ ] Independent verification-only QA reopened product artifacts, sampled claimed checks, wrote only workflow evidence, and passed.
 - [ ] Task result, memory, knowledge/decisions, and logs updated.

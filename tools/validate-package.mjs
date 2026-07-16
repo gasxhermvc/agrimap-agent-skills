@@ -5,6 +5,11 @@ import { execFileSync } from "node:child_process";
 import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { LOG_EVENTS } from "../skills/agrimap-agent-skills/scripts/log-events.mjs";
+import {
+  renderTaskArtifactSchemaDocs,
+  taskArtifactRequiredSections,
+  taskArtifactSchemaIssues,
+} from "../skills/agrimap-agent-skills/scripts/task-artifact-schema.mjs";
 
 const root = process.cwd();
 const errors = [];
@@ -61,16 +66,20 @@ for (const required of [
   "hooks/hooks.json",
   "skills/agrimap-agent-skills/references/patterns/conflict-resolution.md",
   "skills/agrimap-agent-skills/references/analysis-discipline.md",
+  "skills/agrimap-agent-skills/references/glossary.md",
   "skills/agrimap-agent-skills/references/backend-engineer.md",
   "skills/agrimap-agent-skills/references/service-ownership.md",
   "skills/agrimap-agent-skills/scripts/log-events.mjs",
   "skills/agrimap-agent-skills/scripts/identity.mjs",
+  "skills/agrimap-agent-skills/scripts/task-artifact-schema.mjs",
+  "skills/agrimap-agent-skills/assets/task-artifact-schema.json",
   "skills/agrimap-agent-skills/assets/templates/service-ownership.yaml",
   "tests/README.md",
   "tests/helpers/harness.mjs",
   "tests/unit/cli-args.test.mjs",
   "tests/unit/extract-code-blocks.test.mjs",
   "tests/unit/fe-scenarios.test.mjs",
+  "tests/unit/task-artifact-schema.test.mjs",
   "tests/unit/verify-golden.test.mjs",
   "tests/integration/package/usage.test.mjs",
   "tests/integration/workspace/workspace.test.mjs",
@@ -103,10 +112,12 @@ const geminiExtension = await parseJson("gemini-extension.json");
 const geminiHooks = await parseJson("hooks/hooks.json");
 const codexHooks = await parseJson("plugins/agrimap-agent-skills/hooks/codex-hooks.json");
 const claudeHooks = await parseJson("plugins/agrimap-agent-skills/hooks/claude-hooks.json");
+const taskArtifactSchema = await parseJson("skills/agrimap-agent-skills/assets/task-artifact-schema.json");
 
 if (!packageManifest?.scripts?.test?.includes("npm run verify:golden")) errors.push("npm test must include golden verification.");
 if (!packageManifest?.scripts?.test?.includes("npm run validate")) errors.push("npm test must include package validation before behavioral suites.");
 if (!packageManifest?.scripts?.["test:unit"]?.includes("fe-scenarios.test.mjs")) errors.push("Frontend scenario eval is not wired into the automated unit suite.");
+if (!packageManifest?.scripts?.["test:unit"]?.includes("task-artifact-schema.test.mjs")) errors.push("Task artifact schema contract test is not wired into the automated unit suite.");
 for (const scriptName of ["test:unit", "test:integration", "test:workspace", "test:usage"]) {
   if (!packageManifest?.scripts?.[scriptName]) errors.push(`package.json script is missing: ${scriptName}`);
 }
@@ -120,6 +131,24 @@ if (canonicalSkill.split(/\r?\n/).length > 500) errors.push("Canonical SKILL.md 
 for (const marker of ["Answer audit/history questions", "conversational recall alone", "created event must preserve the requested objective"])
   if (!canonicalSkill.includes(marker)) errors.push(`Canonical audit/history contract missing marker: ${marker}`);
 if (!canonicalSkill.includes("[fe-scenarios.md](references/evals/fe-scenarios.md)")) errors.push("Frontend eval catalog is unreachable from SKILL.md.");
+if (!canonicalSkill.includes("[glossary.md](references/glossary.md)")) errors.push("Normative workflow glossary is unreachable from SKILL.md.");
+
+const glossaryReference = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "glossary.md"), "utf8");
+for (const marker of [
+  "Requester authority",
+  "Substantive work",
+  "Checkpoint unit",
+  "Material choice/change",
+  "Complex work",
+  "Few files / small task",
+  "Proportional verification",
+  "third closure for that key must use `full`",
+  "Verification-only QA",
+  "Configurable model label",
+  "Actual model",
+]) {
+  if (!glossaryReference.includes(marker)) errors.push(`Workflow glossary missing marker: ${marker}`);
+}
 
 const memoryAndLogsReference = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "memory-and-logs.md"), "utf8");
 const documentedLogEvents = memoryAndLogsReference.match(/"event":\s*"([^"]+)"/)?.[1]?.split("|") || [];
@@ -132,8 +161,42 @@ if (!workspaceScriptReference.includes('from "./log-events.mjs"')) {
 }
 for (const marker of ["auditEventIssues", 'case "history"', "REQUEST_OBJECTIVE_REQUIRED", "TASK_ID_EXISTS", "AMBIGUOUS_ACTIVE_TASK"])
   if (!workspaceScriptReference.includes(marker)) errors.push(`Workspace audit implementation missing marker: ${marker}`);
-for (const marker of ['renderAssetTemplate("task-brief.md"', 'renderAssetTemplate("checklist.md"'])
-  if (!workspaceScriptReference.includes(marker)) errors.push(`Workspace scaffold must render canonical assets: ${marker}`);
+for (const marker of ["loadTaskArtifactSchema", "taskArtifactSchema.scaffoldOrder", "renderTaskArtifact"])
+  if (!workspaceScriptReference.includes(marker)) errors.push(`Workspace task-artifact schema integration missing marker: ${marker}`);
+for (const hardcodedTemplate of ['renderAssetTemplate("task-brief.md"', 'renderAssetTemplate("checklist.md"'])
+  if (workspaceScriptReference.includes(hardcodedTemplate)) errors.push(`Workspace scaffold bypasses task-artifact schema: ${hardcodedTemplate}`);
+
+if (taskArtifactSchema) {
+  for (const issue of taskArtifactSchemaIssues(taskArtifactSchema)) errors.push(`Task artifact schema: ${issue}`);
+  for (const [artifact, definition] of Object.entries(taskArtifactSchema.artifacts || {})) {
+    const templatePath = path.join(root, "skills", "agrimap-agent-skills", "assets", "templates", definition.template || "");
+    if (!(await exists(templatePath))) {
+      errors.push(`${artifact}: schema template is missing: ${definition.template || "undefined"}`);
+      continue;
+    }
+    const template = await readFile(templatePath, "utf8");
+    for (const field of definition.requiredFields || []) {
+      const escaped = String(field.label).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      if (!new RegExp(`^\\s*-\\s*${escaped}:`, "m").test(template)) {
+        errors.push(`${artifact}: template ${definition.template} is missing required field: ${field.label}`);
+      }
+    }
+    for (const heading of taskArtifactRequiredSections(definition)) {
+      const escaped = String(heading).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      if (!new RegExp(`^##\\s+${escaped}\\s*$`, "m").test(template)) {
+        errors.push(`${artifact}: template ${definition.template} is missing required section: ${heading}`);
+      }
+    }
+    if (definition.kind === "checklist" && !/^\s*- \[[ xX]\]\s+/m.test(template)) {
+      errors.push(`${artifact}: checklist template has no checkbox item.`);
+    }
+  }
+  const generatedSchemaDocs = renderTaskArtifactSchemaDocs(taskArtifactSchema);
+  for (const relativePath of ["README.md", "docs/USAGE.md"]) {
+    const content = await readFile(path.join(root, relativePath), "utf8");
+    if (!content.includes(generatedSchemaDocs)) errors.push(`${relativePath}: generated task-artifact schema block is stale; run npm run sync.`);
+  }
+}
 
 const syncAdapter = await readFile(path.join(root, "tools", "sync-adapters.mjs"), "utf8");
 if (!syncAdapter.includes("packageManifest.version")) errors.push("Sync adapter does not read the canonical package version.");
@@ -162,9 +225,9 @@ for (const relativePath of [
 }
 
 const delegationReference = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "subagents-and-branches.md"), "utf8");
-for (const marker of ["one writer model per wave", "workspace_need", "base commit", "isolated-sandbox", "portable patch", "The owner must not be asked"])
+for (const marker of ["one writer model per wave", "workspace_need", "base commit", "isolated-sandbox", "portable patch", "Neither the requester nor decision owner is responsible"])
   if (!delegationReference.includes(marker)) errors.push(`Delegation contract missing marker: ${marker}`);
-for (const marker of ["QA is a read-only subagent/context", "isolation: worktree", "normal subagent starts in the current working directory"])
+for (const marker of ["verification-only QA", "product_artifacts: read-only", "workflow_writes: qa.md|heartbeat|checkpoint-log", "isolation: worktree", "normal subagent starts in the current working directory"])
   if (!delegationReference.includes(marker)) errors.push(`Delegation/QA isolation contract missing marker: ${marker}`);
 
 const workflowReference = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "workflows.md"), "utf8");
@@ -183,11 +246,11 @@ for (const marker of ["## Message collection gate", "`messages.txt`-style artifa
 const promptReference = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "create-prompt.md"), "utf8");
 if (promptReference.includes("`project_kind`")) errors.push("create-prompt still uses the superseded project_kind dimension.");
 if (!promptReference.includes("exactly `agmws` or `agmbo`")) errors.push("create-prompt backend_profile enum is missing.");
-for (const marker of ["execution source of truth", "deviation_from_prompt", "independent read-only QA", "service-ownership.yaml", "workspace_need", "base_commit", "fallback_mode"])
+for (const marker of ["execution source of truth", "deviation_from_prompt", "verification-only QA", "service-ownership.yaml", "workspace_need", "base_commit", "fallback_mode"])
   if (!promptReference.includes(marker)) errors.push(`create-prompt contract missing marker: ${marker}`);
 
 const qaReference = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "qa-and-done.md"), "utf8");
-for (const marker of ["independent read-only QA", "Result Package as testimony", "There is no conditional pass", "qa-failed"])
+for (const marker of ["independent verification-only QA", "product-read-only", "workflow-artifact writes", "Result Package as testimony", "There is no conditional pass", "qa-failed"])
   if (!qaReference.includes(marker)) errors.push(`QA contract missing marker: ${marker}`);
 for (const marker of ["`messages.txt`-style artifact", "duplicate handling plus idempotent inserts", "QA evidence must name the artifact path", "codes found, reused, added, and conflicted", "inspected producer files", "explicit `no message changes`"])
   if (!qaReference.includes(marker)) errors.push(`QA message-artifact contract missing marker: ${marker}`);
@@ -207,6 +270,8 @@ const modelMatrix = await readFile(path.join(root, "skills", "agrimap-agent-skil
 if (modelMatrix.includes("fable5")) errors.push("Fable is duplicated as fable and fable5 instead of one model label.");
 if (!modelMatrix.includes("fable: Fable 5")) errors.push("Fable 5 display label is missing.");
 if (!modelMatrix.includes("mode: sparse_overrides") || !modelMatrix.includes("fallback: model_key")) errors.push("Display-label fallback policy must declare sparse overrides with model-key fallback.");
+for (const marker of ["provider_entries_are: configurable_model_labels", "configured_field: modelLabel", "execution_field: model", "actual_host_reported_model_or_unknown"])
+  if (!modelMatrix.includes(marker)) errors.push(`Model identity policy missing marker: ${marker}`);
 if (!/^  gemini:\r?$/m.test(modelMatrix) || !modelMatrix.includes("gemini-cli-default")) errors.push("Gemini model capability routing is missing.");
 if (!promptReference.includes("`codex`, `claude`, or `gemini`") || !promptReference.includes("### Gemini")) errors.push("create-prompt Gemini provider rendering is missing.");
 
@@ -323,5 +388,5 @@ if (errors.length) {
   process.stdout.write(`${JSON.stringify({ ok: false, errors }, null, 2)}\n`);
   process.exitCode = 1;
 } else {
-  process.stdout.write(`${JSON.stringify({ ok: true, aliases: operations.operations.length, checks: "manifests, adapters, skill, passive disciplines, dev-state isolation, delegation ownership, usage examples, golden sources" }, null, 2)}\n`);
+  process.stdout.write(`${JSON.stringify({ ok: true, aliases: operations.operations.length, checks: "manifests, provider isolation, adapters, skill, task-artifact schema/templates/docs, glossary, delegation ownership, usage examples, golden sources" }, null, 2)}\n`);
 }

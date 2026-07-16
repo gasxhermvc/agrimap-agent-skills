@@ -1,10 +1,26 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
 
 export async function hooks(harness) {
   const { temp, run, spawn } = harness;
   const { hook: hookScript, workspace: workspaceScript } = harness.scripts;
+
+  function runHookWithHostEnvironment(args, input, environment = {}) {
+    const env = { ...process.env };
+    delete env.PLUGIN_ROOT;
+    delete env.PLUGIN_DATA;
+    delete env.CLAUDE_PLUGIN_ROOT;
+    delete env.CLAUDE_PLUGIN_DATA;
+    Object.assign(env, environment);
+    return JSON.parse(execFileSync(process.execPath, [hookScript, ...args], {
+      cwd: temp,
+      encoding: "utf8",
+      env,
+      input: JSON.stringify(input),
+    }));
+  }
 
   const hookA = run(hookScript, ["--provider", "gemini", "--mode", "task"], {
     cwd: temp,
@@ -20,7 +36,7 @@ export async function hooks(harness) {
     session_id: "parser-regression",
     hook_event_name: "BeforeAgent",
   });
-  assert.match(booleanFlagHook.hookSpecificOutput.additionalContext, /Hook flavor: gemini/);
+  assert.match(booleanFlagHook.hookSpecificOutput.additionalContext, /Hook provider: gemini/);
   assert.match(booleanFlagHook.hookSpecificOutput.additionalContext, /Hook mode: session/);
 
   const autoProviderHook = run(hookScript, ["--provider", "auto", "--mode", "session"], {
@@ -28,7 +44,30 @@ export async function hooks(harness) {
     session_id: "provider-regression",
     hook_event_name: "SessionStart",
   });
-  assert.match(autoProviderHook.hookSpecificOutput.additionalContext, /Hook flavor: unknown/);
+  assert.match(autoProviderHook.hookSpecificOutput.additionalContext, /Hook provider: unknown/);
+
+  const staleClaudeHookInsideCodex = runHookWithHostEnvironment(
+    ["--provider", "claude", "--mode", "session"],
+    { cwd: temp, session_id: "codex-provider-guard", hook_event_name: "SessionStart" },
+    { PLUGIN_ROOT: path.join(temp, "codex-plugin"), CLAUDE_PLUGIN_ROOT: path.join(temp, "codex-plugin") },
+  );
+  assert.match(staleClaudeHookInsideCodex.hookSpecificOutput.additionalContext, /Hook provider: codex/);
+  assert.match(staleClaudeHookInsideCodex.hookSpecificOutput.additionalContext, /Ignored mismatched hook configuration provider=claude/);
+
+  const staleCodexHookInsideClaude = runHookWithHostEnvironment(
+    ["--provider", "codex", "--mode", "session"],
+    { cwd: temp, session_id: "claude-provider-guard", hook_event_name: "SessionStart" },
+    { CLAUDE_PLUGIN_ROOT: path.join(temp, "claude-plugin") },
+  );
+  assert.match(staleCodexHookInsideClaude.hookSpecificOutput.additionalContext, /Hook provider: claude/);
+  assert.match(staleCodexHookInsideClaude.hookSpecificOutput.additionalContext, /Ignored mismatched hook configuration provider=codex/);
+
+  const geminiProviderGuard = runHookWithHostEnvironment(
+    ["--provider", "gemini", "--mode", "session"],
+    { cwd: temp, session_id: "gemini-provider-guard", hook_event_name: "SessionStart" },
+  );
+  assert.match(geminiProviderGuard.hookSpecificOutput.additionalContext, /Hook provider: gemini/);
+  assert.match(geminiProviderGuard.hookSpecificOutput.additionalContext, /runtime provider agree: gemini/);
 
   const repeatedHookA = run(hookScript, ["--provider", "gemini", "--mode", "task"], {
     cwd: temp,

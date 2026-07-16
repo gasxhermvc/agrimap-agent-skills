@@ -1,8 +1,15 @@
 # Example large request: checkout retry
 
-This is a safe fixture for testing large-text intake. A real owner request may be much longer; the headings provide stable chunk boundaries.
+This is a safe fixture for testing large-text intake. A real requester message may be much longer; the headings provide stable chunk boundaries.
 
-## Owner objective
+## Requester and authority
+
+- Requested by: Example product owner
+- Requester authority: owner
+- Decision owner: Example product owner
+- Authority evidence: Confirmed in the fixture request.
+
+## Requester objective
 
 Allow a user to retry checkout after a network timeout without creating a duplicate order.
 
@@ -32,14 +39,13 @@ The UI cannot distinguish an unknown server outcome from a confirmed failure. So
 - Loading, pending-verification, success, recoverable failure, and terminal failure are observable.
 - Existing successful checkout behavior remains covered.
 
-## Owner decisions
+## Authorized decision-owner decisions
 
 - Correctness is more important than a cosmetic refactor.
 - Material contract or logic changes require trade-off discussion.
-- QA must be independent and read-only.
+- QA must be independent and verification-only: product artifacts are read-only, while `qa.md`, heartbeat, and QA checkpoint/log evidence are writable.
 
 ## References
 
 - Visual flow: `examples/inputs/references/checkout-flow.svg`
 - Supporting note: `examples/inputs/references/feature-note.md`
-

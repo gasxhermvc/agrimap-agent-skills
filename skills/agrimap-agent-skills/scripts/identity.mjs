@@ -44,6 +44,7 @@ export function normalizeIdentity(value, options = {}) {
     confirmedAt: confirmedAt || null,
     expiresAt: expiresAt || null,
     model: String(value.model || value.actor || "unknown").trim() || "unknown",
+    modelLabel: String(value.modelLabel || "not-configured").trim() || "not-configured",
     role: String(value.role || "leader").trim() || "leader",
     agent: String(value.agent || "primary").trim() || "primary",
     provider: String(value.provider || options.defaultProvider || "unknown").trim() || "unknown",

@@ -21,7 +21,7 @@
 
 {{root_problem_relevant_probe_results}}
 
-## Solutions and owner trade-off
+## Solutions and decision-owner trade-off
 
 {{options_tradeoffs_recommendation_owner_decision}}
 

@@ -4,8 +4,12 @@
 - Requested by: {{requested_by}}
 - Requester ID: {{requester_id_or_not_recorded}}
 - Identity source: `{{identity_source}}`
+- Requester authority: `{{requester_authority}}`
+- Decision owner: {{decision_owner_or_not_required}}
+- Authority evidence: {{authority_evidence_or_not_required}}
 - Session: `{{session_id}}`
-- Model: `{{actual_model_or_unknown}}`
+- Model label: {{model_label_or_not_configured}}
+- Actual model: `{{actual_model_or_unknown}}`
 - Role: `{{role}}`
 - Agent: `{{agent_name}}`
 - Provider: `{{provider}}`
@@ -28,7 +32,7 @@
 
 {{input_manifest}}
 
-## Decisions and trade-offs
+## Authorized decisions and trade-offs
 
 {{approved_decisions}}
 

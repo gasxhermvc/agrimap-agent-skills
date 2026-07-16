@@ -1,6 +1,6 @@
 # Provider syntax
 
-The umbrella skill is `agrimap-agent-skills`. Provider aliases route to it and pass `operation` plus raw owner arguments.
+The umbrella skill is `agrimap-agent-skills`. Provider aliases route to it and pass `operation` plus raw requester arguments; authority fields remain distinct.
 
 ## Provider detection (do this first)
 

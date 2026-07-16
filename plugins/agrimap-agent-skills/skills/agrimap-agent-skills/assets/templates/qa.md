@@ -2,14 +2,21 @@
 
 - Status: `passed|failed|blocked|not-applicable`
 - QA mode: `fast|full`
+- QA mode reason: {{qa_mode_reason}}
+- Coverage key: {{qa_coverage_key}}
+- Fast sequence: `{{fast_sequence_0_1_or_2}}`
 - Patterns: {{loaded_pattern_files_or_none_with_reason}}
 - Requested by: {{requested_by}}
-- QA model: {{model}}
+- Decision owner: {{decision_owner_or_not_required}}
+- QA model label: {{model_label}}
+- QA actual model: {{actual_model_or_unknown}}
 - QA role: `qa`
 - QA agent: {{agent_name}}
 - QA provider: {{provider}}
-- Read-only: `true`
-- Implementation model: {{implementation_model}}
+- Product artifacts modified: `false`
+- Workflow artifacts written: {{qa_workflow_artifacts_written}}
+- Implementation model label: {{implementation_model_label}}
+- Implementation actual model: {{implementation_actual_model}}
 - Implementation role: {{implementation_role}}
 - Implementation agent: {{implementation_agent}}
 - Implementation provider: {{implementation_provider}}

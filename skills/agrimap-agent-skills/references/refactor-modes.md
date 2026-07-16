@@ -18,7 +18,7 @@ For SQL in `readability-organization` or `strict-preserve-logic`, message collec
 
 ## `strict-allow-logic-change`
 
-Allow intentional logic improvement. Require concern -> conversation -> owner trade-off before editing. Record old behavior, new behavior, compatibility impact, migration/rollback, and the selected unit tests/test cases.
+Allow intentional logic improvement. Require concern -> conversation -> authorized decision-owner trade-off before editing. Record old behavior, new behavior, compatibility impact, migration/rollback, and the selected unit tests/test cases.
 
 ## `targeted-bug-fix`
 

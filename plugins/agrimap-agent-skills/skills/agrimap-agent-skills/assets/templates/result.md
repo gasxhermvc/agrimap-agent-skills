@@ -2,7 +2,9 @@
 
 - Outcome: `completed|qa-failed|blocked|cancelled`
 - Requested by: {{requested_by}}
-- Leader model: {{actual_model_or_unknown}}
+- Decision owner: {{decision_owner_or_not_required}}
+- Leader model label: {{leader_model_label}}
+- Leader actual model: {{actual_model_or_unknown}}
 - Leader role: `leader`
 - Leader agent: {{agent_name}}
 - Leader provider: {{provider}}
@@ -10,9 +12,9 @@
 - QA mode: `{{qa_mode}}`
 - Delivery boundary: `{{delivery_boundary}}`
 
-## Decisions
+## Authorized decisions
 
-{{owner_approved_decisions}}
+{{authorized_decisions}}
 
 ## Changes and verification
 

@@ -21,7 +21,7 @@ services:
     scheduled_jobs: []
     forbidden_cross_service_actions: []
     evidence:
-      - kind: "owner-decision|repository|contract|runtime"
+      - kind: "decision-owner-approval|repository|contract|runtime"
         source: "file:line, decision ID, or URL"
         observed_at: "ISO-8601"
     updated_at: "ISO-8601"

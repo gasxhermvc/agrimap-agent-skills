@@ -50,6 +50,30 @@ function fingerprint(value) {
   return createHash("sha256").update(value).digest("hex");
 }
 
+function normalizeProvider(value) {
+  const provider = typeof value === "string" ? value.toLowerCase() : "";
+  return new Set(["codex", "claude", "gemini"]).has(provider)
+    ? provider
+    : "unknown";
+}
+
+function resolveHookProvider(configuredProvider, environment) {
+  // Codex exports both PLUGIN_ROOT and the Claude-compatible root. Check its
+  // provider-specific variable first so a cached Claude hook cannot mislabel a
+  // Codex session. Gemini has no equivalent host environment marker; its hook
+  // lives in the extension-only root and carries an explicit provider value.
+  if (String(environment.PLUGIN_ROOT || "").trim()) {
+    return { provider: "codex", source: "Codex PLUGIN_ROOT" };
+  }
+  if (configuredProvider === "gemini") {
+    return { provider: "gemini", source: "Gemini extension hook" };
+  }
+  if (String(environment.CLAUDE_PLUGIN_ROOT || "").trim()) {
+    return { provider: "claude", source: "Claude CLAUDE_PLUGIN_ROOT" };
+  }
+  return { provider: configuredProvider, source: "explicit hook configuration" };
+}
+
 function gitRequesterSuggestion(cwd) {
   try {
     return execFileSync("git", ["config", "--get", "user.name"], {
@@ -85,10 +109,10 @@ async function readStdin() {
 const args = parseCliArgs(process.argv.slice(2));
 const input = await readStdin();
 const mode = args.mode || "session";
-const providerValue = typeof args.provider === "string" ? args.provider.toLowerCase() : "";
-const provider = new Set(["codex", "claude", "gemini"]).has(providerValue)
-  ? providerValue
-  : "unknown";
+const configuredProvider = normalizeProvider(args.provider);
+const providerResolution = resolveHookProvider(configuredProvider, process.env);
+const provider = providerResolution.provider;
+const providerMismatch = configuredProvider !== provider;
 const cwd = workspaceRoot(path.resolve(input.cwd || process.cwd()));
 const stateRoot = path.join(cwd, ".agrimap-agent");
 const sessionId = safeSessionId(input.session_id || input.sessionId || input.conversation_id || input.conversationId);
@@ -142,9 +166,12 @@ if (mode === "task") {
 } else {
 context.push(
   "AgriMap identity and audit context:",
-  `- Hook flavor: ${provider} (the installed hook's configuration flag — NOT proof of the running provider)`,
+  `- Hook provider: ${provider} (resolved from ${providerResolution.source}).`,
+  providerMismatch
+    ? `- Ignored mismatched hook configuration provider=${configuredProvider}; host evidence requires provider=${provider}. Refresh the installed plugin to remove the stale hook.`
+    : `- Hook configuration and runtime provider agree: ${provider}.`,
   `- Hook mode: ${mode}`,
-  "- Record executing model and provider from your own runtime identity: you always know your model family and host CLI. Never copy this hook's flavor or `unknown` into briefs/logs when your own identity says otherwise; `model: unknown` is a recording defect unless you genuinely cannot name your own model.",
+  "- Record executing model and provider from your own runtime identity: you always know your model family and host CLI. The resolved hook provider is runtime evidence, but your own host/model identity still wins if any external configuration is stale; `model: unknown` is a recording defect unless you genuinely cannot name your own model.",
   effectiveSessionId
     ? `- Session: ${effectiveSessionId}${sessionId ? "" : " (derived from transcript path)"}`
     : "- Session ID is unavailable. Create a stable local conversation ID before substantive task work.",
@@ -163,7 +190,7 @@ context.push(
   suggestedRequester
     ? `- Unconfirmed Git-name suggestion: ${suggestedRequester}. Ask the human to confirm it; never attribute work automatically from this value.`
     : "- Do not substitute machine, OS, or Git identity for explicit human confirmation.",
-  "- Durable audit rule: every task must record who requested what in its tracked brief and created log; checkpoint each atomic action with an accurate UTC timestamp.",
+  "- Durable audit rule: every task must record who requested what in its tracked brief and created log; checkpoint each durable state transition (not each read/tool call) with an accurate UTC timestamp.",
   "- For audit/history questions, run agm-workspace.mjs history with person/date/task filters; inspect attributionSemantics, auditStorage, invalidLines, and returned brief/result/QA/memory paths. Distinguish requester, workflow executor, claimed files, and Git author; never answer from conversational recall alone.",
   "- Durable project memory is .agrimap-agent/memory/project.md; reopen it when context was compacted or current project facts are needed.",
 );
@@ -175,12 +202,12 @@ if (mode !== "task" && activeTask?.taskId) {
 
 if (mode === "subagent") {
   context.push(
-    "- Inherit requestedBy from the Leader handoff/session and identify model, role, agent, and provider separately.",
-    "- First action before any work: append your identity line to .agrimap-agent/runtime/progress/<task-id>.jsonl, then one heartbeat line per ordered step and a finished/blocked line on exit (see subagents-and-branches.md). The owner watches this file while the UI shows only 'Waiting for subagent…'.",
+    "- Inherit requestedBy and authority fields from the Leader handoff/session; record configurable modelLabel separately from actual model, role, agent, and provider.",
+    "- First action before any work: append your identity line to .agrimap-agent/runtime/progress/<task-id>.jsonl, then one heartbeat line per ordered step and a finished/blocked line on exit (see subagents-and-branches.md). The requester can watch this file while the UI shows only 'Waiting for subagent…'.",
     "- Read workspace_need before any write. Verify the required mode, base commit, visibility, ownership, and integration-return method; report unsupported isolation and use only the named fallback.",
     "- Write only the files and logical contract assigned to you. One writer owns them per integration wave; stop and report overlap not resolved by the Leader.",
     "- Do not assume a sandbox branch or commit is visible. Return the requested integration artifact for the verified workspace mode.",
-    "- Return a structured handoff: status, requestedBy, model, role, agent, provider, summary, files_changed, behavior_changed, decisions_and_reasons, commands_and_tests, remaining_risks, memory_facts, integration_artifact, and branch/commit when applicable.",
+    "- Return a structured handoff: status, requestedBy, requesterAuthority, decisionOwner, modelLabel, actual model, role, agent, provider, summary, files_changed, behavior_changed, decisions_and_reasons, commands_and_tests, remaining_risks, memory_facts, integration_artifact, and branch/commit when applicable.",
   );
 }
 
@@ -188,7 +215,7 @@ if (mode !== "task") {
   context.push(
     "- Read the umbrella skill before using an agm workflow.",
     "- Do not add permission gates. Discuss only material logic/contract/data/architecture trade-offs.",
-    "- Update memory and concise logs after every atomic task; do not claim completion with unchecked items.",
+    "- Update memory and concise logs after every glossary-defined durable state transition; do not claim completion with unchecked items.",
     "- Memory loading policy: this one-time load (plus the pending-work summary above) is the memory context for the whole session. It is not re-injected on later prompts; reopen the memory files yourself only after context compaction or an on-disk change notice.",
   );
   if (projectMemory) context.push("\nCurrent project memory:\n", projectMemory);

@@ -16,6 +16,6 @@
     {"name":"agm-create-unit-test","operation":"create-unit-test","description":"Create target-specific unit or regression tests"},
     {"name":"agm-create-feature","operation":"create-feature","description":"Create a target-specific FE, BE, batch, library, or SQL feature"},
     {"name":"agm-create-prompt","operation":"create-prompt","description":"Create provider-specific Leader, executor, and QA prompts"},
-    {"name":"agm-exec","operation":"execute","description":"Execute one owner-approved generated prompt as the execution source of truth with checkpoints, deviation stops, and a Result Package"}
+    {"name":"agm-exec","operation":"execute","description":"Execute one decision-owner-approved generated prompt as the execution source of truth with checkpoints, deviation stops, and a Result Package"}
   ]
 }

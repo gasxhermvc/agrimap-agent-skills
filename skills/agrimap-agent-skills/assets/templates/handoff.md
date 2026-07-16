@@ -2,7 +2,8 @@
 
 - Status: `completed|partial|blocked`
 - Requested by: {{requested_by}}
-- Model: {{actual_model_or_unknown}}
+- Model label: {{model_label}}
+- Actual model: {{actual_model_or_unknown}}
 - Role: {{role}}
 - Agent: {{agent_name}}
 - Provider: {{provider}}

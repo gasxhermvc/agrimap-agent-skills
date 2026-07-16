@@ -14,12 +14,12 @@
 
 - Use at most five active subagents.
 - Delegate only independent, bounded work with a clear integration boundary.
-- Keep ambiguous owner decisions with the Leader.
+- Keep unresolved material decisions with the Leader until the recorded decision owner approves them.
 - Before dispatch, map every target and forbidden file to exactly one writer for the integration wave.
 - One file and one logical contract have one writer model per wave. Read-only analysis and QA may overlap; writes may not.
 - If two tasks need the same file, shared registry, route table, DI setup, public export, schema object, generated artifact, or contract, combine them under one writer or run them sequentially.
 - The Leader owns integration files by default and prevents instructions whose scopes overlap indirectly.
-- QA is a read-only subagent/context with no write set. It may inspect every integrated artifact but cannot own or modify a source, test, prompt, checklist, or acceptance file.
+- QA is a verification-only subagent/context with no product-artifact write set. It may inspect every integrated artifact and may write only its `qa.md`, heartbeat, and checkpoint/log evidence; it cannot own or modify source, tests, product docs, generated output, implementation prompts, checklists, scope, or acceptance criteria.
 
 ## Workspace modes
 
@@ -32,7 +32,7 @@ Do not assume that a provider's subagent, sandbox, branch, or commit is visible 
 | `isolated-sandbox` | Do not rely on a branch name for integration. | Portable patch/diff or complete changed artifacts, tests, and handoff. |
 | `unknown` | Do not parallelize writers. Execute sequentially until visibility is proven. | Normal handoff after each step. |
 
-The Leader defines `workspace_need`, verifies and records `workspace_mode`, integrates every artifact, resolves conflicts, dispatches independent read-only QA, and synthesizes the final evidence. The owner must not be asked to discover or merge scattered agent work.
+The Leader defines `workspace_need`, verifies and records `workspace_mode`, integrates every artifact, resolves conflicts, dispatches independent verification-only QA, and synthesizes the final evidence. Neither the requester nor decision owner is responsible for discovering or merging scattered agent work.
 
 ## Branch and worktree
 
@@ -62,7 +62,7 @@ Record the final map as `file_ownership`, including the Leader-owned integration
 
 Include:
 
-- task ID, `requestedBy`, executing `model`, `role`, `agent`, `provider`, objective, non-goals, and model profile;
+- task ID, `requestedBy`, requester authority, decision owner, authority evidence, model profile, configurable model label, executing actual `model`, `role`, `agent`, `provider`, objective, and non-goals;
 - required skill/reference files;
 - complete `workspace_need`, verified `workspace_mode`, integration owner, and branch/worktree name when applicable;
 - exact `file_ownership` plus other writers' forbidden files;
@@ -74,7 +74,7 @@ Include:
 - files the agent must not modify;
 - handoff format.
 
-For a QA packet, replace write ownership with `read_only: true`, name the integrated artifact/commit/file set to inspect, list claimed checks to sample independently, and require findings only. Do not include an implementation step.
+For a QA packet, replace product write ownership with `product_artifacts: read-only` and `workflow_writes: qa.md|heartbeat|checkpoint-log`, name the integrated artifact/commit/file set to inspect, list claimed checks to sample independently, and require findings only. Do not include an implementation step.
 
 ## Progress heartbeat — ให้ owner ดูได้ว่า subagent ยังทำงานอยู่และเป็นใคร
 
@@ -99,7 +99,7 @@ Every executing subagent returns:
 
 - `status`: `completed`, `partial`, or `blocked`;
 - `requestedBy` inherited from the Leader handoff;
-- `model`, `role`, `agent`, and `provider` recorded separately;
+- configurable `model_label` plus actual `model`, `role`, `agent`, and `provider` recorded separately;
 - `summary`;
 - `files_changed` with symbols/lines;
 - `behavior_changed`;
@@ -110,4 +110,4 @@ Every executing subagent returns:
 - `integration_artifact`: visible commit SHA, portable patch, or shared-workspace file set;
 - `commit_or_branch` when applicable.
 
-The Leader verifies that the artifact is integrated, then sends it to an independent QA model. A subagent saying “done” or returning a Result Package is not completion evidence.
+The Leader verifies that the artifact is integrated, then sends it to an independent QA model resolved on the active host. A subagent saying “done” or returning a Result Package is not completion evidence.

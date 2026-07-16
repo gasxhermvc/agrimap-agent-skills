@@ -3,7 +3,8 @@
 - Task: `{{task_id}}`
 - Requested by: {{requested_by}}
 - Scope: {{review_scope}}
-- Read-only: `true`
+- Product artifacts modified: `false`
+- Workflow artifacts written: {{review_workflow_artifacts_written}}
 
 ## Findings by severity
 

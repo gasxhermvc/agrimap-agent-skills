@@ -8,11 +8,16 @@ service_refs: [] # service_id values from knowledge/service-ownership.yaml
 review_evidence: "{{task_id}}" # latest task that confirmed this decision is current
 date: {{date}}
 requested_by: {{requested_by}}
+requester_authority: {{requester_authority}}
+decision_owner: {{decision_owner}}
+authority_evidence: {{authority_evidence}}
 ---
 
 # Decision: {{title}}
 
 - Task: `{{task_id}}`
+- Decision owner: {{decision_owner}}
+- Authority evidence: {{authority_evidence}}
 
 ## Problem and evidence
 

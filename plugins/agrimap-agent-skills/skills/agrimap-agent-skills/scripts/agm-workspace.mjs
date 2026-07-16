@@ -24,11 +24,20 @@ import {
   normalizeIdentity,
 } from "./identity.mjs";
 import { isLogEvent, logEventError } from "./log-events.mjs";
+import { loadTaskArtifactSchema } from "./task-artifact-schema.mjs";
 
 const AUDIT_SCHEMA_VERSION = 2;
 const SUPPORTED_AUDIT_SCHEMA_VERSIONS = new Set([1, AUDIT_SCHEMA_VERSION]);
 const TERMINAL_AUDIT_EVENTS = new Set(["qa-failed", "blocked", "cancelled", "completed"]);
 const skillRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const taskArtifactSchema = await loadTaskArtifactSchema(skillRoot);
+const completionTemplateTokenNames = new Set();
+for (const definition of Object.values(taskArtifactSchema.artifacts || {})) {
+  const template = await readFile(path.join(skillRoot, "assets", "templates", definition.template), "utf8");
+  for (const token of template.match(/\{\{[^{}\r\n]+\}\}/g) || []) {
+    completionTemplateTokenNames.add(token.slice(2, -2).trim());
+  }
+}
 
 function workspaceRoot(cwd) {
   try {
@@ -70,6 +79,7 @@ function executionIdentity(args = {}, fallback = {}) {
   const role = firstValue(args.role, fallback.role, "leader");
   return {
     model: firstValue(args.model, args.modelName, args["model-name"], fallback.model, "unknown"),
+    modelLabel: firstValue(args.modelLabel, args["model-label"], fallback.modelLabel, "not-configured"),
     role,
     agent: firstValue(args.agent, args.agentName, args["agent-name"], fallback.agent, role === "leader" ? "primary" : role),
     provider: firstValue(args.provider, fallback.provider, "unknown"),
@@ -100,6 +110,12 @@ async function renderAssetTemplate(fileName, replacements = {}) {
     content = content.replaceAll(`{{${key}}}`, String(value));
   }
   return content.endsWith("\n") ? content : `${content}\n`;
+}
+
+async function renderTaskArtifact(artifactName, replacements = {}) {
+  const definition = taskArtifactSchema.artifacts?.[artifactName];
+  if (!definition?.template) throw new Error(`Task artifact schema is missing a template for ${artifactName}.`);
+  return renderAssetTemplate(definition.template, replacements);
 }
 
 function now() {
@@ -198,7 +214,7 @@ async function ensureLayout(root) {
   const referenceLibrary = {
     "db-schema": "# db-schema references\n\nOwner-provided database DDL: tables, views, and procedures (for example `TABLE_ORDER.sql`, `UM_USER_Q.sql`).\n\nAgents load matching files here as `FACT` before any SQL or data-touching work and must never infer a table, column, type, key, or constraint that is not present in a loaded reference. If the needed schema is missing, the agent names it and asks instead of guessing.\n",
     "api-contracts": "# api-contracts references\n\nOpenAPI/Swagger documents, `.proto` files, and representative request/response samples.\n\nAgents load matching contracts here as `FACT` for integration and cross-service work instead of inferring payload shapes.\n",
-    docs: "# docs references\n\nBusiness and domain documents: requirements, business rules, glossaries, and process notes.\n\nAgents treat these as owner input with `FACT` evidence pointers for scope and acceptance decisions.\n",
+    docs: "# docs references\n\nBusiness and domain documents: requirements, business rules, glossaries, and process notes.\n\nAgents treat requester-supplied documents and decision-owner-approved references as `FACT` only with evidence pointers for scope and acceptance decisions.\n",
     design: "# design references\n\nDesign tokens, brand identity, and UI guidelines.\n\nAgents load these as `FACT` for design-affecting work and never invent a new visual language while a loaded token or identity answers the question. When this folder is empty, agents fall back to tokens already present in the codebase and record `missing-owner-example`.\n",
   };
   for (const [directory, readme] of Object.entries(referenceLibrary)) {
@@ -230,9 +246,9 @@ function activeTaskPath(state, sessionId) {
 
 async function identify(state, args) {
   const sessionId = safeSessionId(args.session);
-  const requestedBy = String(args.owner || args.requestedBy || "").trim();
+  const requestedBy = String(args.requestedBy || args["requested-by"] || args.owner || "").trim();
   if (!sessionId || !requestedBy) {
-    return { ok: false, needsSession: !sessionId, needsRequester: !requestedBy, message: "--session and --owner are required." };
+    return { ok: false, needsSession: !sessionId, needsRequester: !requestedBy, message: "--session and --requested-by are required (--owner remains a legacy alias)." };
   }
   const identitySource = String(args.source || args.identitySource || args["identity-source"] || "manual-confirmed").trim();
   if (!isIdentitySource(identitySource) || identitySource === "legacy-migrated") {
@@ -280,7 +296,7 @@ function gitRequesterSuggestion(root) {
 }
 
 async function resolveRequester(state, args) {
-  const explicit = String(args.owner || args.requestedBy || "").trim();
+  const explicit = String(args.requestedBy || args["requested-by"] || args.owner || "").trim();
   if (explicit) return explicit;
   const sessionId = safeSessionId(args.session);
   if (!sessionId) return null;
@@ -403,7 +419,7 @@ async function appendLog(state, event) {
 async function init(root, args) {
   const state = await ensureLayout(root);
   let identity = null;
-  if (args.session && (args.owner || args.requestedBy)) {
+  if (args.session && (args.requestedBy || args["requested-by"] || args.owner)) {
     const result = await identify(state, args);
     if (!result.ok) return result;
     identity = result.identity;
@@ -471,31 +487,31 @@ async function start(root, args) {
   }
   await mkdir(path.join(taskPath, "handoffs"), { recursive: true });
 
-  if (!(await exists(path.join(taskPath, "brief.md")))) {
-    await writeFile(
-      path.join(taskPath, "brief.md"),
-      await renderAssetTemplate("task-brief.md", {
-        task_id: taskId,
-        requested_by: requestedBy,
-        requester_id_or_not_recorded: confirmedIdentity.requesterId || "Not recorded",
-        identity_source: confirmedIdentity.identitySource,
-        session_id: sessionId,
-        actual_model_or_unknown: execution.model,
-        role: execution.role,
-        agent_name: execution.agent,
-        provider: execution.provider,
-        operation,
-        objective,
-      }),
-      "utf8",
-    );
-  }
-  if (!(await exists(path.join(taskPath, "checklist.md")))) {
-    await writeFile(
-      path.join(taskPath, "checklist.md"),
-      await renderAssetTemplate("checklist.md"),
-      "utf8",
-    );
+  const scaffoldReplacements = {
+    "brief.md": {
+      task_id: taskId,
+      requested_by: requestedBy,
+      requester_id_or_not_recorded: confirmedIdentity.requesterId || "Not recorded",
+      identity_source: confirmedIdentity.identitySource,
+      requester_authority: args.requesterAuthority || args["requester-authority"] || "unknown",
+      decision_owner_or_not_required: args.decisionOwner || args["decision-owner"] || "unresolved",
+      authority_evidence_or_not_required: args.authorityEvidence || args["authority-evidence"] || "unresolved",
+      session_id: sessionId,
+      model_label_or_not_configured: execution.modelLabel,
+      actual_model_or_unknown: execution.model,
+      role: execution.role,
+      agent_name: execution.agent,
+      provider: execution.provider,
+      operation,
+      objective,
+    },
+    "checklist.md": {},
+  };
+  for (const artifactName of taskArtifactSchema.scaffoldOrder || []) {
+    const artifactPath = path.join(taskPath, artifactName);
+    if (!(await exists(artifactPath))) {
+      await writeFile(artifactPath, await renderTaskArtifact(artifactName, scaffoldReplacements[artifactName] || {}), "utf8");
+    }
   }
 
   const active = {
@@ -506,13 +522,16 @@ async function start(root, args) {
     requestedBy,
     requesterId: confirmedIdentity.requesterId,
     identitySource: confirmedIdentity.identitySource,
+    requesterAuthority: scaffoldReplacements["brief.md"].requester_authority,
+    decisionOwner: scaffoldReplacements["brief.md"].decision_owner_or_not_required,
+    authorityEvidence: scaffoldReplacements["brief.md"].authority_evidence_or_not_required,
     ...execution,
     startedAt: now(),
   };
   await writeJson(activePath, active);
   await writeFile(
     path.join(state, "memory", "current", `${taskId}.md`),
-    `# Current task memory\n\n- Task: \`${taskId}\`\n- Requested by: ${requestedBy}\n- Request: ${objective}\n- Model: \`${execution.model}\`\n- Role: \`${execution.role}\`\n- Agent: \`${execution.agent}\`\n- Provider: \`${execution.provider}\`\n- Status: started\n- Operation: \`${operation}\`\n- Last checkpoint: ${now()}\n- Summary: ${objective}\n`,
+    `# Current task memory\n\n- Task: \`${taskId}\`\n- Requested by: ${requestedBy}\n- Requester authority: \`${scaffoldReplacements["brief.md"].requester_authority}\`\n- Decision owner: ${scaffoldReplacements["brief.md"].decision_owner_or_not_required}\n- Request: ${objective}\n- Model label: \`${execution.modelLabel}\`\n- Actual model: \`${execution.model}\`\n- Role: \`${execution.role}\`\n- Agent: \`${execution.agent}\`\n- Provider: \`${execution.provider}\`\n- Status: started\n- Operation: \`${operation}\`\n- Last checkpoint: ${now()}\n- Summary: ${objective}\n`,
     "utf8",
   );
   await appendLog(state, {
@@ -572,7 +591,7 @@ async function checkpoint(root, args) {
   const concerns = String(args.concerns || "None recorded.");
   await writeFile(
     path.join(state, "memory", "current", `${taskId}.md`),
-    `# Current task memory\n\n- Task: \`${taskId}\`\n- Requested by: ${requestedBy}\n- Request: ${request || "Not recorded (legacy task)"}\n- Model: \`${execution.model}\`\n- Role: \`${execution.role}\`\n- Agent: \`${execution.agent}\`\n- Provider: \`${execution.provider}\`\n- Status: ${args.status || "in-progress"}\n- Last checkpoint: ${now()}\n- Summary: ${summary}\n- Reason: ${args.reason || "Atomic task checkpoint."}\n- Files: ${files.length ? files.map((file) => `\`${file}\``).join(", ") : "None"}\n- Verification: ${verification.length ? verification.join("; ") : "Not yet run"}\n- Concerns: ${concerns}\n`,
+    `# Current task memory\n\n- Task: \`${taskId}\`\n- Requested by: ${requestedBy}\n- Request: ${request || "Not recorded (legacy task)"}\n- Model label: \`${execution.modelLabel}\`\n- Actual model: \`${execution.model}\`\n- Role: \`${execution.role}\`\n- Agent: \`${execution.agent}\`\n- Provider: \`${execution.provider}\`\n- Status: ${args.status || "in-progress"}\n- Last checkpoint: ${now()}\n- Summary: ${summary}\n- Reason: ${args.reason || "Durable state-transition checkpoint."}\n- Files: ${files.length ? files.map((file) => `\`${file}\``).join(", ") : "None"}\n- Verification: ${verification.length ? verification.join("; ") : "Not yet run"}\n- Concerns: ${concerns}\n`,
     "utf8",
   );
   await appendLog(state, {
@@ -583,7 +602,7 @@ async function checkpoint(root, args) {
     ...execution,
     event,
     summary,
-    reason: String(args.reason || "Atomic task checkpoint."),
+    reason: String(args.reason || "Durable state-transition checkpoint."),
     files,
     verification,
   });
@@ -704,6 +723,7 @@ function placeholderValueReason(value) {
   if (unresolvedTemplateTokens(normalized).length > 0) return "template-placeholder";
   if (/^<[^<>\r\n]+>$/.test(normalized)) return "angle-placeholder";
   if (/^(?:todo|tbd|tbc|fixme)\.?$/i.test(normalized)) return "todo-placeholder";
+  if (/^unresolved\.?$/i.test(normalized)) return "unresolved-placeholder";
   if (/^define before implementation\.?$/i.test(normalized)) return "scaffold-placeholder";
   if (/^[a-z][a-z0-9-]*(?:\|[a-z][a-z0-9-]*)+$/i.test(normalized)) return "unresolved-choice";
   return null;
@@ -723,20 +743,6 @@ function markdownSection(content, heading) {
   }
   return lines.slice(start + 1, end).join("\n").trim();
 }
-
-const completionTemplateTokenNames = new Set([
-  "task_id", "requested_by", "actual_model_or_unknown", "role", "agent_name", "provider", "operation",
-  "requester_id_or_not_recorded", "identity_source", "session_id",
-  "objective", "scope", "non_goals", "target_kind", "backend_profile", "logic_impact", "workspace_mode",
-  "integration_owner", "branch_name", "file_ownership", "input_manifest", "approved_decisions",
-  "service_ids_from_canonical_ownership_file_or_not_applicable", "open_concerns", "model",
-  "loaded_pattern_files_or_none_with_reason", "implementation_model", "implementation_role", "implementation_agent",
-  "implementation_provider", "prompt_path", "requirement_to_evidence", "verification",
-  "executor_claims_reopened_and_rerun", "regression_checks", "limitations", "findings_only_no_edits",
-  "qa_status", "qa_mode", "delivery_boundary", "owner_approved_decisions", "files_behavior_and_evidence", "checklist_status",
-  "memory_and_log_updates", "remaining_concerns", "commit_recommendation", "new_prompt_path_or_not_applicable",
-  "outstanding_items_or_no_pending_issues",
-]);
 
 function unresolvedTemplateTokens(content) {
   return [...new Set(String(content || "").match(/\{\{[^{}\r\n]+\}\}/g) || [])]
@@ -780,12 +786,45 @@ async function taskAuditIdentity(taskPath) {
   };
 }
 
+async function priorPassedQaRuns(state, currentTaskId, coverageKey) {
+  const normalizedCoverageKey = String(coverageKey || "").trim().toLowerCase();
+  if (!normalizedCoverageKey) return [];
+  const completedAt = new Map();
+  const logFiles = (await filesUnder(path.join(state, "logs"))).filter((file) => file.endsWith(".jsonl"));
+  for (const file of logFiles) {
+    for (const line of (await readFile(file, "utf8")).split(/\r?\n/).filter(Boolean)) {
+      try {
+        const event = JSON.parse(line);
+        if (event.taskId === currentTaskId || event.event !== "completed" || auditEventIssues(event).length > 0) continue;
+        const timestamp = Date.parse(event.timestamp);
+        if (Number.isFinite(timestamp) && timestamp > (completedAt.get(event.taskId) || 0)) completedAt.set(event.taskId, timestamp);
+      } catch {
+        // Invalid audit lines cannot establish prior completion or QA counter state.
+      }
+    }
+  }
+
+  const runs = [];
+  for (const [taskId, timestamp] of completedAt) {
+    const qa = await readFile(path.join(state, "tasks", taskId, "qa.md"), "utf8").catch(() => "");
+    if (plainMarkdownValue(markdownField(qa, "Status")).toLowerCase() !== "passed") continue;
+    if (plainMarkdownValue(markdownField(qa, "Coverage key")).toLowerCase() !== normalizedCoverageKey) continue;
+    const mode = plainMarkdownValue(markdownField(qa, "QA mode")).toLowerCase();
+    if (!new Set(["fast", "full"]).has(mode)) continue;
+    runs.push({ taskId, timestamp, mode });
+  }
+  return runs.sort((left, right) => left.timestamp - right.timestamp || left.taskId.localeCompare(right.taskId));
+}
+
 async function validate(root, args) {
   const state = path.join(root, ".agrimap-agent");
   const taskId = safeTaskId(args.task);
   if (!taskId) return { ok: false, message: "--task is required." };
   const taskPath = path.join(state, "tasks", taskId);
-  const required = ["brief.md", "checklist.md", "qa.md", "result.md"];
+  const artifactDefinitions = taskArtifactSchema.artifacts || {};
+  const required = Object.entries(artifactDefinitions)
+    .filter(([, definition]) => definition.requiredForCompletion)
+    .map(([file]) => file);
   const missing = [];
   for (const file of required) {
     if (!(await exists(path.join(taskPath, file)))) missing.push(file);
@@ -795,10 +834,10 @@ async function validate(root, args) {
   for (const file of required) {
     artifacts[file] = await readFile(path.join(taskPath, file), "utf8").catch(() => "");
   }
-  const brief = artifacts["brief.md"];
-  const checklist = artifacts["checklist.md"];
-  const qa = artifacts["qa.md"];
-  const result = artifacts["result.md"];
+  const brief = artifacts["brief.md"] || "";
+  const checklist = artifacts["checklist.md"] || "";
+  const qa = artifacts["qa.md"] || "";
+  const result = artifacts["result.md"] || "";
   const placeholderFailures = [];
   for (const [file, content] of Object.entries(artifacts)) {
     for (const token of unresolvedTemplateTokens(content)) placeholderFailures.push({ file, token });
@@ -823,69 +862,103 @@ async function validate(root, args) {
     return value;
   };
 
-  const requestedBy = requireField("brief.md", brief, "Requested by");
-  for (const label of ["Objective", "Scope", "Non-goals"]) requireField("brief.md", brief, label);
-
-  const checklistItems = checklist.split(/\r?\n/)
-    .map((line) => line.match(/^\s*- \[([ xX])\]\s*(.*?)\s*$/))
-    .filter(Boolean);
-  const unchecked = checklist.split(/\r?\n/).filter((line) => /^\s*- \[ \]/.test(line));
-  if (checklistItems.length === 0) contentFailures.push({ file: "checklist.md", field: "checkboxes", reason: "missing" });
-  for (const item of checklistItems) {
-    const reason = placeholderValueReason(item[2]);
-    if (reason) contentFailures.push({ file: "checklist.md", field: "checkbox", reason });
+  const artifactFields = {};
+  let checklistItems = [];
+  let unchecked = [];
+  for (const [file, definition] of Object.entries(artifactDefinitions)) {
+    if (!definition.requiredForCompletion) continue;
+    const content = artifacts[file] || "";
+    artifactFields[file] = {};
+    for (const field of definition.requiredFields || []) {
+      const value = requireField(file, content, field.label);
+      artifactFields[file][field.label] = value;
+      const normalized = value.toLowerCase();
+      if (field.enum && !field.enum.map((item) => String(item).toLowerCase()).includes(normalized)) {
+        contentFailures.push({ file, field: field.label, reason: "invalid-enum" });
+      }
+      if (field.const !== undefined && normalized !== String(field.const).toLowerCase()) {
+        contentFailures.push({ file, field: field.label, reason: "const-mismatch" });
+      }
+    }
+    for (const heading of definition.requiredSections || []) requireSection(file, content, heading);
+    for (const [fieldLabel, cases] of Object.entries(definition.requiredSectionsByField || {})) {
+      const selected = String(artifactFields[file][fieldLabel] || "").toLowerCase();
+      for (const heading of cases[selected] || []) requireSection(file, content, heading);
+    }
+    if (definition.kind === "checklist") {
+      checklistItems = content.split(/\r?\n/)
+        .map((line) => line.match(/^\s*- \[([ xX])\]\s*(.*?)\s*$/))
+        .filter(Boolean);
+      unchecked = content.split(/\r?\n/).filter((line) => /^\s*- \[ \]/.test(line));
+      if (checklistItems.length < Number(definition.minimumItems || 1)) {
+        contentFailures.push({ file, field: "checkboxes", reason: "missing" });
+      }
+      for (const item of checklistItems) {
+        const reason = placeholderValueReason(item[2]);
+        if (reason) contentFailures.push({ file, field: "checkbox", reason });
+      }
+    }
   }
 
-  const qaStatus = requireField("qa.md", qa, "Status").toLowerCase();
-  const qaAccepted = qaStatus === "passed" || qaStatus === "not-applicable";
-  if (!qaAccepted) contentFailures.push({ file: "qa.md", field: "Status", reason: "not-accepted" });
-  const qaMode = requireField("qa.md", qa, "QA mode").toLowerCase();
-  if (!["fast", "full"].includes(qaMode)) contentFailures.push({ file: "qa.md", field: "QA mode", reason: "invalid-enum" });
-  requireField("qa.md", qa, "Patterns");
-  const qaRequester = requireField("qa.md", qa, "Requested by");
-  if (requestedBy && qaRequester && requestedBy !== qaRequester) contentFailures.push({ file: "qa.md", field: "Requested by", reason: "requester-mismatch" });
-  const qaModel = requireField("qa.md", qa, "QA model");
-  const qaRole = requireField("qa.md", qa, "QA role").toLowerCase();
-  if (qaRole !== "qa") contentFailures.push({ file: "qa.md", field: "QA role", reason: "must-be-qa" });
-  const qaAgent = requireField("qa.md", qa, "QA agent");
-  requireField("qa.md", qa, "QA provider");
-  const implementationModel = requireField("qa.md", qa, "Implementation model");
-  requireField("qa.md", qa, "Implementation role");
-  const implementationAgent = requireField("qa.md", qa, "Implementation agent");
-  requireField("qa.md", qa, "Implementation provider");
-  if (qaStatus === "passed" && qaModel && qaAgent && qaModel.toLowerCase() === implementationModel.toLowerCase() && qaAgent.toLowerCase() === implementationAgent.toLowerCase()) {
+  const rules = taskArtifactSchema.crossArtifactRules || {};
+  const artifactTaskId = artifactFields["brief.md"]?.[rules.taskIdField] || "";
+  if (artifactTaskId !== taskId) contentFailures.push({ file: "brief.md", field: rules.taskIdField, reason: "task-id-mismatch" });
+  const requestedBy = artifactFields["brief.md"]?.[rules.requesterField] || "";
+  const decisionOwner = artifactFields["brief.md"]?.[rules.decisionOwnerField] || "";
+  const qaStatus = String(artifactFields["qa.md"]?.[rules.qaStatusField] || "").toLowerCase();
+  const qaMode = String(artifactFields["qa.md"]?.[rules.qaModeField] || "").toLowerCase();
+  const qaAccepted = (rules.acceptedQaStatuses || []).includes(qaStatus);
+  if (!qaAccepted) contentFailures.push({ file: "qa.md", field: rules.qaStatusField, reason: "not-accepted" });
+  const patterns = artifactFields["qa.md"]?.[rules.patternField] || "";
+  if (/^none(?:\s+applicable)?\.?$/i.test(patterns)) {
+    contentFailures.push({ file: "qa.md", field: rules.patternField, reason: "none-requires-reason" });
+  }
+
+  for (const file of ["qa.md", "result.md"]) {
+    const artifactRequester = artifactFields[file]?.[rules.requesterField] || "";
+    if (requestedBy && artifactRequester && requestedBy !== artifactRequester) {
+      contentFailures.push({ file, field: rules.requesterField, reason: "requester-mismatch" });
+    }
+    const artifactDecisionOwner = artifactFields[file]?.[rules.decisionOwnerField] || "";
+    if (decisionOwner && artifactDecisionOwner && decisionOwner !== artifactDecisionOwner) {
+      contentFailures.push({ file, field: rules.decisionOwnerField, reason: "decision-owner-mismatch" });
+    }
+  }
+
+  const qaIdentity = (rules.qaIdentityFields || []).map((label) => String(artifactFields["qa.md"]?.[label] || "").toLowerCase());
+  const implementationIdentity = (rules.implementationIdentityFields || []).map((label) => String(artifactFields["qa.md"]?.[label] || "").toLowerCase());
+  if (qaStatus === "passed" && qaIdentity.length && qaIdentity.every((value, index) => value === implementationIdentity[index])) {
     contentFailures.push({ file: "qa.md", field: "QA identity", reason: "not-independent" });
   }
-  const qaReadOnly = requireField("qa.md", qa, "Read-only").toLowerCase() === "true";
-  if (!qaReadOnly) contentFailures.push({ file: "qa.md", field: "Read-only", reason: "must-be-true" });
-  if (qaStatus === "passed") {
-    requireSection("qa.md", qa, "Requirement evidence");
-    requireSection("qa.md", qa, "Commands and observed results");
-  } else if (qaStatus === "not-applicable") {
-    requireSection("qa.md", qa, "Limitations");
+
+  const fastSequence = String(artifactFields["qa.md"]?.[rules.fastSequenceField] || "");
+  if (qaMode === "full" && fastSequence !== String(rules.fullFastSequence)) {
+    contentFailures.push({ file: "qa.md", field: rules.fastSequenceField, reason: "full-must-reset-counter" });
+  }
+  if (qaMode === "fast" && !(rules.fastAllowedSequences || []).map(String).includes(fastSequence)) {
+    contentFailures.push({ file: "qa.md", field: rules.fastSequenceField, reason: "fast-sequence-limit" });
+  }
+  const coverageKey = artifactFields["qa.md"]?.[rules.coverageKeyField] || "";
+  const priorQaRuns = await priorPassedQaRuns(state, taskId, coverageKey);
+  let priorConsecutiveFast = 0;
+  for (const run of priorQaRuns) priorConsecutiveFast = run.mode === "full" ? 0 : priorConsecutiveFast + 1;
+  const expectedFastSequence = priorConsecutiveFast + 1;
+  if (qaMode === "fast" && priorConsecutiveFast >= (rules.fastAllowedSequences || []).length) {
+    contentFailures.push({ file: "qa.md", field: rules.qaModeField, reason: "historical-full-required" });
+  } else if (qaMode === "fast" && fastSequence !== String(expectedFastSequence)) {
+    contentFailures.push({ file: "qa.md", field: rules.fastSequenceField, reason: "historical-sequence-mismatch" });
   }
 
-  const resultOutcome = requireField("result.md", result, "Outcome").toLowerCase();
-  if (resultOutcome !== "completed") contentFailures.push({ file: "result.md", field: "Outcome", reason: "must-be-completed" });
-  const resultRequester = requireField("result.md", result, "Requested by");
-  if (requestedBy && resultRequester && requestedBy !== resultRequester) {
-    contentFailures.push({ file: "result.md", field: "Requested by", reason: "requester-mismatch" });
-  }
-  const resultQaStatus = requireField("result.md", result, "QA status").toLowerCase();
+  const resultQaStatus = String(artifactFields["result.md"]?.[rules.resultQaStatusField] || "").toLowerCase();
   if (!qaAccepted || resultQaStatus !== qaStatus) {
-    contentFailures.push({ file: "result.md", field: "QA status", reason: "qa-status-mismatch" });
+    contentFailures.push({ file: "result.md", field: rules.resultQaStatusField, reason: "qa-status-mismatch" });
   }
-  const resultQaMode = requireField("result.md", result, "QA mode").toLowerCase();
-  if (resultQaMode !== qaMode) contentFailures.push({ file: "result.md", field: "QA mode", reason: "qa-mode-mismatch" });
-  const deliveryBoundary = requireField("result.md", result, "Delivery boundary").toLowerCase();
-  if (!["task", "commit", "publish", "release"].includes(deliveryBoundary)) {
-    contentFailures.push({ file: "result.md", field: "Delivery boundary", reason: "invalid-enum" });
-  } else if (deliveryBoundary !== "task" && qaMode !== "full") {
-    contentFailures.push({ file: "result.md", field: "Delivery boundary", reason: "requires-full-qa" });
+  const resultQaMode = String(artifactFields["result.md"]?.[rules.resultQaModeField] || "").toLowerCase();
+  if (resultQaMode !== qaMode) contentFailures.push({ file: "result.md", field: rules.resultQaModeField, reason: "qa-mode-mismatch" });
+  const deliveryBoundary = String(artifactFields["result.md"]?.[rules.deliveryBoundaryField] || "").toLowerCase();
+  if ((rules.fullQaBoundaries || []).includes(deliveryBoundary) && qaMode !== "full") {
+    contentFailures.push({ file: "result.md", field: rules.deliveryBoundaryField, reason: "requires-full-qa" });
   }
-  requireSection("result.md", result, "Changes and verification");
-  requireSection("result.md", result, "Checklist and memory");
-  requireSection("result.md", result, "Outstanding items");
 
   const memoryRecorded = await exists(path.join(state, "memory", "current", `${taskId}.md`))
     || await exists(path.join(state, "memory", "recent", `${taskId}.md`));
@@ -934,6 +1007,12 @@ async function validate(root, args) {
     placeholderFailures,
     contentFailures,
     qaAccepted,
+    qaCounter: {
+      coverageKey,
+      priorPassedRuns: priorQaRuns,
+      priorConsecutiveFast,
+      expectedFastSequence,
+    },
     taskLogged,
     createdRequestRecorded,
     auditFailures,
@@ -1235,11 +1314,12 @@ async function history(root, args) {
       if (![event.model, event.role, event.agent, event.provider].some((value) => String(value || "").trim())) continue;
       const executor = {
         model: String(event.model || "unknown"),
+        modelLabel: String(event.modelLabel || "not-recorded"),
         role: String(event.role || "unknown"),
         agent: String(event.agent || "unknown"),
         provider: String(event.provider || "unknown"),
       };
-      const key = `${executor.model}\u0000${executor.role}\u0000${executor.agent}\u0000${executor.provider}`;
+      const key = `${executor.model}\u0000${executor.modelLabel}\u0000${executor.role}\u0000${executor.agent}\u0000${executor.provider}`;
       const existing = executorMap.get(key) || { ...executor, eventCount: 0, firstAt: event.timestampUtc, lastAt: event.timestampUtc };
       existing.eventCount += 1;
       existing.lastAt = event.timestampUtc;
@@ -1290,7 +1370,7 @@ async function history(root, args) {
     rangeSemantics: "--from is inclusive; --to YYYY-MM-DD includes the whole UTC date; --days is a rolling 24-hour window.",
     attributionSemantics: {
       requestedBy: "Confirmed human who requested the task; not proof of who edited or committed files.",
-      executionIdentity: "Model, role, agent, and provider recorded by the workflow event.",
+      executionIdentity: "Actual model, optional configurable model label, role, agent, and provider recorded by the workflow event.",
       recordedFiles: "Paths claimed by valid versioned non-terminal workflow events; not filesystem or Git authorship proof.",
       legacyClaimedFiles: "Paths found only in unversioned legacy events; visible for diagnosis but never promoted into versioned attribution or closure events.",
       gitContext: "gitHead/gitDirty describe repository state when a versioned event was appended; use Git history/blame separately for commit authorship.",

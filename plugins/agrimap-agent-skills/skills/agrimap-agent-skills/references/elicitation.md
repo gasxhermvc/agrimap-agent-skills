@@ -28,8 +28,8 @@ Resolve each input in this order and stop at the first source that answers it:
 | Tier | Rule | Inputs |
 | --- | --- | --- |
 | 1 — never guess | No direct evidence → ask in one batch. Never default silently; a wrong value changes contracts, data, or behavior. | `target_kind`, `backend_profile`, `refactor_mode`, `provider` for create-prompt, new project/artifact names, the objective of any creation work, and the destination of a new project scaffold |
-| 2 — infer and declare | Infer from evidence, state the inferred value in the activation receipt, and proceed; the owner corrects cheaply. | `phase`, review scope, inferred target files, objective refinements |
-| 3 — fixed default, never ask | The discipline supplies it. | analyze/diagnose/simulate/plan/design/architect/review/history/qa are read-only and never edit; implementation happens only when the operation or owner requests it |
+| 2 — infer and declare | Infer from evidence, state the inferred value in the activation receipt, and proceed; the requester corrects cheaply. | `phase`, review scope, inferred target files, objective refinements |
+| 3 — fixed default, never ask | The discipline supplies it. | analyze/diagnose/simulate/plan/design/architect/review/history/qa are product-read-only and never edit product artifacts; each may write only its assigned workflow artifacts. Implementation requires a write operation requested within recorded authority. |
 
 Direct evidence for Tier 1 means a pointed file's path or extension, an existing host project, or an explicit statement in the request. A plausible-sounding value is not evidence.
 
@@ -38,14 +38,14 @@ Direct evidence for Tier 1 means a pointed file's path or extension, an existing
 When Tier 1 inputs remain unknown, ask once for all of them together:
 
 - Number every question. Give numeric options. Mark the recommended value when one exists.
-- The owner answers in one line, positionally (`1 2 approve`) or with `key=value` overrides.
+- The requester answers non-material input questions in one line, positionally (`1 2 approve`) or with `key=value` overrides. A material choice requires the recorded decision owner or requester authority=`owner|delegated`.
 - `approve` accepts every recommended value.
 - Ask at most one follow-up batch when the reply is still ambiguous, then summarize the unresolved point instead of looping.
 
 Example:
 
 ```text
-Owner: /agm-create-feature สร้าง project template ใหม่ให้หน่อย ขอชื่อ publisher
+Requester: /agm-create-feature สร้าง project template ใหม่ให้หน่อย ขอชื่อ publisher
 
 Agent: ขอ 3 คำตอบ ตอบบรรทัดเดียวเรียงลำดับ เช่น "1 2 approve":
   1) target: 1=main  2=library
@@ -53,21 +53,21 @@ Agent: ขอ 3 คำตอบ ตอบบรรทัดเดียวเร
   3) ชื่อ: เสนอ agmbo-publisher-netcore (format: agmws|agmbo-<project_name>-netcore)
      ตอบ approve หรือพิมพ์ชื่อใหม่
 
-Owner: 1 2 agmbo-job-publisher-netcore
+Requester: 1 2 agmbo-job-publisher-netcore
 
 Agent: สร้างด้วย company template — ยืนยันคำสั่งก่อนรัน (ที่ workspace root):
   dotnet new agmbo --name "agmbo-job-publisher-netcore" --project-key "AGMBO-JOB-PUBLISHER"
     --image-name "agmbo_job_publisher_netcore" --port-number "5000" --https-port-number "5001"
   ตอบ approve หรือแก้ค่า
 
-Owner: approve
+Decision owner: approve
 ```
 
-New project scaffolds run the company `dotnet new agmwa|agmws|agmbo` templates per the scaffolding contract in [workflows.md](workflows.md): derive recommended parameters from the confirmed name, present the complete command and its working directory verbatim, and run only after owner approval. For work inside an existing repository, the destination needs no question — every created or modified path is already visible in the confirmed slice plan.
+New project scaffolds run the company `dotnet new agmwa|agmws|agmbo` templates per the scaffolding contract in [workflows.md](workflows.md): derive recommended parameters from the confirmed name, present the complete command and its working directory verbatim, and run only after decision-owner approval. For work inside an existing repository, the destination needs no question — every created or modified path is already visible in the confirmed slice plan.
 
 ## Do not rush
 
-A generated analysis, plan, proposal list, or prompt is never permission to execute. Never auto-advance past an owner gate: batched answers, understanding checklists, prompt approval, and explicit go-signals each require the owner's actual reply. Analysis-family operations never edit files even when a fix looks obvious; return the finding instead.
+A generated analysis, plan, proposal list, or prompt is never permission to execute. Never auto-advance past an authority gate: batched answers require the requester's actual reply; material approvals and explicit go-signals require the decision owner or requester authority=`owner|delegated`. Analysis-family operations never edit product artifacts even when a fix looks obvious; return the finding while writing only their assigned workflow artifacts.
 
 ## Per-operation resolution
 
@@ -82,7 +82,7 @@ A generated analysis, plan, proposal list, or prompt is never permission to exec
 | `agm-review` | `@file` alone works | scope defaults to correctness → regressions → contracts/data → tests; free text narrows it (for example "ตรวจคำผิด") | no target |
 | `agm-history` | free text maps to filters ("ของ Billy 7 วันล่าสุด" → `--requester Billy --days 7`) | UTC boundaries from bare dates | person/time range stays ambiguous |
 | `agm-refactor-fe/be/sql` | free text may select the mode | mode from intent ("เร็วขึ้น" → performance, "อ่านง่าย" → readability, "แก้บั๊ก X" → targeted-bug-fix); `target_kind` from alias + path; `backend_profile` from the host project | intent does not select exactly one mode, or the profile cannot be found |
-| `agm-qa` | bare works with an active task | `task_id` from the active task; read-only is fixed | no active task and no `task_id` |
+| `agm-qa` | bare works with an active task | `task_id` from the active task; product artifacts read-only and QA workflow writes are fixed | no active task and no `task_id` |
 | `agm-create-unit-test` | `@file` alone works | `target_kind`/`backend_profile` from path evidence; framework and naming from existing tests | placement evidence is missing; otherwise use the propose-first list below |
 | `agm-create-feature` | needs the objective | placement from evidence when files/paths exist; slice plan shows every output path before building | objective missing → one question; then one batched confirm of placement + names; new project scaffold → confirm the full `dotnet new` command and working directory |
 | `agm-create-prompt` | needs the objective | task context swept from the conversation and `.agrimap-agent` state | `provider` and any unresolved Tier 1 input |
@@ -92,7 +92,7 @@ A generated analysis, plan, proposal list, or prompt is never permission to exec
 
 `agm-create-unit-test` and `agm-create-feature` embed a bounded analysis pass; do not require a separate analyze task first.
 
-- Unit tests: classify the target from path evidence, inspect the existing framework and naming, then present a numbered list of behaviors and regression risks worth testing with recommended entries marked. The owner picks in one reply: `approve` (recommended only), `all`, or numbers such as `1 2 5`. Create only the selected tests. Skip the proposal when the owner already named the behaviors to cover.
+- Unit tests: classify the target from path evidence, inspect the existing framework and naming, then present a numbered list of behaviors and regression risks worth testing with recommended entries marked. The requester may pick routine coverage in one reply: `approve` (recommended only), `all`, or numbers such as `1 2 5`; a material behavior/contract choice requires decision-owner authority. Create only the selected tests. Skip the proposal when the requester already named the behaviors to cover.
 - Features: the objective is Tier 1 and never guessed. Infer placement from evidence, propose the smallest slice plan (files to create or modify), confirm once, then build.
 
 ## Refactor mode menu

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.2 - 2026-07-16
+
+- Isolated Codex, Claude, and Gemini hook discovery so each host records only its own provider.
+- Added runtime provider correction for stale cross-loaded Codex/Claude hook artifacts.
+- Added a normative workflow glossary separating requester from decision-owner authority and defining substantive work, checkpoint units, material/complex/small work, proportional verification, verification-only QA, the exact two-fast-then-full QA counter, and configured versus actual model identity.
+- Centralized task artifact fields, required sections, QA/full-release rules, templates, generated documentation, and completion validation in `assets/task-artifact-schema.json`.
+- Added historical QA-counter enforcement, independent QA identity checks, workflow-write/product-read-only evidence, and schema/template/docs contract tests.
+- Bumped the package version so provider-hook fixes replace cached `0.1.1` installations.
+
 ## 0.1.1 - 2026-07-16
 
 - Split Codex and Claude plugin hooks into explicitly selected provider-specific files; Gemini retains its extension hooks.

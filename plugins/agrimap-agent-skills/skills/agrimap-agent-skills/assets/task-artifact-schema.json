@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 1,
+  "description": "Canonical scaffold and completion contract for AgriMap task artifacts.",
+  "scaffoldOrder": [
+    "brief.md",
+    "checklist.md"
+  ],
+  "artifacts": {
+    "brief.md": {
+      "template": "task-brief.md",
+      "purpose": "Requester, authority, execution identity, objective, scope, ownership, and decisions.",
+      "requiredForCompletion": true,
+      "requiredFields": [
+        { "label": "Task ID" },
+        { "label": "Requested by" },
+        { "label": "Identity source", "enum": ["manual-confirmed", "git-config-confirmed", "legacy-migrated"] },
+        { "label": "Requester authority", "enum": ["owner", "delegated", "requester-only", "unknown"] },
+        { "label": "Decision owner" },
+        { "label": "Authority evidence" },
+        { "label": "Model label" },
+        { "label": "Actual model" },
+        { "label": "Role" },
+        { "label": "Agent" },
+        { "label": "Provider", "enum": ["codex", "claude", "gemini"] },
+        { "label": "Operation" },
+        { "label": "Objective" },
+        { "label": "Scope" },
+        { "label": "Non-goals" }
+      ],
+      "requiredSections": [
+        "File and logical-contract ownership",
+        "Inputs",
+        "Authorized decisions and trade-offs",
+        "Service ownership references",
+        "Concerns"
+      ]
+    },
+    "checklist.md": {
+      "template": "checklist.md",
+      "purpose": "Checked completion ledger derived from the task contract.",
+      "requiredForCompletion": true,
+      "kind": "checklist",
+      "minimumItems": 1,
+      "requireAllChecked": true
+    },
+    "qa.md": {
+      "template": "qa.md",
+      "purpose": "Independent verification-only QA evidence with product artifacts read-only.",
+      "requiredForCompletion": true,
+      "requiredFields": [
+        { "label": "Status", "enum": ["passed", "failed", "blocked", "not-applicable"] },
+        { "label": "QA mode", "enum": ["fast", "full"] },
+        { "label": "QA mode reason" },
+        { "label": "Coverage key" },
+        { "label": "Fast sequence", "enum": ["0", "1", "2"] },
+        { "label": "Patterns" },
+        { "label": "Requested by" },
+        { "label": "Decision owner" },
+        { "label": "QA model label" },
+        { "label": "QA actual model" },
+        { "label": "QA role", "const": "qa" },
+        { "label": "QA agent" },
+        { "label": "QA provider", "enum": ["codex", "claude", "gemini"] },
+        { "label": "Product artifacts modified", "const": "false" },
+        { "label": "Workflow artifacts written" },
+        { "label": "Implementation model label" },
+        { "label": "Implementation actual model" },
+        { "label": "Implementation role" },
+        { "label": "Implementation agent" },
+        { "label": "Implementation provider", "enum": ["codex", "claude", "gemini"] }
+      ],
+      "requiredSectionsByField": {
+        "Status": {
+          "passed": ["Requirement evidence", "Commands and observed results"],
+          "not-applicable": ["Limitations"]
+        }
+      }
+    },
+    "result.md": {
+      "template": "result.md",
+      "purpose": "Leader closure result, QA boundary, verification, memory, and outstanding work.",
+      "requiredForCompletion": true,
+      "requiredFields": [
+        { "label": "Outcome", "const": "completed" },
+        { "label": "Requested by" },
+        { "label": "Decision owner" },
+        { "label": "Leader model label" },
+        { "label": "Leader actual model" },
+        { "label": "Leader role", "const": "leader" },
+        { "label": "Leader agent" },
+        { "label": "Leader provider", "enum": ["codex", "claude", "gemini"] },
+        { "label": "QA status", "enum": ["passed", "not-applicable"] },
+        { "label": "QA mode", "enum": ["fast", "full"] },
+        { "label": "Delivery boundary", "enum": ["task", "commit", "publish", "release"] }
+      ],
+      "requiredSections": [
+        "Authorized decisions",
+        "Changes and verification",
+        "Checklist and memory",
+        "Concerns and commit boundary",
+        "Outstanding items"
+      ]
+    }
+  },
+  "crossArtifactRules": {
+    "acceptedQaStatuses": ["passed", "not-applicable"],
+    "taskIdField": "Task ID",
+    "requesterField": "Requested by",
+    "decisionOwnerField": "Decision owner",
+    "qaStatusField": "Status",
+    "qaModeField": "QA mode",
+    "patternField": "Patterns",
+    "coverageKeyField": "Coverage key",
+    "resultQaStatusField": "QA status",
+    "resultQaModeField": "QA mode",
+    "deliveryBoundaryField": "Delivery boundary",
+    "fullQaBoundaries": ["commit", "publish", "release"],
+    "qaIdentityFields": ["QA actual model", "QA agent", "QA provider"],
+    "implementationIdentityFields": ["Implementation actual model", "Implementation agent", "Implementation provider"],
+    "fastSequenceField": "Fast sequence",
+    "fullFastSequence": "0",
+    "fastAllowedSequences": ["1", "2"]
+  },
+  "qaFullTriggers": [
+    "commit, publish, or release boundary",
+    "public contract, data behavior, generated-code regeneration, or migration",
+    "retest after failed QA",
+    "third consecutive passed-fast closure for the same coverage key",
+    "authorized decision-owner request"
+  ]
+}

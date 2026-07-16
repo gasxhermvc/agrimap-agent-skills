@@ -1,6 +1,6 @@
 {
   "name": "agrimap-agent-skills",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "description": "Official cross-agent AgriMap engineering skill package",
   "author": "Billy (gasxhermvc)",
@@ -16,7 +16,7 @@
   "scripts": {
     "sync": "node tools/sync-adapters.mjs",
     "test": "npm run validate && npm run test:unit && npm run test:integration && npm run verify:golden",
-    "test:unit": "node --test tests/unit/cli-args.test.mjs tests/unit/extract-code-blocks.test.mjs tests/unit/fe-scenarios.test.mjs tests/unit/verify-golden.test.mjs",
+    "test:unit": "node --test tests/unit/cli-args.test.mjs tests/unit/extract-code-blocks.test.mjs tests/unit/fe-scenarios.test.mjs tests/unit/task-artifact-schema.test.mjs tests/unit/verify-golden.test.mjs",
     "test:integration": "npm run test:workspace && npm run test:usage",
     "test:workspace": "node --test tests/integration/workspace/workspace.test.mjs",
     "test:usage": "node --test tests/integration/package/usage.test.mjs",

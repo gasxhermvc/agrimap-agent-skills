@@ -12,9 +12,7 @@ const platformSyntax = await read("skills/agrimap-agent-skills/references/platfo
 const rootIgnore = await read(".gitignore");
 const codexManifest = JSON.parse(await read("plugins/agrimap-agent-skills/.codex-plugin/plugin.json"));
 const claudeManifest = JSON.parse(await read("plugins/agrimap-agent-skills/.claude-plugin/plugin.json"));
-const codexHooks = await read("plugins/agrimap-agent-skills/hooks/codex-hooks.json");
-const claudeHooks = await read("plugins/agrimap-agent-skills/hooks/claude-hooks.json");
-const geminiHooks = await read("hooks/hooks.json");
+const geminiManifest = JSON.parse(await read("gemini-extension.json"));
 const refactorModes = [...(await read("skills/agrimap-agent-skills/references/refactor-modes.md")).matchAll(/^## `([^`]+)`/gm)].map((match) => match[1]);
 
 async function filesUnder(directory) {
@@ -81,14 +79,33 @@ test("usage documentation covers activation, help, and provider syntax", async (
   assert.match(usage, /notepad \.\\docs\\USAGE\.md/);
   assert.ok(rootIgnore.split(/\r?\n/).includes(".agrimap-agent/"));
   assert.equal(await read("plugins/agrimap-agent-skills/docs/USAGE.md"), usage);
+});
+
+test("provider hook discovery is isolated per host", async () => {
   assert.equal(codexManifest.hooks, "./hooks/codex-hooks.json");
   assert.equal(claudeManifest.hooks, "./hooks/claude-hooks.json");
-  await assert.rejects(read("plugins/agrimap-agent-skills/hooks/hooks.json"), { code: "ENOENT" });
-  assert.equal(codexHooks.match(/--provider codex/g)?.length, 3);
-  assert.doesNotMatch(codexHooks, /--provider claude/);
-  assert.doesNotMatch(claudeHooks, /--provider auto/);
-  assert.equal(claudeHooks.match(/--provider claude/g)?.length, 3);
-  assert.equal(geminiHooks.match(/--provider gemini/g)?.length, 2);
+  assert.equal(codexManifest.version, JSON.parse(await read("package.json")).version);
+  assert.equal(claudeManifest.version, codexManifest.version);
+  assert.equal(geminiManifest.version, codexManifest.version);
+
+  const providerArtifacts = [
+    ["codex", `plugins/agrimap-agent-skills/${codexManifest.hooks.replace(/^\.\//, "")}`, 3],
+    ["claude", `plugins/agrimap-agent-skills/${claudeManifest.hooks.replace(/^\.\//, "")}`, 3],
+    ["gemini", "hooks/hooks.json", 2],
+  ];
+  for (const [provider, hookPath, expectedCount] of providerArtifacts) {
+    const content = await read(hookPath);
+    assert.equal(content.match(new RegExp(`--provider ${provider}`, "g"))?.length, expectedCount);
+    for (const otherProvider of ["codex", "claude", "gemini"].filter((candidate) => candidate !== provider)) {
+      assert.doesNotMatch(content, new RegExp(`--provider ${otherProvider}`), `${hookPath} leaks ${otherProvider}`);
+    }
+  }
+
+  await assert.rejects(
+    read("plugins/agrimap-agent-skills/hooks/hooks.json"),
+    { code: "ENOENT" },
+    "Codex and Claude must not share an auto-discovered default hook file",
+  );
 });
 
 test("usage documentation covers supported targets and refactor modes", () => {
@@ -105,11 +122,12 @@ test("usage documentation covers supported targets and refactor modes", () => {
 test("published input fixtures match their plugin copies", async () => {
   const largeRequest = await read("examples/inputs/LONG-REQUEST.md");
   const visualReference = await read("examples/inputs/references/checkout-flow.svg");
-  const ownerNote = await read("examples/inputs/references/feature-note.md");
+  const requesterNote = await read("examples/inputs/references/feature-note.md");
   assert.equal(await read("plugins/agrimap-agent-skills/examples/inputs/LONG-REQUEST.md"), largeRequest);
   assert.equal(await read("plugins/agrimap-agent-skills/examples/inputs/references/checkout-flow.svg"), visualReference);
   assert.match(largeRequest, /## Acceptance criteria/);
-  assert.match(largeRequest, /## Owner decisions/);
+  assert.match(largeRequest, /## Authorized decision-owner decisions/);
+  assert.match(largeRequest, /Requester authority: owner/);
   assert.match(visualReference, /^<svg[\s\S]+<title[\s\S]+<desc[\s\S]+<\/svg>\s*$/);
-  assert.match(ownerNote, /network timeout as an unknown outcome/);
+  assert.match(requesterNote, /network timeout as an unknown outcome/);
 });

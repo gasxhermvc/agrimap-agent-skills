@@ -20,8 +20,8 @@ Every non-unknown ownership claim requires `evidence` with file/URL/decision poi
 1. Read the canonical file for cross-service, cross-database, integration, route ownership, or business-boundary work.
 2. Verify that the referenced evidence still matches the current project before relying on a high-impact claim.
 3. Use only `confirmed` claims as hard routing or placement decisions.
-4. For `tentative` or `unknown`, continue safe read-only investigation. Discuss with the owner before a task changes logic, public contract, data ownership, or service boundary.
-5. Update the same canonical entry after an owner decision. Record who decided, the evidence, and the superseded claim when applicable.
+4. For `tentative` or `unknown`, continue safe product-read-only investigation. Obtain a decision-owner decision before a task changes logic, public contract, data ownership, or service boundary.
+5. Update the same canonical entry after an authorized decision-owner decision. Record who decided, their authority evidence, the supporting evidence, and the superseded claim when applicable.
 6. Put task-specific observations in task memory/logs and point back to `service_id`; do not create another ownership SoT.
 
 Do not import the legacy/Fable service list as confirmed data. Migrate each useful entry only after evidence review, preserving `tentative` or `unknown` where confirmation is missing.

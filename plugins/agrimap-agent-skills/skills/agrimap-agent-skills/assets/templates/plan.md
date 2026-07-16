@@ -14,7 +14,7 @@
 
 ## Ordered steps
 
-| # | Target (file/symbol) | Action | Verification | Owner decision point |
+| # | Target (file/symbol) | Action | Verification | Decision-owner approval point |
 | --- | --- | --- | --- | --- |
 | 1 | {{target}} | {{action}} | {{verification}} | {{decision_or_none}} |
 
