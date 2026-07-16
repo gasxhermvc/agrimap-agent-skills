@@ -25,6 +25,7 @@
 
 ## Load only when the condition matches
 
-- No additional conditional reference by default; select one target pattern only when lifecycle-core routing requires it.
+- When target_kind is fe-main or fe-library: [frontend-engineer.md](../frontend-engineer.md) — frontend state and observable fundamentals
+- When target_kind is be-main or be-library: [backend-engineer.md](../backend-engineer.md) — backend boundary and runtime fundamentals
 
 Do not read the router `SKILL.md` during operation execution. If this generated entrypoint is missing or corrupt, stop with `PACKAGE_ENTRYPOINT_MISSING` and ask for package sync/reinstallation; never broaden into the router.

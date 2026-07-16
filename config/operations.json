@@ -17,8 +17,9 @@
         { "path": "input-and-scope.md", "why": "target and input coverage" }
       ],
       "conditionalReferences": [
-        { "when": "the target is backend code that reads cookie, header, query, form, JSON body, or device ID", "path": "backend-engineer.md#http-request-value-normalization", "why": "main/library normalization and migration gate" },
-        { "when": "that backend request-value condition matches", "path": "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md", "why": "exact normalize API and compatibility behavior" }
+        { "when": "target_kind is fe-main or fe-library", "path": "frontend-engineer.md", "why": "frontend analysis fundamentals" },
+        { "when": "target_kind is be-main or be-library", "path": "backend-engineer.md", "why": "backend analysis fundamentals including request-value normalization" },
+        { "when": "the backend target reads cookie, header, query, form, JSON body, or device ID", "path": "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md", "why": "exact normalize API and compatibility behavior" }
       ]
     },
     {
@@ -37,8 +38,9 @@
         { "path": "input-and-scope.md", "why": "symptom and target coverage" }
       ],
       "conditionalReferences": [
-        { "when": "the symptom may involve cookie, header, query, form, JSON body, or device-ID resolution", "path": "backend-engineer.md#http-request-value-normalization", "why": "normalization failure hypotheses for main/library code" },
-        { "when": "that backend request-value condition matches", "path": "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md", "why": "expected extraction, normalization, and precedence" }
+        { "when": "target_kind is fe-main or fe-library", "path": "frontend-engineer.md", "why": "frontend diagnosis fundamentals" },
+        { "when": "target_kind is be-main or be-library", "path": "backend-engineer.md", "why": "backend diagnosis fundamentals including request-value normalization" },
+        { "when": "the backend symptom may involve cookie, header, query, form, JSON body, or device-ID resolution", "path": "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md", "why": "expected extraction, normalization, and precedence" }
       ]
     },
     {
@@ -54,6 +56,10 @@
       "instructions": ["Model the initial state, transitions, branches, failure modes, and observables.", "Label assumptions and confidence; do not present a simulation as measured runtime fact."],
       "references": [
         { "path": "analysis-discipline.md", "why": "assumption and confidence labels" }
+      ],
+      "conditionalReferences": [
+        { "when": "target_kind is fe-main or fe-library", "path": "frontend-engineer.md", "why": "frontend state and observable fundamentals" },
+        { "when": "target_kind is be-main or be-library", "path": "backend-engineer.md", "why": "backend boundary and runtime fundamentals" }
       ]
     },
     {
@@ -70,6 +76,10 @@
       "references": [
         { "path": "analysis-discipline.md", "why": "evidence-backed plan assumptions" },
         { "path": "input-and-scope.md", "why": "scope ledger" }
+      ],
+      "conditionalReferences": [
+        { "when": "target_kind is fe-main or fe-library", "path": "frontend-engineer.md", "why": "frontend execution-plan fundamentals" },
+        { "when": "target_kind is be-main or be-library", "path": "backend-engineer.md", "why": "backend execution-plan fundamentals" }
       ]
     },
     {
@@ -106,6 +116,10 @@
       "references": [
         { "path": "analysis-discipline.md", "why": "architecture evidence and counterarguments" },
         { "path": "service-ownership.md", "why": "canonical service and data ownership" }
+      ],
+      "conditionalReferences": [
+        { "when": "target_kind is fe-main or fe-library", "path": "frontend-engineer.md", "why": "frontend architecture fundamentals" },
+        { "when": "target_kind is be-main or be-library", "path": "backend-engineer.md", "why": "backend architecture fundamentals" }
       ]
     },
     {
@@ -123,7 +137,9 @@
         { "path": "analysis-discipline.md", "why": "finding evidence and severity" }
       ],
       "conditionalReferences": [
-        { "when": "the target is FE, BE, or SQL", "path": "patterns/pattern-status.md", "why": "route to the current target pattern only" }
+        { "when": "the target is FE, BE, or SQL", "path": "patterns/pattern-status.md", "why": "route to the current target pattern only" },
+        { "when": "target_kind is fe-main or fe-library", "path": "frontend-engineer.md", "why": "frontend review fundamentals" },
+        { "when": "target_kind is be-main or be-library", "path": "backend-engineer.md", "why": "backend review fundamentals" }
       ]
     },
     {
@@ -210,6 +226,8 @@
       ],
       "conditionalReferences": [
         { "when": "the task is FE, BE, or SQL", "path": "patterns/pattern-status.md", "why": "select exactly the matching pattern and Detect gates" },
+        { "when": "target_kind is fe-main or fe-library", "path": "frontend-engineer.md", "why": "frontend QA fundamentals" },
+        { "when": "target_kind is be-main or be-library", "path": "backend-engineer.md", "why": "backend QA fundamentals including request-value normalization" },
         { "when": "BE work reads or refactors cookie, header, query, form, JSON body, or device-ID resolution", "path": "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md", "why": "request-value QA behavior matrix for main/library code" }
       ]
     },
@@ -268,6 +286,11 @@
         { "path": "create-prompt.md", "why": "prompt lifecycle and provider rendering" },
         { "path": "subagents-and-branches.md", "why": "delegation, visibility, and integration" },
         { "path": "model-capability-matrix.yaml", "why": "capability-profile routing labels" }
+      ],
+      "conditionalReferences": [
+        { "when": "target_kind is fe-main or fe-library", "path": "frontend-engineer.md", "why": "frontend fundamentals that every generated handoff must carry" },
+        { "when": "target_kind is be-main or be-library", "path": "backend-engineer.md", "why": "backend fundamentals that every generated handoff must carry" },
+        { "when": "target_kind is sql-table, sql-procedure, or sql-table-and-procedure", "path": "patterns/sql.md", "why": "SQL fundamentals that every generated handoff must carry" }
       ]
     },
     {

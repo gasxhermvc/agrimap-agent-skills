@@ -289,6 +289,25 @@ npm test
 npm run validate
 ```
 
+Token/read coverage can be audited independently from product-code tests:
+
+```powershell
+# Every generated operation baseline plus curated FE/BE/QA/golden scenarios
+npm run audit:tokens
+
+# One scenario with every counted file
+npm run audit:tokens -- --scenario qa-fe-main-golden-regulated --details
+
+# CI mode: exit 1 on a missing route/reference or exceeded budget
+npm run audit:tokens -- --scenario router-only --json
+npm run audit:tokens:strict
+
+# ทดสอบตัว audit โดยเฉพาะ
+npm run test:token-coverage
+```
+
+The audit reports direct alias preload, cumulative `Load now`, and the complete selected scenario as words, characters, and an estimated token range. Estimates use 3–4 characters per token because Codex, Claude, and Gemini tokenizers differ. Scenario definitions and budgets live in `skills/agrimap-agent-skills/assets/token-coverage-scenarios.json`; use `--json` for machine-readable evidence.
+
 `package.json` is the only package-version source of truth. `npm run sync` propagates that version to the Codex manifest, Claude manifest/marketplace, and Gemini manifest while rebuilding the operation index, compact operation entrypoints, routing-skill mirror, dedicated aliases, and provider adapters from the canonical runtime core plus `config/operations.json`. Never edit generated routing indexes, operation entrypoints, plugin mirrors, alias skills, Gemini command files, or generated manifest versions directly. Before a public release, resolve the golden-example rights/license decision, update `package.json`, add the release entry to `CHANGELOG.md`, then rerun sync, tests, and validation.
 
 Official format references: [Codex plugins](https://developers.openai.com/codex/build-plugins), [Codex subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents), [Claude plugin marketplaces](https://code.claude.com/docs/en/plugin-marketplaces), and [Gemini extensions](https://geminicli.com/docs/extensions/reference/).

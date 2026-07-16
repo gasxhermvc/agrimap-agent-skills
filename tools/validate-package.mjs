@@ -83,7 +83,9 @@ for (const required of [
   "skills/agrimap-agent-skills/scripts/log-events.mjs",
   "skills/agrimap-agent-skills/scripts/identity.mjs",
   "skills/agrimap-agent-skills/scripts/task-artifact-schema.mjs",
+  "skills/agrimap-agent-skills/scripts/token-coverage.mjs",
   "skills/agrimap-agent-skills/assets/task-artifact-schema.json",
+  "skills/agrimap-agent-skills/assets/token-coverage-scenarios.json",
   "skills/agrimap-agent-skills/assets/templates/service-ownership.yaml",
   "tests/README.md",
   "tests/helpers/harness.mjs",
@@ -160,6 +162,8 @@ if (!packageManifest?.scripts?.test?.includes("npm run verify:golden")) errors.p
 if (!packageManifest?.scripts?.test?.includes("npm run validate")) errors.push("npm test must include package validation before behavioral suites.");
 if (!packageManifest?.scripts?.["test:unit"]?.includes("fe-scenarios.test.mjs")) errors.push("Frontend scenario eval is not wired into the automated unit suite.");
 if (!packageManifest?.scripts?.["test:unit"]?.includes("task-artifact-schema.test.mjs")) errors.push("Task artifact schema contract test is not wired into the automated unit suite.");
+if (!packageManifest?.scripts?.["test:unit"]?.includes("token-coverage.test.mjs")) errors.push("Token coverage audit test is not wired into the automated unit suite.");
+if (!packageManifest?.scripts?.["audit:tokens"]?.includes("token-coverage.mjs")) errors.push("Token coverage audit command is missing.");
 for (const scriptName of ["test:unit", "test:integration", "test:workspace", "test:usage"]) {
   if (!packageManifest?.scripts?.[scriptName]) errors.push(`package.json script is missing: ${scriptName}`);
 }

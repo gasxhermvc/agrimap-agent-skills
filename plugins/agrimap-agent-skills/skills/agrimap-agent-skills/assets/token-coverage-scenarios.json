@@ -1,0 +1,302 @@
+{
+  "schemaVersion": 1,
+  "includeOperationBaselines": true,
+  "tokenEstimate": {
+    "lowCharsPerToken": 4,
+    "highCharsPerToken": 3
+  },
+  "budgets": {
+    "direct": {
+      "maxWords": 900,
+      "maxEstimatedTokensHigh": 2400
+    },
+    "required": {
+      "maxWords": 3700,
+      "maxEstimatedTokensHigh": 9500
+    },
+    "scenario": {
+      "maxWords": 6500,
+      "maxEstimatedTokensHigh": 18000
+    }
+  },
+  "scenarios": [
+    {
+      "id": "router-only",
+      "description": "Umbrella routing without executing a dedicated operation",
+      "operation": "router",
+      "kind": "router",
+      "depth": "light",
+      "mustLoad": [
+        "operation-index.md",
+        "platform-syntax.md"
+      ]
+    },
+    {
+      "id": "analyze-fe-main-light",
+      "description": "Frontend analysis must receive the passive FE fundamentals",
+      "operation": "analyze",
+      "depth": "light",
+      "activate": [
+        "frontend-engineer.md"
+      ],
+      "mustLoad": [
+        "analysis-discipline.md",
+        "input-and-scope.md",
+        "frontend-engineer.md"
+      ]
+    },
+    {
+      "id": "design-fe-main-light",
+      "description": "Frontend design with the FE discipline condition selected",
+      "operation": "design",
+      "depth": "light",
+      "activate": [
+        "frontend-engineer.md"
+      ],
+      "mustLoad": [
+        "analysis-discipline.md",
+        "input-and-scope.md",
+        "frontend-engineer.md"
+      ]
+    },
+    {
+      "id": "diagnose-fe-main-light",
+      "description": "Frontend diagnosis must receive the passive FE fundamentals",
+      "operation": "diagnose",
+      "depth": "light",
+      "activate": [
+        "frontend-engineer.md"
+      ],
+      "mustLoad": [
+        "analysis-discipline.md",
+        "input-and-scope.md",
+        "frontend-engineer.md"
+      ]
+    },
+    {
+      "id": "simulate-fe-main-light",
+      "description": "Frontend state simulation with FE state and observable fundamentals",
+      "operation": "simulate",
+      "depth": "light",
+      "activate": [
+        "frontend-engineer.md"
+      ],
+      "mustLoad": [
+        "analysis-discipline.md",
+        "frontend-engineer.md"
+      ]
+    },
+    {
+      "id": "plan-fe-main-light",
+      "description": "Frontend execution planning with FE structure fundamentals",
+      "operation": "plan",
+      "depth": "light",
+      "activate": [
+        "frontend-engineer.md"
+      ],
+      "mustLoad": [
+        "analysis-discipline.md",
+        "input-and-scope.md",
+        "frontend-engineer.md"
+      ]
+    },
+    {
+      "id": "architect-fe-main-standard",
+      "description": "Frontend architecture must retain FE structure and ownership fundamentals",
+      "operation": "architect",
+      "depth": "standard",
+      "activate": [
+        "frontend-engineer.md"
+      ],
+      "mustLoad": [
+        "analysis-discipline.md",
+        "service-ownership.md",
+        "frontend-engineer.md"
+      ]
+    },
+    {
+      "id": "review-fe-main-light",
+      "description": "Frontend review selects status plus the passive FE discipline",
+      "operation": "review",
+      "depth": "light",
+      "activate": [
+        "patterns/pattern-status.md",
+        "frontend-engineer.md"
+      ],
+      "select": [
+        "patterns/frontend.md"
+      ],
+      "mustLoad": [
+        "analysis-discipline.md",
+        "patterns/pattern-status.md",
+        "patterns/frontend.md",
+        "frontend-engineer.md"
+      ]
+    },
+    {
+      "id": "refactor-fe-main-light",
+      "description": "Normal frontend refactor before golden evidence",
+      "operation": "refactor-fe",
+      "depth": "light",
+      "mustLoad": [
+        "refactor-modes.md",
+        "frontend-engineer.md",
+        "patterns/frontend.md"
+      ]
+    },
+    {
+      "id": "refactor-fe-main-golden-light",
+      "description": "Frontend refactor using one selected current golden architecture entry",
+      "operation": "refactor-fe",
+      "depth": "light",
+      "select": [
+        "patterns/golden/frontend-main/manifest.json",
+        "patterns/conflict-resolution.md",
+        "patterns/golden/frontend-main/002-2-architecture-rules.md"
+      ],
+      "mustLoad": [
+        "refactor-modes.md",
+        "frontend-engineer.md",
+        "patterns/frontend.md",
+        "patterns/golden/frontend-main/manifest.json",
+        "patterns/conflict-resolution.md",
+        "patterns/golden/frontend-main/002-2-architecture-rules.md"
+      ]
+    },
+    {
+      "id": "create-unit-test-fe-library-light",
+      "description": "Frontend library unit-test creation with FE discipline",
+      "operation": "create-unit-test",
+      "depth": "light",
+      "activate": [
+        "frontend-engineer.md"
+      ],
+      "mustLoad": [
+        "elicitation.md",
+        "frontend-engineer.md"
+      ]
+    },
+    {
+      "id": "create-feature-fe-main-light",
+      "description": "Frontend feature creation before selected golden evidence",
+      "operation": "create-feature",
+      "depth": "light",
+      "activate": [
+        "frontend-engineer.md"
+      ],
+      "mustLoad": [
+        "elicitation.md",
+        "frontend-engineer.md"
+      ]
+    },
+    {
+      "id": "qa-fe-main-golden-regulated",
+      "description": "Independent frontend QA with one selected current golden architecture entry",
+      "operation": "qa",
+      "depth": "regulated",
+      "activate": [
+        "patterns/pattern-status.md",
+        "frontend-engineer.md"
+      ],
+      "select": [
+        "patterns/frontend.md",
+        "patterns/golden/frontend-main/manifest.json",
+        "patterns/conflict-resolution.md",
+        "patterns/golden/frontend-main/002-2-architecture-rules.md"
+      ],
+      "mustLoad": [
+        "qa-and-done.md",
+        "patterns/pattern-status.md",
+        "patterns/frontend.md",
+        "frontend-engineer.md",
+        "patterns/golden/frontend-main/manifest.json",
+        "patterns/conflict-resolution.md",
+        "patterns/golden/frontend-main/002-2-architecture-rules.md"
+      ],
+      "budgets": {
+        "scenario": {
+          "maxWords": 6700
+        }
+      }
+    },
+    {
+      "id": "create-prompt-fe-main-regulated",
+      "description": "Frontend prompt generation must carry FE fundamentals into handoffs",
+      "operation": "create-prompt",
+      "depth": "regulated",
+      "activate": [
+        "frontend-engineer.md"
+      ],
+      "mustLoad": [
+        "create-prompt.md",
+        "subagents-and-branches.md",
+        "model-capability-matrix.yaml",
+        "frontend-engineer.md"
+      ]
+    },
+    {
+      "id": "analyze-be-request-normalize-light",
+      "description": "Backend request-value analysis with normalizeRequestValue guidance",
+      "operation": "analyze",
+      "depth": "light",
+      "activate": [
+        "backend-engineer.md",
+        "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md"
+      ],
+      "mustLoad": [
+        "analysis-discipline.md",
+        "input-and-scope.md",
+        "backend-engineer.md",
+        "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md"
+      ]
+    },
+    {
+      "id": "diagnose-be-request-normalize-light",
+      "description": "Backend request-value diagnosis with normalizeRequestValue behavior",
+      "operation": "diagnose",
+      "depth": "light",
+      "activate": [
+        "backend-engineer.md",
+        "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md"
+      ],
+      "mustLoad": [
+        "analysis-discipline.md",
+        "input-and-scope.md",
+        "backend-engineer.md",
+        "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md"
+      ]
+    },
+    {
+      "id": "refactor-be-request-normalize-light",
+      "description": "Backend refactor that consolidates scattered request-value extraction",
+      "operation": "refactor-be",
+      "depth": "light",
+      "activate": [
+        "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md"
+      ],
+      "mustLoad": [
+        "refactor-modes.md",
+        "backend-engineer.md",
+        "patterns/backend.md",
+        "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md"
+      ]
+    },
+    {
+      "id": "qa-be-request-normalize-regulated",
+      "description": "Independent backend QA for normalizeRequestValue behavior",
+      "operation": "qa",
+      "depth": "regulated",
+      "activate": [
+        "patterns/pattern-status.md",
+        "backend-engineer.md",
+        "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md"
+      ],
+      "mustLoad": [
+        "qa-and-done.md",
+        "patterns/pattern-status.md",
+        "backend-engineer.md",
+        "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md"
+      ]
+    }
+  ]
+}

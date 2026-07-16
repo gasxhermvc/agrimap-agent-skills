@@ -26,5 +26,7 @@
 ## Load only when the condition matches
 
 - When the target is FE, BE, or SQL: [patterns/pattern-status.md](../patterns/pattern-status.md) — route to the current target pattern only
+- When target_kind is fe-main or fe-library: [frontend-engineer.md](../frontend-engineer.md) — frontend review fundamentals
+- When target_kind is be-main or be-library: [backend-engineer.md](../backend-engineer.md) — backend review fundamentals
 
 Do not read the router `SKILL.md` during operation execution. If this generated entrypoint is missing or corrupt, stop with `PACKAGE_ENTRYPOINT_MISSING` and ask for package sync/reinstallation; never broaden into the router.

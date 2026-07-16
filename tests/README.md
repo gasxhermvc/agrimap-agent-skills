@@ -16,6 +16,8 @@ tests/
 ## Commands
 
 - `npm run test:unit`: isolated unit tests.
+- `npm run test:token-coverage`: deterministic token/read coverage unit tests.
+- `npm run audit:tokens`: report every operation baseline and curated scenario; add `-- --strict` behavior through `npm run audit:tokens:strict` for CI.
 - `npm run test:workspace`: workspace lifecycle, hooks, completion, history, and reuse integration.
 - `npm run test:usage`: published package/documentation integration.
 - `npm run test:integration`: all integration categories.

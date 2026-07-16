@@ -26,7 +26,8 @@
 
 ## Load only when the condition matches
 
-- When the symptom may involve cookie, header, query, form, JSON body, or device-ID resolution: [backend-engineer.md](../backend-engineer.md#http-request-value-normalization) — normalization failure hypotheses for main/library code
-- When that backend request-value condition matches: [patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md](../patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md) — expected extraction, normalization, and precedence
+- When target_kind is fe-main or fe-library: [frontend-engineer.md](../frontend-engineer.md) — frontend diagnosis fundamentals
+- When target_kind is be-main or be-library: [backend-engineer.md](../backend-engineer.md) — backend diagnosis fundamentals including request-value normalization
+- When the backend symptom may involve cookie, header, query, form, JSON body, or device-ID resolution: [patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md](../patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md) — expected extraction, normalization, and precedence
 
 Do not read the router `SKILL.md` during operation execution. If this generated entrypoint is missing or corrupt, stop with `PACKAGE_ENTRYPOINT_MISSING` and ask for package sync/reinstallation; never broaden into the router.
