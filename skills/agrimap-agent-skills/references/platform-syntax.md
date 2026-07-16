@@ -2,13 +2,19 @@
 
 The umbrella skill is `agrimap-agent-skills`. Provider aliases route to it and pass `operation` plus raw owner arguments.
 
+## Provider detection (do this first)
+
+You already know which provider you are: your own model identity and harness determine it — a GPT/Codex model in Codex CLI is **Codex**; a Claude model in Claude Code is **Claude Code**; a Gemini model in Gemini CLI is **Gemini CLI**. Do not ask the user which provider they are on, and do not guess from the command text they typed (users copy syntax across providers — that is exactly the failure to prevent).
+
+All help output, alias lists, and examples must use **only the active provider's section below**. Showing another provider's invocation form as if it were runnable here is a defect: a Codex user given `/agrimap-agent-skills:agm-review` will get a hard failure because Codex has no plugin slash commands — the only runnable form on Codex is the `$agm-*` skill mention.
+
 Successful routing must produce an activation receipt containing `AgriMap skill active`, the selected operation, requester, normalized input coverage, and the pre-work checklist before substantive work. The receipt confirms the umbrella was loaded; it must not ask for routine permission already covered by the request.
 
 ## Codex
 
 - Canonical: `$agrimap-agent-skills`
 - Thin aliases: `$agm-analyze`, `$agm-plan`, `$agm-review`, and the other generated `$agm-*` skills.
-- Codex uses skill mentions rather than portable slash commands.
+- Codex uses skill mentions rather than portable slash commands. There is no plugin-prefixed form: `/agrimap-agent-skills:agm-review` and `$agrimap-agent-skills:agm-review` are both invalid — type the alias skill directly (`$agm-review ...`).
 - Managed worktrees are surface-dependent. Do not treat a spawned local subagent as worktree-isolated unless the current environment proves it.
 - Example: `$agm-analyze requested_by=Billy target_files=src/app.ts objective="Find the root cause; do not edit"`
 - Help: `$agm-analyze -h`

@@ -111,9 +111,9 @@
     },
     {
       "fileName": "018-11-generated-api-contract.md",
-      "heading": "11. Generated API Contract — gen-code workflow (npm run gen-api:api)",
+      "heading": "11. Generated API Contract — pointer to shared patterns/gencode-api.md (app flavor: npm run gen-api:api)",
       "language": "md",
-      "sha256": "905d064d1d9d3a89ea0e40994ccff5c7d1b6f8ee4de00a80b46149da38958b36"
+      "sha256": "e67983b7c2f1cc865e50053296aa79a64d3c770cf0ee22f077bf95d6c77bc3a1"
     },
     {
       "fileName": "019-12-testing-conventions.md",

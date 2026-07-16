@@ -7,6 +7,7 @@ Classify the target and delivery phase before designing files. Apply [backend-en
 - `be-library`: reusable codebase with a stable public surface; update `README.md` and Playground in every feature task.
 
 `agmws` and `agmbo` are backend-main profiles, not target kinds. No fallback profile exists.
+Resolve the profile from repo evidence first (Presentation/Controllers ⇒ `agmws`; Quartz.NET + `Infrastructure/TaskScheduler.cs`, no Presentation ⇒ `agmbo`; packaged library + README/Playground ⇒ `be-library`) per the detection table in [backend-engineer.md](../backend-engineer.md); ask only on conflicting or absent signals.
 Do not add Type A/B/C or require `change_kind`; derive concrete work from the objective and current code.
 
 ## Main flow
@@ -50,6 +51,8 @@ BE can originate a code in Domain/Application, translate it at the response boun
 
 There is no Presentation tier. Use `Quartz/TaskScheduler trigger -> Application/UseCase -> Domain -> Port -> Infrastructure`. Inspect `Infrastructure/TaskScheduler.cs` for scheduled tasks. Record trigger, concurrency behavior, retry/error handling, and registration impact. Do not put business logic in the scheduler or add a schedule when the feature is only an executable batch operation.
 
+**Knowledge sharing:** everything below the entry point is identical to `agmws` — all `golden/backend-main/` evidence (use case, repository, DTO/model placement, DI, error handling, SP conventions) applies to `agmbo` work directly. Only the entry tier differs: replace Controller + Presentation DTO with the Quartz trigger in `TaskScheduler.cs` calling the same Application/UseCase shape. An `agmbo` task must never stall waiting for "batch-flavored" copies of knowledge that already exists in `backend-main`.
+
 ## BE libraries
 
 For every library feature:
@@ -59,7 +62,7 @@ For every library feature:
 - add or update the Playground example;
 - run library tests/build and the Playground verification path.
 
-Current curated BE-library references live under `golden/backend-libraries/` and cover public behavior, configuration, README-style usage, and Playground paths. Match them to the active package version and published surface. No verified `backend_profile=agmbo` scheduler example exists; request the scheduler-specific owner set when that gap affects the task.
+Current curated BE-library references live under `golden/backend-libraries/` and cover public behavior, configuration, README-style usage, and Playground paths. Match them to the active package version and published surface. No verified `backend_profile=agmbo` scheduler example exists yet — that gap covers **only the `TaskScheduler.cs` entry file itself**, not the rest of an `agmbo` slice. Synthesize the scheduler entry from standard Quartz.NET practice under the thin-trigger rule (scheduling/registration only, business logic in the use case), note the missing example in the receipt as an intake follow-up, and continue; do not block the task on it.
 
 ## Golden examples
 

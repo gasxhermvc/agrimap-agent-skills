@@ -1,17 +1,45 @@
 # QA and done contract
 
+## QA verification scope — inspect, find, report; nothing else
+
+**What QA reviews (the whole scope, per task relevance):**
+
+- scope/checklist reconciliation against the owner objective and approved trade-offs;
+- pattern conformance of changed artifacts via the scope's Detect gates;
+- correctness of the changed path and its declared behavior;
+- contracts (routes, DTOs, public APIs, stored-procedure/result shapes, message codes);
+- nearby regression surface, callers/consumers, DI/registration, generated-code boundary;
+- build/static/parse health proportional to the change;
+- required companion artifacts (tests, README/Playground, message artifact, reuse index).
+
+**Allowed actions (read/observe only):**
+
+- open and read files, diffs, manifests, and task artifacts;
+- run Detect greps, parse/static validation, typecheck, lint;
+- run the project's **existing non-mutating** build/test commands proportional to the change.
+
+**Forbidden actions — no exception, even to "prove" a finding:**
+
+- editing, creating, or deleting any project file (source, tests, SQL, config, docs);
+- deploying or executing anything with side effects: creating/altering databases (including disposable/LocalDB), running servers, publishing packages, calling external services;
+- installing dependencies, regenerating code, or any git mutation;
+- fixing, working around, or partially remediating a finding.
+
+QA's entire output is its report: findings with severity, file/line, evidence, and impact, written to the task's `qa.md` plus the returned status. Found a problem → record it and return `failed`; cannot verify without a forbidden action → return `blocked` naming the missing evidence — never perform the forbidden action to unblock yourself.
+
 ## QA sequence
 
 1. Use an independent read-only QA subagent/context that did not write the implementation. Give it no file ownership and no instruction to fix findings.
 2. Re-read the owner objective, approved trade-offs, execution prompt SoT, and pre-work checklist.
-3. Treat the executor Result Package as testimony. Reopen the actual diff/files and verify the stated symbols and behavior.
-4. Map every requirement to observed evidence.
-5. Independently select and rerun one or two material verification claims when available, including one primary-path check and one risk-focused check proportional to the change.
-6. Test the primary path and affected failure paths.
-7. Check nearby callers, contracts, data, build/static health, and regression surface.
-8. Verify generated files, DI/registration, README/Playground, scheduler, and message artifacts when applicable. For SQL/BE error-code scope, reconcile emitted/mapped/forwarded codes against the active `messages.txt`-style artifact and verify duplicate handling plus idempotent inserts. QA evidence must name the artifact path and list codes found, reused, added, and conflicted. Accept an empty result only when the evidence lists the inspected producer files and records explicit `no message changes`.
-9. For frontend tasks, verify reuse-search evidence and that `knowledge/frontend-reuse.jsonl` reflects created, changed, moved, deprecated, or newly discovered reusable artifacts.
-10. Record reproducible evidence and unresolved limitations without editing source, tests, prompts, scope, or acceptance criteria.
+3. **Load the same scope discipline the implementation was required to use** — the routing pattern file for the scope (`patterns/sql.md` / `frontend.md` / `backend.md`) and the specific golden/manifest entries it selects, following the umbrella read-economy rule. Pattern conformance is a required QA dimension: run the pattern's Detect gates (grep checks) against the changed artifacts and record each result. QA that judges FE/BE/SQL output without a named loaded pattern file is invalid, exactly as it is for the implementer.
+4. Treat the executor Result Package as testimony. Reopen the actual diff/files and verify the stated symbols and behavior.
+5. Map every requirement to observed evidence.
+6. Independently select and rerun one or two material verification claims when available, including one primary-path check and one risk-focused check proportional to the change — within the allowed actions of the Verification scope only. **Verification depth is proportional (owner decision 2026-07-16):** for SQL DDL/procedure work, pattern-conformance Detect gates plus parse/static-level validation are the sufficient evidence; deploying to any database (including disposable/LocalDB) is never QA's action. When data-behavior risk or an owner request requires live-execution evidence, the executor/Leader produces it during implementation verification and QA inspects the recorded results — QA that cannot verify without a forbidden action returns `blocked`.
+7. Test the primary path and affected failure paths.
+8. Check nearby callers, contracts, data, build/static health, and regression surface.
+9. Verify generated files, DI/registration, README/Playground, scheduler, and message artifacts when applicable. For SQL/BE error-code scope, reconcile emitted/mapped/forwarded codes against the active `messages.txt`-style artifact and verify duplicate handling plus idempotent inserts. QA evidence must name the artifact path and list codes found, reused, added, and conflicted. Accept an empty result only when the evidence lists the inspected producer files and records explicit `no message changes`.
+10. For frontend tasks, verify reuse-search evidence and that `knowledge/frontend-reuse.jsonl` reflects created, changed, moved, deprecated, or newly discovered reusable artifacts.
+11. Record reproducible evidence and unresolved limitations without editing source, tests, prompts, scope, or acceptance criteria.
 
 ## QA status
 

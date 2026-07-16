@@ -123,8 +123,9 @@ const previousHookState = mode === "task" && hookStatePath
 
 const context = [
   "AgriMap identity and audit context:",
-  `- Provider: ${provider}`,
+  `- Hook flavor: ${provider} (the installed hook's configuration flag — NOT proof of the running provider)`,
   `- Hook mode: ${mode}`,
+  "- Record executing model and provider from your own runtime identity: you always know your model family and host CLI. Never copy this hook's flavor or `unknown` into briefs/logs when your own identity says otherwise; `model: unknown` is a recording defect unless you genuinely cannot name your own model.",
   effectiveSessionId
     ? `- Session: ${effectiveSessionId}${sessionId ? "" : " (derived from transcript path)"}`
     : "- Session ID is unavailable. Create a stable local conversation ID before substantive task work.",
@@ -136,7 +137,7 @@ const context = [
   taskRequester
     ? `- Active task requested by: ${taskRequester}; immutable task attribution comes from its tracked brief and created log event.`
     : "- No active task requester is recorded for this session.",
-  `- Execution identity: model=${execution.model || "unknown"}, role=${execution.role || "leader"}, agent=${execution.agent || "primary"}, provider=${execution.provider || provider}.`,
+  `- Previously recorded execution identity (may be stale — your own runtime identity wins): model=${execution.model || "unrecorded"}, role=${execution.role || "leader"}, agent=${execution.agent || "primary"}, provider=${execution.provider || "unrecorded"}.`,
   effectiveSessionId
     ? `- Persist or reconfirm identity with agm-workspace.mjs identify --session ${effectiveSessionId} --owner <confirmed-human-name>; runtime identity is ignored by Git.`
     : "- Persist identity with agm-workspace.mjs identify --session <stable-local-id> --owner <confirmed-human-name>; runtime identity is ignored by Git.",

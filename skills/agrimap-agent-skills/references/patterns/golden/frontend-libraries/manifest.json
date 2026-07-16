@@ -45,9 +45,9 @@
     },
     {
       "fileName": "007-7-generated-apis-per-library.md",
-      "heading": "7. Generated APIs — per-library generated-apis, gen tooling",
+      "heading": "7. Generated APIs — pointer to shared patterns/gencode-api.md (library flavor: npm run gen-api:<lib>)",
       "language": "md",
-      "sha256": "4d44271ff9bf3c1de9e353bbf47a7dc9e1c37f201cdcb1c3f207d82e23bc5bd8"
+      "sha256": "65f1660474c6f69a9bbe4945d7c44890063a96af4aad3684fd732b8b66c001e4"
     },
     {
       "fileName": "008-8-environment-injection-consumer-wiring.md",

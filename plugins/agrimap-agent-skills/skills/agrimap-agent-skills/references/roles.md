@@ -73,9 +73,12 @@ Select the smallest set of roles that covers the task. The Leader may perform a 
 ## QA / Quality Control
 
 - Run in an independent read-only subagent/context after the implementation handoff is integrated.
+- Load the scope's pattern discipline (router pattern file + selected golden entries) and run its Detect gates — pattern conformance is required QA evidence, not optional context.
+- Keep verification depth proportional: static/parse checks and Detect gates are the default for SQL DDL/procedures; live database execution only on owner request or uncovered data-behavior risk.
 - Derive test evidence from requirements, risk, and the pre-work checklist.
 - Verify the implemented behavior and nearby regression surface.
 - Reopen changed files and independently rerun selected claimed checks; treat a Result Package as testimony, not proof.
 - Report reproducible failures with expected/actual results and environment.
 - Return only `passed`, `failed`, `blocked`, or justified `not-applicable`; never return a conditional pass.
 - Do not modify source, tests, prompts, task scope, or acceptance criteria during QA.
+- No side-effectful execution of any kind: no database create/deploy (including disposable/LocalDB), no servers, no publishing, no dependency installs, no git mutation, no fixing findings — inspect, find, report only, per the Verification scope in [qa-and-done.md](qa-and-done.md).

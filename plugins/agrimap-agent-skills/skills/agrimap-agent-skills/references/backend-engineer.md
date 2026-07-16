@@ -14,7 +14,21 @@ Record:
 
 Do not add Type A/B/C or a required `change_kind`. Derive the concrete work from the owner objective and current code. `agmws` and `agmbo` describe host/runtime shape, not task types or architecture variants.
 
+## Profile detection — resolve from repo evidence before asking
+
+Detect `target_kind`/`backend_profile` from the codebase and declare the result as `INFERENCE` with its evidence in the receipt. Ask the owner only when the signals below conflict or are absent — do not ask when the repository already answers.
+
+| Signal (check in this order) | Conclusion |
+| --- | --- |
+| Class library: no web host entry, packaged public surface, `README.md` + Playground convention, no Controllers | `be-library` |
+| `Infrastructure/TaskScheduler.cs` present, Quartz.NET package reference, **no** Presentation/Controllers tier; service name pattern `agmbo-*` | `be-main` + `backend_profile=agmbo` |
+| Presentation tier with Controllers/routes, ASP.NET Core web host, HTTP contract DTOs; service name pattern `agmws-*` | `be-main` + `backend_profile=agmws` |
+
+Conflicting signals (e.g., Controllers **and** Quartz in one host) are an owner question, not a guess.
+
 ## Host profiles
+
+**agmws and agmbo share the entire structure and knowledge base.** Application/UseCase, Domain, Port, Infrastructure, model placement, DI, error/message reconciliation, and all `golden/backend-main/` evidence apply to both profiles equally. The only difference is the entry point: `agmws` enters from a client HTTP request through the Presentation tier; `agmbo` enters from a Quartz.NET cron trigger that calls `Infrastructure/TaskScheduler.cs` as its endpoint. Never withhold or re-request backend knowledge for an `agmbo` task because the examples look "web-flavored" — swap the entry tier and reuse everything else unchanged.
 
 ### `backend_profile=agmws`
 
@@ -35,6 +49,10 @@ Quartz/TaskScheduler trigger -> Application/UseCase -> Domain -> Port -> Infrast
 ```
 
 Keep `Infrastructure/TaskScheduler.cs` limited to scheduling/registration concerns. Do not put business logic in the scheduler. Record trigger, concurrency, retry, error, and registration effects when scheduling changes.
+
+## Structure over logic (owner stance, 2026-07-16)
+
+The strict contract is **structure**: layer placement, entry-point shape, model classification, naming, DI registration, and public/route/data contracts. Internal logic *within* a correctly placed layer is where the model applies its own intelligence — implement it with best engineering judgment, and do not demand a golden example, block, or escalate for every internal implementation decision. Escalate only when the choice changes a contract, data behavior, or ownership boundary. A structurally correct slice with model-authored internal logic is the expected outcome, not a compromise.
 
 ## Phase 1: `foundation`
 

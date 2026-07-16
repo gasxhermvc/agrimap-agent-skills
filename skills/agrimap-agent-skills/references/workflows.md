@@ -2,6 +2,37 @@
 
 Use this router after intake and impact analysis. Combine a workflow with the relevant technical role; do not treat command names as permission gates. Automatically compose the passive [Front-end Engineer discipline](frontend-engineer.md) for FE targets and [Back-end Engineer discipline](backend-engineer.md) for BE targets. Resolve missing inputs with [elicitation.md](elicitation.md) before asking anything.
 
+## Task lifecycle — ทุก operation วิ่งผ่าน 6 กระบวนการนี้
+
+This file is the **operation catalog**; the lifecycle spine lives in `SKILL.md`. Every task, regardless of operation, passes these phases in order — each has a measurable exit gate. Phase 6 is cross-cutting and can fire from inside any phase.
+
+| # | กระบวนการ | ทำอะไร | กฎอยู่ที่ | Exit gate (ชี้วัด — ผ่านเมื่อ) |
+|---|---|---|---|---|
+| 1 | **คิด** (Think) | normalize inputs, หา root/hidden problem, แยก FACT/INFERENCE, ตัวเลือก+trade-off | SKILL §Start (4–7), §Analyze before editing, [analysis-discipline.md](analysis-discipline.md) | scope/non-goals/assumptions ถูกประกาศ; evidence มี label; มี recommendation เมื่อทางเลือก >1 |
+| 2 | **เตรียมบทบาท** (Prepare) | requester/identity, target detection, เลือก role + โหลด pattern ตาม scope | SKILL §Start (1–3, 8), §Route technical patterns, [roles.md](roles.md), engineer disciplines | activation receipt ออกแล้ว พร้อมบรรทัด `Patterns:` + ผล detection + execution identity จริง |
+| 3 | **จ่ายงาน** (Dispatch) | ตัดสิน single-agent vs fan-out, ownership map, handoff แบบ inline-fundamentals | SKILL §Delegate deliberately, [subagents-and-branches.md](subagents-and-branches.md) | งานเล็ก = ไม่ fan-out; งานใหญ่ = ownership map ครบ ≤5 subagents, handoff มี fundamentals ติดไป |
+| 4 | **ทำงาน** (Execute) | ทำตาม operation contract ในไฟล์นี้ + เคารพ write boundary | SKILL §Execute, operation sections ด้านล่าง, patterns | deliverable ของ operation ถูกเขียนลง artifact ที่กำหนด; ไม่มีการเขียนนอก boundary |
+| 5 | **สรุปผล** (Conclude) | checkpoint memory/logs, verify, QA อิสระ, result package | SKILL §Checkpoint + §Verify and close, [qa-and-done.md](qa-and-done.md) | checklist reconciled; QA status บันทึกแล้ว; result fields ครบ; commit boundary ระบุแล้ว |
+| 6 | **แจ้งปัญหา** (Report problems) | ส่งสัญญาณเมื่อติด/ขัดแย้ง/เพี้ยนจากแผน — จากกระบวนการไหนก็ได้ | §Problem reporting ด้านล่าง | ปัญหาถูกรายงานพร้อม evidence และงานหยุดถูกจุด — ไม่มีการ self-unblock |
+
+## Operation write boundary — รั้วเดียว ใช้ทุกคำสั่ง
+
+- **Read-only operations** — `analyze`, `diagnose`, `simulate`, `plan`, `design`, `architect`, `review`, `history`, `qa`: ห้ามแก้ project file ใด ๆ (source/SQL/config/schema/data) และห้าม execution ที่มี side effect (deploy, สร้าง/แก้ database, run server, publish, install) — เขียนได้เฉพาะ artifact ใต้ `.agrimap-agent/` ของ task ตัวเอง ไม่มีการตีความ objective ใดเปิดทางให้ลงมือได้; อยากให้แก้ = ปิดงานนี้แล้วเปิด write operation แยก
+- **Write operations** — `refactor-fe/be/sql`, `create-feature`, `create-unit-test`, `exec`: แก้ project ได้ตาม confirmed scope + ต้องรัน verify loop ตาม pattern ของ scope
+
+## Problem reporting — กระบวนการแจ้งปัญหา (cross-cutting)
+
+เมื่อเจอสถานการณ์เหล่านี้ ให้หยุดจุดที่กระทบ รายงานพร้อมหลักฐาน แล้วรอการตัดสินใจ — ห้ามแก้ปัญหาข้ามรั้วเพื่อไปต่อ:
+
+| สถานการณ์ | สัญญาณที่ต้องส่ง | บันทึกที่ |
+|---|---|---|
+| ความจริงขัดกับ prompt/แผนที่อนุมัติ | `deviation_from_prompt` + evidence (ห้ามตีความ prompt ใหม่เงียบ ๆ) | result/handoff + log event |
+| ตรวจไม่ได้โดยไม่ละเมิด write boundary | `blocked` + ระบุ evidence ที่ขาด | qa.md / task artifact |
+| QA พบ defect | `failed` + severity/file/line/impact — ห้ามซ่อมเองในงานเดิม | qa.md, งานปิดเป็น `qa-failed` |
+| decision record ขัดกันสองใบใน topic เดียว | หยุด ถาม owner ว่าใบไหน current | รายงานใน receipt/chat |
+| pattern/example ที่ต้องใช้ไม่มี | ประกาศ gap ใน receipt + `missing-owner-example` แล้วทำงานต่อบน evidence ที่มี (gap ไม่ block งานที่ไม่เกี่ยว) | receipt + [pattern-status.md](patterns/pattern-status.md) |
+| scope บานเกินที่อนุมัติ | บันทึกเป็น follow-up แยก — ห้ามขยายเงียบ ๆ | current memory + result concerns |
+
 ## Choosing an operation
 
 | Operation | Use when the owner is thinking | Ends with | Wrong fit → use instead |
@@ -23,11 +54,15 @@ Use this router after intake and impact analysis. Combine a workflow with the re
 
 ## `/agm-analyze`
 
-Use [analysis-discipline.md](analysis-discipline.md). Produce labeled evidence, hidden problems, dependencies, impact surface, unknowns, solution options, trade-offs, recommendation, and an execution-ready checklist. For delegation candidates, identify shared files/contracts that prevent parallel writes. Do not edit unless the owner also requests implementation. Write the deliverable to `.agrimap-agent/tasks/<task-id>/analysis.md` using [analysis.md](../assets/templates/analysis.md); a chat answer alone does not close the task.
+Use [analysis-discipline.md](analysis-discipline.md). Produce labeled evidence, hidden problems, dependencies, impact surface, unknowns, solution options, trade-offs, recommendation, and an execution-ready checklist. For delegation candidates, identify shared files/contracts that prevent parallel writes.
+
+**Analysis is strictly read-only over the project.** It never edits source, SQL, config, schema, or data — not even a one-line "obvious fix" the analysis itself uncovered, and no phrasing of the objective counts as an implied implementation request. Its only writes are the task's own artifacts under `.agrimap-agent/`. When the owner wants the fix applied, close the analysis and route to the matching execution operation (`refactor-*` / `create-feature` / `exec`) as a separate explicit request. An analyze run that changed a project file is a workflow defect regardless of whether the change was correct. Write the deliverable to `.agrimap-agent/tasks/<task-id>/analysis.md` using [analysis.md](../assets/templates/analysis.md); a chat answer alone does not close the task.
 
 ## `/agm-diagnose`
 
-Trace symptoms to root cause using [analysis-discipline.md](analysis-discipline.md). Build a hypothesis table with evidence for/against, run bounded diagnostics, identify the proven cause, and propose the smallest complete fix. Do not implement unless requested. Write the deliverable to `.agrimap-agent/tasks/<task-id>/diagnosis.md` using [analysis.md](../assets/templates/analysis.md).
+Trace symptoms to root cause using [analysis-discipline.md](analysis-discipline.md). Build a hypothesis table with evidence for/against, run bounded diagnostics, identify the proven cause, and propose the smallest complete fix.
+
+**Diagnostics are read-only and observational**: read, grep, parse, typecheck, existing non-mutating tests/builds. They never mutate project files, schemas, databases, or data, and never deploy anything. The fix is *proposed*, never applied in this operation — no objective phrasing counts as an implied implementation request; execution is a separate explicit operation. The only writes are `.agrimap-agent/` task artifacts. Write the deliverable to `.agrimap-agent/tasks/<task-id>/diagnosis.md` using [analysis.md](../assets/templates/analysis.md).
 
 ## `/agm-simulate`
 
@@ -55,7 +90,7 @@ Decision-impact lookup is a Leader responsibility at intake and uses frontmatter
 
 ## `/agm-review`
 
-Review correctness first, then behavior regressions, contracts/data, maintainability, performance when relevant, and tests. Report findings by severity with file, line, evidence, impact, and actionable fix. Do not refactor during a review-only request. Write the deliverable to `.agrimap-agent/tasks/<task-id>/review.md` using [review.md](../assets/templates/review.md).
+Review correctness first, then behavior regressions, contracts/data, maintainability, performance when relevant, and tests. Report findings by severity with file, line, evidence, impact, and actionable fix. **Review is strictly read-only over the project** — do not refactor, patch, or "fix while here" during a review-only request, and never execute anything mutating or deploy anything; the only writes are `.agrimap-agent/` task artifacts. Write the deliverable to `.agrimap-agent/tasks/<task-id>/review.md` using [review.md](../assets/templates/review.md).
 
 ## `/agm-history`
 
@@ -78,7 +113,7 @@ For `agm-refactor-sql` in `readability-organization` or `strict-preserve-logic`,
 
 ## `/agm-qa`
 
-Run in an independent read-only QA subagent/context. Translate requirements and checklist items into evidence, reopen the changed artifacts, and rerun selected claims from the executor Result Package. Test the changed path, relevant regression surface, failure paths, and build/static health. Return `passed`, `failed`, `blocked`, or justified `not-applicable` with reproducible evidence; never fix findings or return a conditional pass.
+Run in an independent read-only QA subagent/context. First load the scope's pattern discipline (`patterns/sql.md` / `frontend.md` / `backend.md` plus the golden entries its routing selects) and run the pattern's Detect gates against the changed artifacts — pattern conformance is required QA evidence, and QA without a named loaded pattern file is invalid. Then translate requirements and checklist items into evidence, reopen the changed artifacts, and rerun selected claims from the executor Result Package. Test the changed path, relevant regression surface, failure paths, and build/static health with **proportional depth** and only the allowed actions of the QA Verification scope: for SQL DDL/procedures, Detect gates plus parse/static validation are the sufficient evidence — QA never deploys to any database, runs servers, publishes, installs, or mutates anything; when live-execution evidence is required, the executor/Leader produces it and QA inspects the recorded results, otherwise QA returns `blocked`. Return `passed`, `failed`, `blocked`, or justified `not-applicable` with reproducible evidence; never fix findings or return a conditional pass — inspect, find, report only.
 
 ## `/agm-create-unit-test`
 

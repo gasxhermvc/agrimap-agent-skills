@@ -107,10 +107,13 @@ Append one JSON object per line:
   "reason": "problem addressed",
   "files": ["path"],
   "verification": ["command/result"],
+  "skillsUsed": ["agm:patterns/sql", "agm:golden/sql"],
   "gitHead": "40-or-64-character-commit-id-or-null",
   "gitDirty": false
 }
 ```
+
+`skillsUsed` is an **optional observability field**: the registry IDs from [skill-registry.md](skill-registry.md) naming which skill modules actually informed this step, so a human reading the log can see "this step was reasoned with these skills". List only modules that materially shaped the step, ordered by influence. Its absence never invalidates an event, and it is not a validation gate — but when present, IDs must come from the registry, never invented.
 
 The first event for every new task is `created` and also contains `request`, the durable normalized statement of what the human asked for. Timestamps are generated at append time as ISO-8601 UTC and logs are append-only. Schema v2 requires explicit `gitHead`/`gitDirty` repository context (both may be `null` outside Git) and requires every `changed` checkpoint to contain at least one nonblank claimed affected file. Completed/non-complete closure events carry forward unique files only from valid versioned, non-terminal task events; invalid, legacy-unverified, and earlier terminal records cannot supply carried attribution. Those Git fields are context, not proof that the logged requester or executor authored that commit. Completion validation keeps schema v1 readable without retroactively imposing the v2 Git or changed-file rules, while rejecting incomplete attribution/execution/time fields or a missing created request in every versioned event.
 

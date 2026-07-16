@@ -4,6 +4,8 @@ Frontend code is usually broad rather than algorithmically difficult. Control te
 
 This is a passive discipline layer, not a standalone workflow or alias. Apply it automatically whenever `target_kind` is `fe-main` or `fe-library`, including analysis, design, architecture, feature work, refactor, review, unit tests, QA, and prompt generation.
 
+**Every role carries the FE fundamentals.** No role — Leader, analyst, executor, reviewer, QA, or prompt generator — may act on FE scope without the agm-frontend fundamentals: the target detection result and selected golden collection, the Facade + Signal structure rules for `fe-main` (or service-first + public-API rules for `fe-library`), and the generated-API boundary ([patterns/gencode-api.md](patterns/gencode-api.md)). When work is delegated, the handoff prompt must inline these fundamentals (detection result, collection name, and the specific structural rules in scope) so the subagent holds them without re-reading the whole reference tree; a subagent that received an FE assignment without them must request the corrected handoff instead of improvising.
+
 ## Required classification
 
 Record:
@@ -13,6 +15,21 @@ Record:
 - `reuse_scope`: `core`, `shared`, `library`, `feature`, or `generated`;
 - affected flows and consuming teams;
 - project/company standards and local exceptions.
+
+## Target detection — resolve from repo evidence before asking
+
+Detect `target_kind` from the workspace and declare the result as `INFERENCE` with its evidence in the receipt. Ask the owner only when the signals conflict or are absent — do not ask when the repository already answers.
+
+| Signal (check in this order) | Conclusion | Knowledge collection |
+| --- | --- | --- |
+| `projects/<lib>/` layout with `ng-package.json` + `src/public-api.ts`, packaged `@agrimap/*` names, a `playground` project | `fe-library` | `golden/frontend-libraries/` |
+| Single app under `src/app/` with `core/ domain/ features/ generated-apis/ shared/`, app-level `angular.json`, consumes `@agrimap/*` from npm | `fe-main` | `golden/frontend-main/` |
+
+The two collections carry different conventions (naming, facade usage, test style) — loading the wrong one produces confidently wrong output, so the detection result and the selected collection must both appear in the receipt `Patterns:` line. A file inside `projects/<lib>/` is library-lane even when the task started from an application symptom; crossing lanes (editing a library to fix an app task) is a blast-radius decision that requires the library workflow, not a silent edit.
+
+## Structure over logic (owner stance, 2026-07-16)
+
+The strict contract is **structure**: the Facade + Signal architecture and CODING-STANDARD rules for `fe-main` (R1–R5, layer boundaries, naming, signal primitives, generated-API boundary), and the public-API/naming/entry conventions for `fe-library`. Internal logic *within* a correctly structured layer is where the model applies its own intelligence — implement it with best engineering judgment, and do not demand a golden example, block, or escalate for every internal implementation decision. Escalate only when a choice changes a public contract, data behavior, or ownership boundary. A structurally correct feature with model-authored internal logic is the expected outcome, not a compromise.
 
 ## Design source of trust
 
