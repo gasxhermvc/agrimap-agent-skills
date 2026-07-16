@@ -3,16 +3,16 @@
 <!-- Generated from config/operations.json. Do not edit directly. -->
 
 - Operation: `create-unit-test`
-- Lifecycle: `lightweight-eligible`
+- Workflow depth: default `light`; allowed `light`, `standard`, `regulated`
 - Mode: `product-write`
 - Purpose: Create target-specific unit or regression tests.
-- Deliverable: selected tests plus verification and Result Package
+- Deliverable: selected tests plus direct verified result at light or schema result at standard/regulated
 
 ## Inputs and help
 
 - Required: target.
 - Conditional: requester selection when behaviors were not already specified; backend_profile for be-main.
-- Minimal example: `$agm-create-unit-test requested_by=Billy target_files=src/orders.ts objective="cover duplicate cancellation"`
+- Minimal example: `$agm-create-unit-test depth=light target_files=src/orders.ts objective="cover duplicate cancellation"`
 
 ## Execute this contract
 

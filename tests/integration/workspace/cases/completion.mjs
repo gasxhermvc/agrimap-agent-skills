@@ -5,10 +5,10 @@ import { LOG_EVENTS, QA_FAILED_EVENT } from "../../../../skills/agrimap-agent-sk
 
 const logEventSet = new Set(LOG_EVENTS);
 
-function validBrief() {
+function validBrief({ taskId = "task-a", depth = "regulated" } = {}) {
   return `# Task brief
 
-- Task ID: \`task-a\`
+- Task ID: \`${taskId}\`
 - Requested by: Alice
 - Identity source: \`manual-confirmed\`
 - Requester authority: \`owner\`
@@ -20,6 +20,7 @@ function validBrief() {
 - Agent: \`primary\`
 - Provider: \`codex\`
 - Operation: \`analyze\`
+- Workflow depth: \`${depth}\`
 - Objective: Analyze Angular {{orderStatus}} behavior.
 - Scope: Task A artifacts and evidence.
 - Non-goals: Unrelated task changes.
@@ -84,7 +85,7 @@ function validQa({ mode = "fast", fastSequence = "1" } = {}) {
 `;
 }
 
-function validResult({ mode = "fast", boundary = "task" } = {}) {
+function validResult({ mode = "fast", boundary = "task", depth = "regulated" } = {}) {
   return `# Result
 
 - Outcome: completed
@@ -95,8 +96,9 @@ function validResult({ mode = "fast", boundary = "task" } = {}) {
 - Leader role: leader
 - Leader agent: primary
 - Leader provider: codex
-- QA status: passed
-- QA mode: ${mode}
+- Workflow depth: ${depth}
+- QA status: ${depth === "regulated" ? "passed" : "not-applicable"}
+- QA mode: ${depth === "regulated" ? mode : "not-applicable"}
 - Delivery boundary: ${boundary}
 
 ## Authorized decisions
@@ -332,7 +334,25 @@ export async function completion(harness) {
   const taskDLog = await readTaskLog("task-d");
   assert.equal(taskDLog.at(-1).event, "cancelled");
 
-  for (const taskId of ["task-a", "task-b", "task-c", "task-d"]) {
+  const lightStart = spawn(workspaceScript, ["start", "--cwd", temp, "--session", "session-a", "--depth", "light", "--title", "Must remain stateless"]);
+  assert.equal(lightStart.status, 1);
+  assert.equal(JSON.parse(lightStart.stdout).code, "LIGHT_DEPTH_STATE_FORBIDDEN");
+
+  run(workspaceScript, ["start", "--cwd", temp, "--session", "session-a", "--task", "task-standard", "--operation", "refactor-be", "--depth", "standard", "--title", "Standard bounded refactor"]);
+  const standardDirectory = path.join(temp, ".agrimap-agent", "tasks", "task-standard");
+  await writeFile(path.join(standardDirectory, "brief.md"), validBrief({ taskId: "task-standard", depth: "standard" }), "utf8");
+  await writeFile(path.join(standardDirectory, "checklist.md"), "# Checklist\n\n- [x] Bounded refactor and targeted verification passed.\n", "utf8");
+  await assert.rejects(readFile(path.join(standardDirectory, "qa.md"), "utf8"));
+  await writeFile(path.join(standardDirectory, "result.md"), validResult({ depth: "standard", boundary: "commit" }), "utf8");
+  const standardCommitValidation = spawn(workspaceScript, ["validate", "--cwd", temp, "--task", "task-standard"]);
+  assert.equal(standardCommitValidation.status, 1);
+  assert.equal(JSON.parse(standardCommitValidation.stdout).contentFailures.some((failure) => failure.reason === "requires-regulated-depth"), true);
+  await writeFile(path.join(standardDirectory, "result.md"), validResult({ depth: "standard" }), "utf8");
+  const completedStandard = run(workspaceScript, ["complete", "--cwd", temp, "--session", "session-a", "--task", "task-standard"]);
+  assert.equal(completedStandard.ok, true);
+  assert.equal((await readTaskLog("task-standard")).at(-1).workflowDepth, "standard");
+
+  for (const taskId of ["task-a", "task-b", "task-c", "task-d", "task-standard"]) {
     assert.equal((await readTaskLog(taskId)).every((entry) => logEventSet.has(entry.event)), true);
   }
 }

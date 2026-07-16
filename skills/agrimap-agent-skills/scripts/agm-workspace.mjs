@@ -23,14 +23,15 @@ import {
   localAuditMetadata,
   normalizeIdentity,
 } from "./identity.mjs";
-import { isLogEvent, logEventError, QA_FAILED_EVENT } from "./log-events.mjs";
+import { isLogEvent, logEventError, MILESTONE_TYPES, QA_FAILED_EVENT } from "./log-events.mjs";
 import { loadTaskArtifactSchema } from "./task-artifact-schema.mjs";
 
-const AUDIT_SCHEMA_VERSION = 2;
-const SUPPORTED_AUDIT_SCHEMA_VERSIONS = new Set([1, AUDIT_SCHEMA_VERSION]);
+const AUDIT_SCHEMA_VERSION = 3;
+const SUPPORTED_AUDIT_SCHEMA_VERSIONS = new Set([1, 2, AUDIT_SCHEMA_VERSION]);
 const TERMINAL_AUDIT_EVENTS = new Set([QA_FAILED_EVENT, "blocked", "cancelled", "completed"]);
 const skillRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const taskArtifactSchema = await loadTaskArtifactSchema(skillRoot);
+const TRACKED_WORKFLOW_DEPTHS = new Set(taskArtifactSchema.workflowDepths || ["standard", "regulated"]);
 const completionTemplateTokenNames = new Set();
 for (const definition of Object.values(taskArtifactSchema.artifacts || {})) {
   const template = await readFile(path.join(skillRoot, "assets", "templates", definition.template), "utf8");
@@ -368,6 +369,18 @@ function auditEventIssues(event) {
   if (event.event === "created" && !String(event.request || "").trim()) {
     issues.push({ field: "request", reason: "missing-on-created-event" });
   }
+  if (schemaVersion >= 3) {
+    if (!TRACKED_WORKFLOW_DEPTHS.has(String(event.workflowDepth || "").toLowerCase())) {
+      issues.push({ field: "workflowDepth", reason: "missing-or-invalid" });
+    }
+    const milestoneEvents = new Set(["changed", "verified", "decision", "qa-finding"]);
+    if (milestoneEvents.has(event.event) && !MILESTONE_TYPES.includes(event.milestone)) {
+      issues.push({ field: "milestone", reason: "missing-or-invalid" });
+    }
+    if (!milestoneEvents.has(event.event) && event.milestone !== undefined) {
+      issues.push({ field: "milestone", reason: "forbidden-on-created-or-terminal-event" });
+    }
+  }
   if (!Array.isArray(event.files)) issues.push({ field: "files", reason: "must-be-array" });
   else if (schemaVersion >= 2) {
     if (event.files.some((file) => typeof file !== "string" || !file.trim())) {
@@ -439,6 +452,13 @@ async function init(root, args) {
 
 async function start(root, args) {
   const state = await ensureLayout(root);
+  const workflowDepth = String(args.depth || args["workflow-depth"] || "regulated").trim().toLowerCase();
+  if (workflowDepth === "light") {
+    return { ok: false, code: "LIGHT_DEPTH_STATE_FORBIDDEN", message: "Light depth must not start task state; execute directly without requester persistence or workflow artifacts." };
+  }
+  if (!TRACKED_WORKFLOW_DEPTHS.has(workflowDepth)) {
+    return { ok: false, code: "INVALID_WORKFLOW_DEPTH", message: "--depth must be standard or regulated when starting tracked state." };
+  }
   const sessionId = safeSessionId(args.session);
   if (!sessionId) {
     return { ok: false, needsSession: true, message: "A stable --session is required so concurrent project users do not collide." };
@@ -503,11 +523,14 @@ async function start(root, args) {
       agent_name: execution.agent,
       provider: execution.provider,
       operation,
+      workflow_depth: workflowDepth,
       objective,
     },
     "checklist.md": {},
   };
   for (const artifactName of taskArtifactSchema.scaffoldOrder || []) {
+    const requiredForDepths = taskArtifactSchema.artifacts?.[artifactName]?.requiredForDepths || [];
+    if (!requiredForDepths.includes(workflowDepth)) continue;
     const artifactPath = path.join(taskPath, artifactName);
     if (!(await exists(artifactPath))) {
       await writeFile(artifactPath, await renderTaskArtifact(artifactName, scaffoldReplacements[artifactName] || {}), "utf8");
@@ -517,6 +540,7 @@ async function start(root, args) {
   const active = {
     taskId,
     operation,
+    workflowDepth,
     objective,
     sessionId,
     requestedBy,
@@ -531,7 +555,7 @@ async function start(root, args) {
   await writeJson(activePath, active);
   await writeFile(
     path.join(state, "memory", "current", `${taskId}.md`),
-    `# Current task memory\n\n- Task: \`${taskId}\`\n- Requested by: ${requestedBy}\n- Requester authority: \`${scaffoldReplacements["brief.md"].requester_authority}\`\n- Decision owner: ${scaffoldReplacements["brief.md"].decision_owner_or_not_required}\n- Request: ${objective}\n- Model label: \`${execution.modelLabel}\`\n- Actual model: \`${execution.model}\`\n- Role: \`${execution.role}\`\n- Agent: \`${execution.agent}\`\n- Provider: \`${execution.provider}\`\n- Status: started\n- Operation: \`${operation}\`\n- Last checkpoint: ${now()}\n- Summary: ${objective}\n`,
+    `# Current task memory\n\n- Task: \`${taskId}\`\n- Workflow depth: \`${workflowDepth}\`\n- Requested by: ${requestedBy}\n- Requester authority: \`${scaffoldReplacements["brief.md"].requester_authority}\`\n- Decision owner: ${scaffoldReplacements["brief.md"].decision_owner_or_not_required}\n- Request: ${objective}\n- Model label: \`${execution.modelLabel}\`\n- Actual model: \`${execution.model}\`\n- Role: \`${execution.role}\`\n- Agent: \`${execution.agent}\`\n- Provider: \`${execution.provider}\`\n- Status: started\n- Operation: \`${operation}\`\n- Last milestone: ${now()}\n- Summary: ${objective}\n`,
     "utf8",
   );
   await appendLog(state, {
@@ -540,6 +564,7 @@ async function start(root, args) {
     requesterId: confirmedIdentity.requesterId,
     identitySource: confirmedIdentity.identitySource,
     ...execution,
+    workflowDepth,
     event: "created",
     summary: `Started ${operation} task.`,
     request: objective,
@@ -566,6 +591,24 @@ async function checkpoint(root, args) {
   if (!taskId || !summary) return { ok: false, message: "--task and --summary are required." };
   const event = String(args.event || "changed").trim();
   if (!isLogEvent(event)) return logEventError(event);
+  if (event === "created" || TERMINAL_AUDIT_EVENTS.has(event)) {
+    return { ok: false, code: "CHECKPOINT_EVENT_NOT_MILESTONE", message: "start owns created; complete|close owns terminal events. checkpoint accepts only durable intermediate milestones." };
+  }
+  const defaultMilestone = event === "decision"
+    ? "scope-decision"
+    : event === "verified" || event === "qa-finding"
+      ? "verification-gate"
+      : "acceptance-slice";
+  const milestone = String(args.milestone || defaultMilestone).trim().toLowerCase();
+  const allowedMilestonesByEvent = {
+    changed: new Set(["acceptance-slice", "integration"]),
+    decision: new Set(["scope-decision"]),
+    verified: new Set(["verification-gate"]),
+    "qa-finding": new Set(["verification-gate"]),
+  };
+  if (!MILESTONE_TYPES.includes(milestone) || !allowedMilestonesByEvent[event]?.has(milestone)) {
+    return { ok: false, code: "INVALID_MILESTONE", message: `--milestone must match event ${event}: ${[...(allowedMilestonesByEvent[event] || [])].join("|") || "none"}.` };
+  }
   const files = listValue(args.files);
   if (event === "changed" && files.length === 0) {
     return {
@@ -607,7 +650,7 @@ async function checkpoint(root, args) {
   const concerns = String(args.concerns || "None recorded.");
   await writeFile(
     path.join(state, "memory", "current", `${taskId}.md`),
-    `# Current task memory\n\n- Task: \`${taskId}\`\n- Requested by: ${requestedBy}\n- Request: ${request || "Not recorded (legacy task)"}\n- Model label: \`${execution.modelLabel}\`\n- Actual model: \`${execution.model}\`\n- Role: \`${execution.role}\`\n- Agent: \`${execution.agent}\`\n- Provider: \`${execution.provider}\`\n- Status: ${args.status || "in-progress"}\n- Last checkpoint: ${now()}\n- Summary: ${summary}\n- Reason: ${args.reason || "Durable state-transition checkpoint."}\n- Files: ${files.length ? files.map((file) => `\`${file}\``).join(", ") : "None"}\n- Verification: ${verification.length ? verification.join("; ") : "Not yet run"}\n- Concerns: ${concerns}\n`,
+    `# Current task memory\n\n- Task: \`${taskId}\`\n- Workflow depth: \`${activeMatch?.active?.workflowDepth || taskIdentity.workflowDepth || "regulated"}\`\n- Requested by: ${requestedBy}\n- Request: ${request || "Not recorded (legacy task)"}\n- Model label: \`${execution.modelLabel}\`\n- Actual model: \`${execution.model}\`\n- Role: \`${execution.role}\`\n- Agent: \`${execution.agent}\`\n- Provider: \`${execution.provider}\`\n- Status: ${args.status || "in-progress"}\n- Last milestone: \`${milestone}\` at ${now()}\n- Summary: ${summary}\n- Reason: ${args.reason || "Durable milestone checkpoint."}\n- Files: ${files.length ? files.map((file) => `\`${file}\``).join(", ") : "None"}\n- Verification: ${verification.length ? verification.join("; ") : "Not yet run"}\n- Concerns: ${concerns}\n`,
     "utf8",
   );
   await appendLog(state, {
@@ -616,13 +659,15 @@ async function checkpoint(root, args) {
     requesterId,
     identitySource,
     ...execution,
+    workflowDepth: activeMatch?.active?.workflowDepth || taskIdentity.workflowDepth || "regulated",
     event,
+    milestone,
     summary,
-    reason: String(args.reason || "Durable state-transition checkpoint."),
+    reason: String(args.reason || "Durable milestone checkpoint."),
     files,
     verification,
   });
-  return { ok: true, taskId, requestedBy, requesterId, identitySource, ...execution, memory: `memory/current/${taskId}.md` };
+  return { ok: true, taskId, milestone, requestedBy, requesterId, identitySource, ...execution, memory: `memory/current/${taskId}.md` };
 }
 
 async function filesUnder(directory) {
@@ -820,6 +865,7 @@ async function taskAuditIdentity(taskPath) {
     identitySource: optionalMarkdownField(brief, "Identity source"),
     request: optionalMarkdownField(brief, "Objective"),
     sessionId: optionalMarkdownField(brief, "Session"),
+    workflowDepth: optionalMarkdownField(brief, "Workflow depth"),
   };
 }
 
@@ -859,8 +905,13 @@ async function validate(root, args) {
   if (!taskId) return { ok: false, message: "--task is required." };
   const taskPath = path.join(state, "tasks", taskId);
   const artifactDefinitions = taskArtifactSchema.artifacts || {};
+  const briefPreview = await readFile(path.join(taskPath, "brief.md"), "utf8").catch(() => "");
+  const workflowDepth = String(args.depth || args["workflow-depth"] || optionalMarkdownField(briefPreview, "Workflow depth") || "regulated").toLowerCase();
+  if (!TRACKED_WORKFLOW_DEPTHS.has(workflowDepth)) {
+    return { ok: false, taskId, workflowDepth, contentFailures: [{ file: "brief.md", field: "Workflow depth", reason: "invalid-enum" }] };
+  }
   const required = Object.entries(artifactDefinitions)
-    .filter(([, definition]) => definition.requiredForCompletion)
+    .filter(([, definition]) => definition.requiredForCompletion && (definition.requiredForDepths || []).includes(workflowDepth))
     .map(([file]) => file);
   const missing = [];
   for (const file of required) {
@@ -903,7 +954,7 @@ async function validate(root, args) {
   let checklistItems = [];
   let unchecked = [];
   for (const [file, definition] of Object.entries(artifactDefinitions)) {
-    if (!definition.requiredForCompletion) continue;
+    if (!required.includes(file)) continue;
     const content = artifacts[file] || "";
     artifactFields[file] = {};
     for (const field of definition.requiredFields || []) {
@@ -938,20 +989,25 @@ async function validate(root, args) {
   }
 
   const rules = taskArtifactSchema.crossArtifactRules || {};
+  const regulated = workflowDepth === String(rules.regulatedDepth || "regulated");
   const artifactTaskId = artifactFields["brief.md"]?.[rules.taskIdField] || "";
   if (artifactTaskId !== taskId) contentFailures.push({ file: "brief.md", field: rules.taskIdField, reason: "task-id-mismatch" });
   const requestedBy = artifactFields["brief.md"]?.[rules.requesterField] || "";
   const decisionOwner = artifactFields["brief.md"]?.[rules.decisionOwnerField] || "";
+  const briefWorkflowDepth = String(artifactFields["brief.md"]?.[rules.workflowDepthField] || "").toLowerCase();
+  const resultWorkflowDepth = String(artifactFields["result.md"]?.[rules.workflowDepthField] || "").toLowerCase();
+  if (briefWorkflowDepth !== workflowDepth) contentFailures.push({ file: "brief.md", field: rules.workflowDepthField, reason: "depth-mismatch" });
+  if (resultWorkflowDepth !== workflowDepth) contentFailures.push({ file: "result.md", field: rules.workflowDepthField, reason: "depth-mismatch" });
   const qaStatus = String(artifactFields["qa.md"]?.[rules.qaStatusField] || "").toLowerCase();
   const qaMode = String(artifactFields["qa.md"]?.[rules.qaModeField] || "").toLowerCase();
-  const qaAccepted = (rules.acceptedQaStatuses || []).includes(qaStatus);
-  if (!qaAccepted) contentFailures.push({ file: "qa.md", field: rules.qaStatusField, reason: "not-accepted" });
+  const qaAccepted = regulated ? (rules.acceptedQaStatuses || []).includes(qaStatus) : true;
+  if (regulated && !qaAccepted) contentFailures.push({ file: "qa.md", field: rules.qaStatusField, reason: "not-accepted" });
   const patterns = artifactFields["qa.md"]?.[rules.patternField] || "";
-  if (/^none(?:\s+applicable)?\.?$/i.test(patterns)) {
+  if (regulated && /^none(?:\s+applicable)?\.?$/i.test(patterns)) {
     contentFailures.push({ file: "qa.md", field: rules.patternField, reason: "none-requires-reason" });
   }
 
-  for (const file of ["qa.md", "result.md"]) {
+  for (const file of [...(regulated ? ["qa.md"] : []), "result.md"]) {
     const artifactRequester = artifactFields[file]?.[rules.requesterField] || "";
     if (requestedBy && artifactRequester && requestedBy !== artifactRequester) {
       contentFailures.push({ file, field: rules.requesterField, reason: "requester-mismatch" });
@@ -964,36 +1020,41 @@ async function validate(root, args) {
 
   const qaIdentity = (rules.qaIdentityFields || []).map((label) => String(artifactFields["qa.md"]?.[label] || "").toLowerCase());
   const implementationIdentity = (rules.implementationIdentityFields || []).map((label) => String(artifactFields["qa.md"]?.[label] || "").toLowerCase());
-  if (qaStatus === "passed" && qaIdentity.length && qaIdentity.every((value, index) => value === implementationIdentity[index])) {
+  if (regulated && qaStatus === "passed" && qaIdentity.length && qaIdentity.every((value, index) => value === implementationIdentity[index])) {
     contentFailures.push({ file: "qa.md", field: "QA identity", reason: "not-independent" });
   }
 
   const fastSequence = String(artifactFields["qa.md"]?.[rules.fastSequenceField] || "");
-  if (qaMode === "full" && fastSequence !== String(rules.fullFastSequence)) {
+  if (regulated && qaMode === "full" && fastSequence !== String(rules.fullFastSequence)) {
     contentFailures.push({ file: "qa.md", field: rules.fastSequenceField, reason: "full-must-reset-counter" });
   }
-  if (qaMode === "fast" && !(rules.fastAllowedSequences || []).map(String).includes(fastSequence)) {
+  if (regulated && qaMode === "fast" && !(rules.fastAllowedSequences || []).map(String).includes(fastSequence)) {
     contentFailures.push({ file: "qa.md", field: rules.fastSequenceField, reason: "fast-sequence-limit" });
   }
   const coverageKey = artifactFields["qa.md"]?.[rules.coverageKeyField] || "";
-  const priorQaRuns = await priorPassedQaRuns(state, taskId, coverageKey);
+  const priorQaRuns = regulated ? await priorPassedQaRuns(state, taskId, coverageKey) : [];
   let priorConsecutiveFast = 0;
   for (const run of priorQaRuns) priorConsecutiveFast = run.mode === "full" ? 0 : priorConsecutiveFast + 1;
   const expectedFastSequence = priorConsecutiveFast + 1;
-  if (qaMode === "fast" && priorConsecutiveFast >= (rules.fastAllowedSequences || []).length) {
+  if (regulated && qaMode === "fast" && priorConsecutiveFast >= (rules.fastAllowedSequences || []).length) {
     contentFailures.push({ file: "qa.md", field: rules.qaModeField, reason: "historical-full-required" });
-  } else if (qaMode === "fast" && fastSequence !== String(expectedFastSequence)) {
+  } else if (regulated && qaMode === "fast" && fastSequence !== String(expectedFastSequence)) {
     contentFailures.push({ file: "qa.md", field: rules.fastSequenceField, reason: "historical-sequence-mismatch" });
   }
 
   const resultQaStatus = String(artifactFields["result.md"]?.[rules.resultQaStatusField] || "").toLowerCase();
-  if (!qaAccepted || resultQaStatus !== qaStatus) {
+  if (regulated && (!qaAccepted || resultQaStatus !== qaStatus)) {
     contentFailures.push({ file: "result.md", field: rules.resultQaStatusField, reason: "qa-status-mismatch" });
+  } else if (!regulated && resultQaStatus !== "not-applicable") {
+    contentFailures.push({ file: "result.md", field: rules.resultQaStatusField, reason: "standard-requires-not-applicable" });
   }
   const resultQaMode = String(artifactFields["result.md"]?.[rules.resultQaModeField] || "").toLowerCase();
-  if (resultQaMode !== qaMode) contentFailures.push({ file: "result.md", field: rules.resultQaModeField, reason: "qa-mode-mismatch" });
+  if (regulated && resultQaMode !== qaMode) contentFailures.push({ file: "result.md", field: rules.resultQaModeField, reason: "qa-mode-mismatch" });
+  if (!regulated && resultQaMode !== "not-applicable") contentFailures.push({ file: "result.md", field: rules.resultQaModeField, reason: "standard-requires-not-applicable" });
   const deliveryBoundary = String(artifactFields["result.md"]?.[rules.deliveryBoundaryField] || "").toLowerCase();
-  if ((rules.fullQaBoundaries || []).includes(deliveryBoundary) && qaMode !== "full") {
+  if (!regulated && (rules.fullQaBoundaries || []).includes(deliveryBoundary)) {
+    contentFailures.push({ file: "result.md", field: rules.deliveryBoundaryField, reason: "requires-regulated-depth" });
+  } else if (regulated && (rules.fullQaBoundaries || []).includes(deliveryBoundary) && qaMode !== "full") {
     contentFailures.push({ file: "result.md", field: rules.deliveryBoundaryField, reason: "requires-full-qa" });
   }
 
@@ -1044,6 +1105,7 @@ async function validate(root, args) {
     placeholderFailures,
     contentFailures,
     qaAccepted,
+    workflowDepth,
     qaCounter: {
       coverageKey,
       priorPassedRuns: priorQaRuns,
@@ -1119,9 +1181,12 @@ async function complete(root, args) {
     requesterId: activeMatch?.active?.requesterId || taskIdentity.requesterId || null,
     identitySource: activeMatch?.active?.identitySource || taskIdentity.identitySource || "legacy-migrated",
     ...execution,
+    workflowDepth: validation.workflowDepth,
     event: "completed",
     summary: "Task passed its completion gate.",
-    reason: "Checklist, QA, memory, and logs are complete.",
+    reason: validation.workflowDepth === "regulated"
+      ? "Checklist, regulated QA, memory, and milestone logs are complete."
+      : "Checklist, proportional verification, memory, and milestone logs are complete.",
     files,
     verification: prompts.moved
       ? ["agm-workspace validate: passed", `prompts archived: ${prompts.destination}`]
@@ -1180,6 +1245,7 @@ async function closeTask(root, args) {
     requesterId: activeMatch?.active?.requesterId || taskIdentity.requesterId || null,
     identitySource: activeMatch?.active?.identitySource || taskIdentity.identitySource || "legacy-migrated",
     ...execution,
+    workflowDepth: activeMatch?.active?.workflowDepth || taskIdentity.workflowDepth || "regulated",
     event: status,
     summary: `Task closed as ${status}; it did not pass the completion gate.`,
     reason: String(args.reason || "Closed without claiming completion."),

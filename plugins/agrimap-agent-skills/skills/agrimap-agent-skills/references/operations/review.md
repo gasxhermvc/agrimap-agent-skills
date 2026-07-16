@@ -3,16 +3,16 @@
 <!-- Generated from config/operations.json. Do not edit directly. -->
 
 - Operation: `review`
-- Lifecycle: `lightweight-eligible`
+- Workflow depth: default `light`; allowed `light`, `standard`, `regulated`
 - Mode: `product-read-only`
 - Purpose: Review code or artifacts with evidence-backed findings.
-- Deliverable: .agrimap-agent/tasks/<task-id>/review.md
+- Deliverable: direct findings at light; tracked review artifact only at standard/regulated
 
 ## Inputs and help
 
 - Required: target.
 - Conditional: review_scope when the requester wants narrower coverage than the default.
-- Minimal example: `$agm-review requested_by=Billy target_files=src/orders.ts review_scope=correctness,regression,tests`
+- Minimal example: `$agm-review depth=light target_files=src/orders.ts review_scope=correctness,regression,tests`
 
 ## Execute this contract
 

@@ -152,8 +152,8 @@ if (mode === "task") {
   if (!confirmedIdentity) {
     context.push(
       identity?.expired
-        ? `AgriMap: requester confirmation expired (last: ${identity.requestedBy}). Consult the operation Lifecycle; reconfirm/persist only for tracked work. Lightweight/stateless work must not ask solely for attribution.`
-        : "AgriMap: requester is not persisted. Consult the operation Lifecycle; identify the human only for tracked work. Lightweight/stateless work proceeds without workflow attribution.",
+        ? `AgriMap: requester confirmation expired (last: ${identity.requestedBy}). Select workflow depth first; reconfirm only for standard/regulated work. Light work must not ask solely for attribution.`
+        : "AgriMap: requester is not persisted. Select workflow depth first; identify the human only for standard/regulated work. Light work proceeds without workflow attribution.",
     );
   }
   if (activeTask && previousHookState && previousHookState.memoryFingerprint !== memoryFingerprint) {
@@ -172,23 +172,23 @@ context.push(
   "- Record executing model and provider from your own runtime identity: you always know your model family and host CLI. The resolved hook provider is runtime evidence, but your own host/model identity still wins if any external configuration is stale; `model: unknown` is a recording defect unless you genuinely cannot name your own model.",
   effectiveSessionId
     ? `- Session: ${effectiveSessionId}${sessionId ? "" : " (derived from transcript path)"}`
-    : "- Session ID is unavailable. Create one only if the selected operation enters tracked work.",
+    : "- Session ID is unavailable. Create one only for standard/regulated work.",
   confirmedIdentity
     ? `- Confirmed session requester: ${confirmedIdentity.requestedBy}; valid until ${confirmedIdentity.expiresAt}.`
     : identity?.expired
-      ? `- Requester confirmation expired. Last confirmed requester was ${identity.requestedBy}; reconfirm only for tracked work.`
-      : "- Session requester is unknown. Resolve it only after the operation selects tracked work; lightweight/stateless work skips persistence.",
+      ? `- Requester confirmation expired. Last confirmed requester was ${identity.requestedBy}; reconfirm only for standard/regulated work.`
+      : "- Session requester is unknown. Resolve it only after selecting standard/regulated depth; light work skips persistence.",
   taskRequester
     ? `- Active task requested by: ${taskRequester}; immutable task attribution comes from its tracked brief and created log event.`
     : "- No active task requester is recorded for this session.",
   `- Previously recorded execution identity (may be stale — your own runtime identity wins): model=${execution.model || "unrecorded"}, role=${execution.role || "leader"}, agent=${execution.agent || "primary"}, provider=${execution.provider || "unrecorded"}.`,
   effectiveSessionId
-    ? `- For tracked work only, persist/reconfirm with agm-workspace.mjs identify --session ${effectiveSessionId} --owner <confirmed-human-name>.`
-    : "- For tracked work only, create a stable session ID and persist the confirmed human.",
+    ? `- For standard/regulated work only, persist/reconfirm with agm-workspace.mjs identify --session ${effectiveSessionId} --owner <confirmed-human-name>.`
+    : "- For standard/regulated work only, create a stable session ID and persist the confirmed human.",
   suggestedRequester
     ? `- Unconfirmed Git-name suggestion: ${suggestedRequester}. Ask the human to confirm it; never attribute work automatically from this value.`
     : "- Do not substitute machine, OS, or Git identity for explicit human confirmation.",
-  "- Lifecycle rule: lightweight/stateless work creates no task artifacts or audit events. Tracked work records requester/objective and durable transitions.",
+  "- Workflow depth: light creates no task artifacts or audit events; standard/regulated records requester/objective and milestone transitions.",
   "- For audit/history questions, run agm-workspace.mjs history with person/date/task filters; inspect attributionSemantics, auditStorage, invalidLines, and returned brief/result/QA/memory paths. Distinguish requester, workflow executor, claimed files, and Git author; never answer from conversational recall alone.",
   "- Durable project memory is .agrimap-agent/memory/project.md; reopen it when context was compacted or current project facts are needed.",
 );
@@ -212,10 +212,10 @@ if (mode === "subagent") {
 
 if (mode !== "task") {
   context.push(
-    "- For a generated agm alias, read compact runtime-core.md, glossary.md, and exactly its operations/<operation>.md entrypoint; never load the routing-only umbrella during execution. A missing/corrupt compact route is PACKAGE_ENTRYPOINT_MISSING and requires sync/reinstallation.",
+    "- For a generated agm alias, read exactly lifecycle-core.md and its operations/<operation>.md entrypoint; do not preload the glossary or routing umbrella. A missing/corrupt compact route is PACKAGE_ENTRYPOINT_MISSING.",
     "- Do not add permission gates. Discuss only material logic/contract/data/architecture trade-offs.",
-    "- Select Lifecycle before attribution or workflow writes. Lightweight/stateless work skips receipt, task artifacts, memory/logs, and separate QA.",
-    "- For tracked work, reopen project memory on demand and update it only at durable transitions; do not inject it into unrelated lightweight work.",
+    "- Select light|standard|regulated before attribution or workflow writes. Light skips receipt, task artifacts, memory/logs, and separate QA.",
+    "- For standard/regulated work, reopen project memory on demand and update only at defined milestones; do not inject it into light work.",
   );
   if (currentTaskMemory) context.push("\nCurrent tracked-task memory:\n", currentTaskMemory);
 }

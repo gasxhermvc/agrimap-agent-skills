@@ -10,7 +10,7 @@
 |---|---|---|
 | `agm:router` | `SKILL.md` | เลือก dedicated operation skill เท่านั้น; ไม่ execute task |
 | `agm:glossary` | `glossary.md` | นิยาม authority, work boundary, task size, QA, model identity |
-| `agm:runtime-core` | `runtime-core.md` | compact common contract สำหรับ generated operation aliases |
+| `agm:lifecycle-core` | `lifecycle-core.md` | compact `light|standard|regulated` contract และ milestone selector สำหรับ aliases |
 | `agm:workflows` | `workflows.md` | compatibility source map; ไม่โหลดใน normal alias path |
 | `agm:roles` | `roles.md` | เลือก/สวมบทบาท |
 | `agm:qa-and-done` | `qa-and-done.md` | QA scope, sequence, completion gate |
@@ -52,6 +52,7 @@
 | `agm:golden/frontend-libraries` | `patterns/golden/frontend-libraries/` | งาน `@agrimap/*` library workspace |
 | `agm:golden/backend-main` | `patterns/golden/backend-main/` | งาน BE main (agmws + agmbo ใช้ร่วมกัน) |
 | `agm:golden/backend-libraries` | `patterns/golden/backend-libraries/` | งาน `AgriMap.Platform` libraries |
+| `agm:golden/backend-request-values` | `patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md` | งานอ่าน/normalize cookie, header, query, form, JSON body และ device ID ทั้ง BE main/library |
 | `agm:golden/sql` | `patterns/golden/sql/` | หลักฐาน SQL |
 
 ## วิธีใช้ใน logs

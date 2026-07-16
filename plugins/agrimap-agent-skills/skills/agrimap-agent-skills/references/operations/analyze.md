@@ -3,16 +3,16 @@
 <!-- Generated from config/operations.json. Do not edit directly. -->
 
 - Operation: `analyze`
-- Lifecycle: `lightweight-eligible`
+- Workflow depth: default `light`; allowed `light`, `standard`, `regulated`
 - Mode: `product-read-only`
 - Purpose: Analyze scope, hidden problems, impacts, and trade-offs.
-- Deliverable: .agrimap-agent/tasks/<task-id>/analysis.md
+- Deliverable: direct analysis response at light; tracked analysis artifact only at standard/regulated
 
 ## Inputs and help
 
 - Required: objective or a pointed target.
 - Conditional: target_kind when repository evidence cannot resolve the affected discipline.
-- Minimal example: `$agm-analyze requested_by=Billy target_files=src/orders.ts objective="Explain duplicate requests; do not edit"`
+- Minimal example: `$agm-analyze depth=light target_files=src/orders.ts objective="Explain duplicate requests; do not edit"`
 
 ## Execute this contract
 
@@ -26,6 +26,7 @@
 
 ## Load only when the condition matches
 
-- No additional conditional reference by default; select one target pattern only when runtime-core routing requires it.
+- When the target is backend code that reads cookie, header, query, form, JSON body, or device ID: [backend-engineer.md](../backend-engineer.md#http-request-value-normalization) — main/library normalization and migration gate
+- When that backend request-value condition matches: [patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md](../patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md) — exact normalize API and compatibility behavior
 
 Do not read the router `SKILL.md` during operation execution. If this generated entrypoint is missing or corrupt, stop with `PACKAGE_ENTRYPOINT_MISSING` and ask for package sync/reinstallation; never broaden into the router.

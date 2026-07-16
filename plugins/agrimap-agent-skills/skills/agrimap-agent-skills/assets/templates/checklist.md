@@ -10,5 +10,5 @@
 - [ ] Smallest complete implementation/analysis finished.
 - [ ] Changed points and nearby regressions checked.
 - [ ] Glossary-defined proportional-verification tier recorded and passed.
-- [ ] Canonical tracked QA passed with required evidence.
-- [ ] Task result, memory, knowledge/decisions, and logs updated.
+- [ ] Completion evidence matches depth: proportional self-verification for standard or canonical QA for regulated.
+- [ ] Task result, memory, knowledge/decisions, and milestone logs updated.

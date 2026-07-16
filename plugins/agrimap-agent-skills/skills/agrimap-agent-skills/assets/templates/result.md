@@ -8,6 +8,7 @@
 - Leader role: `leader`
 - Leader agent: {{agent_name}}
 - Leader provider: {{provider}}
+- Workflow depth: `{{workflow_depth}}`
 - QA status: `{{qa_status}}`
 - QA mode: `{{qa_mode}}`
 - Delivery boundary: `{{delivery_boundary}}`

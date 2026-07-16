@@ -9,6 +9,7 @@
 - [Phase 1: foundation](#phase-1-foundation)
 - [Phase 2: active-development](#phase-2-active-development)
 - [Error/message reconciliation](#errormessage-reconciliation)
+- [HTTP request-value normalization](#http-request-value-normalization)
 - [Phase 3: stabilization](#phase-3-stabilization)
 
 Apply this passive discipline whenever `target_kind` is `be-main` or `be-library`, including analysis, architecture, feature work, refactor, review, tests, QA, and prompt generation. Do not expose a separate Back-end Engineer command.
@@ -108,6 +109,18 @@ Run this gate whenever touched BE code defines, emits, maps, translates, or forw
 3. Apply the same-code rule before adding anything: same code + same meaning is reused without another insert; same code + different or ambiguous meaning is an owner conflict; a new code receives one clear user-facing definition plus one idempotent insert matching the proven project contract.
 4. Keep raw exception messages, stack traces, database text, and internal identifiers in logs/telemetry rather than the user-facing description.
 5. Handoff must name the artifact path and list codes found, reused, added, conflicted, and verified for duplicates/idempotency. If no user-facing code changed, record `no message changes`. A code with no proven dictionary contract is incomplete, not permission to guess a table or insert.
+
+## HTTP request-value normalization
+
+Apply this gate to both `be-main` and `be-library` whenever code reads, resolves, validates, or refactors cookie, header, query, form, or JSON-body values. Load only [`013-1-extensions-request-value-normalize.md`](patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md) for the detailed API and compatibility contract.
+
+1. Scan the affected path for direct `Request.Headers`, `Request.Cookies`, `Request.Query`, `Request.Form`, body reads, repeated trim/blank checks, fallback chains, and hardcoded request-key strings.
+2. For `be-main`, reuse the active `AgriMap.Platform.Extensions` API only when the referenced package/source proves that surface exists. For `be-library`, preserve the published API and update README/Playground/tests with any intentional change.
+3. Preserve observable semantics before consolidation: source precedence, first-versus-joined multi-values, blank-to-null normalization, trimming, JSON case behavior, form/body buffering, cancellation, and generated device-ID fallback.
+4. Centralize cookie/header/parameter names in `ClientRequestResolverExtensions`. These helpers are static extensions and require no DI registration; do not add a wrapper service merely to satisfy structure.
+5. Refactor by one caller family or acceptance slice, then verify direct-access remnants and behavior. Do not mass-replace mechanically when existing semantics differ.
+
+Analysis names duplication clusters and migration boundaries. Diagnosis proves whether inconsistent extraction/normalization causes the symptom. QA reruns representative cookie/header/query/form/body and fallback cases against the golden contract.
 
 ## Phase 3: `stabilization`
 

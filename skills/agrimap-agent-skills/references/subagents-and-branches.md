@@ -1,6 +1,6 @@
 # Delegation, workspace, and progress
 
-Load this file only for tracked work that actually delegates. Lightweight/stateless work never delegates.
+Load this file only for `regulated` work that actually delegates. `light` and `standard` never delegate.
 
 ## Dispatch boundary
 
@@ -49,4 +49,4 @@ Official Codex behavior: [Subagents](https://learn.chatgpt.com/docs/agent-config
 
 Return status, summary, execution identity, display/thread/progress channel, files/symbols, behavior, decisions, commands/results, risks, memory facts, workspace mode, and integration artifact. A `done` status is testimony only.
 
-The Leader verifies visibility and ownership before integration, integrates once, resolves conflicts without overwriting unrelated work, and then follows the selected lifecycle's completion contract.
+The Leader verifies visibility and ownership before integration, integrates once, resolves conflicts without overwriting unrelated work, and then follows the selected workflow depth's completion contract.

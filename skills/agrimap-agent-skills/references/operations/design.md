@@ -3,16 +3,16 @@
 <!-- Generated from config/operations.json. Do not edit directly. -->
 
 - Operation: `design`
-- Lifecycle: `lightweight-eligible`
+- Workflow depth: default `light`; allowed `light`, `standard`, `regulated`
 - Mode: `product-read-only`
 - Purpose: Design a user flow, behavior, and acceptance criteria.
-- Deliverable: .agrimap-agent/tasks/<task-id>/design.md
+- Deliverable: direct design at light; tracked design artifact only at standard/regulated
 
 ## Inputs and help
 
 - Required: objective.
 - Conditional: target_kind when FE/BE placement remains ambiguous; phase for FE/BE work when repository evidence cannot resolve it.
-- Minimal example: `$agm-design requested_by=Billy target_kind=fe-main objective="Design empty/loading/error states"`
+- Minimal example: `$agm-design depth=light target_kind=fe-main objective="Design empty/loading/error states"`
 
 ## Execute this contract
 

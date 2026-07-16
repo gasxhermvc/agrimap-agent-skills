@@ -1,6 +1,6 @@
-# Canonical tracked QA and completion
+# Canonical regulated QA and completion
 
-This file is the single policy source for tracked-task QA, correction, and completion. Lightweight/stateless lanes do not load or apply it.
+This file is the single policy source for `regulated` QA, correction, and completion. `light` and `standard` do not load it; standard completion uses proportional self-verification with QA marked not applicable.
 
 ## Verifier boundary
 
@@ -36,7 +36,7 @@ Conditional technical evidence belongs to the selected FE/BE/SQL pattern, not th
 
 There is no conditional pass. On the first failure, end the verifier context, preserve the finding in `qa.md`, and append non-terminal `qa-finding`. The assigned writer may correct once in the same task only within existing scope/acceptance and without a new material decision; then a fresh verifier runs full QA. A repeated failure or correction outside that boundary closes without completion and moves to a new approved task. The terminal audit event is `qa-failed`.
 
-## Tracked completion gate
+## Regulated completion gate
 
 Complete only when:
 

@@ -20,6 +20,8 @@ test("task artifact schema owns scaffold, completion fields, templates, and gene
   const schema = await loadTaskArtifactSchema(skillRoot);
   assert.deepEqual(taskArtifactSchemaIssues(schema), []);
   assert.deepEqual(schema.scaffoldOrder, ["brief.md", "checklist.md"]);
+  assert.deepEqual(schema.workflowDepths, ["standard", "regulated"]);
+  assert.deepEqual(schema.artifacts["qa.md"].requiredForDepths, ["regulated"]);
   assert.equal(schema.artifacts["result.md"].requiredSections.includes("Outstanding items"), true);
   assert.deepEqual(schema.crossArtifactRules.fastAllowedSequences, ["1", "2"]);
   assert.equal(schema.qaFullTriggers.some((trigger) => trigger.includes("third consecutive passed-fast closure")), true);
@@ -32,6 +34,9 @@ test("task artifact schema owns scaffold, completion fields, templates, and gene
 
   const generated = renderTaskArtifactSchemaDocs(schema);
   assert.match(generated, /`qa\.md`/);
+  assert.match(generated, /Required depths/);
+  assert.match(generated, /`standard`/);
+  assert.match(generated, /`regulated`/);
   assert.match(generated, /`Outstanding items`/);
   assert.match(generated, /third consecutive passed-fast closure/);
   assert.equal(

@@ -47,6 +47,10 @@ Do not relocate existing repository interfaces or models across layers during a 
 
 BE can originate a code in Domain/Application, translate it at the response boundary, or forward it from Infrastructure/SQL. For every affected vertical slice, apply [Error/message reconciliation](../backend-engineer.md#error-message-reconciliation) and the SQL [Message collection gate](sql.md#message-collection-gate) when a procedure participates. Do not create a second entry for a code whose meaning is already identical, and do not remap a conflicting meaning silently. The output is the active project's `messages.txt`-style artifact plus duplicate/idempotency evidence, or an explicit `no message changes` result.
 
+## HTTP request values
+
+When a BE slice reads cookies, headers, query/form fields, or JSON bodies, apply [HTTP request-value normalization](../backend-engineer.md#http-request-value-normalization). The `AgriMap.Platform.Extensions` pattern serves both `be-main` consumers and the `be-library` owner: normalize blank to `null`, trim values, preserve fallback order/body re-read behavior, centralize key names, and add no DI registration for static extensions. Before clean-code refactor, inventory direct access and prove semantic equivalence rather than replacing syntax globally.
+
 ## `backend_profile=agmbo`
 
 There is no Presentation tier. Use `Quartz/TaskScheduler trigger -> Application/UseCase -> Domain -> Port -> Infrastructure`. Inspect `Infrastructure/TaskScheduler.cs` for scheduled tasks. Record trigger, concurrency behavior, retry/error handling, and registration impact. Do not put business logic in the scheduler or add a schedule when the feature is only an executable batch operation.

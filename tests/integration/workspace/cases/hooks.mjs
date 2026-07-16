@@ -92,7 +92,7 @@ export async function hooks(harness) {
   });
   assert.doesNotMatch(claudeSessionB.hookSpecificOutput.additionalContext, /Current project memory:/);
   assert.match(claudeSessionB.hookSpecificOutput.additionalContext, /Current tracked-task memory:/);
-  assert.match(claudeSessionB.hookSpecificOutput.additionalContext, /Lightweight\/stateless work skips receipt, task artifacts, memory\/logs, and separate QA/);
+  assert.match(claudeSessionB.hookSpecificOutput.additionalContext, /Light skips receipt, task artifacts, memory\/logs, and separate QA/);
 
   const unchangedClaudePrompt = run(hookScript, ["--provider", "claude", "--mode", "task"], {
     cwd: temp,
@@ -126,7 +126,7 @@ export async function hooks(harness) {
     hook_event_name: "SessionStart",
   });
   assert.match(hookUnknown.hookSpecificOutput.additionalContext, /Session requester is unknown/);
-  assert.match(hookUnknown.hookSpecificOutput.additionalContext, /Resolve it only after the operation selects tracked work/);
+  assert.match(hookUnknown.hookSpecificOutput.additionalContext, /Resolve it only after selecting standard\/regulated depth/);
   assert.doesNotMatch(hookUnknown.hookSpecificOutput.additionalContext, /Confirmed session requester: Bob/);
 
   run(workspaceScript, ["identify", "--cwd", temp, "--session", "transcript-fallback.jsonl", "--owner", "Carol", "--provider", "gemini"]);

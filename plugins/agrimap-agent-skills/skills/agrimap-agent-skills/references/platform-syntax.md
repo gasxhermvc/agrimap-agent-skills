@@ -43,7 +43,7 @@ Each generated alias must contain only:
 
 1. the requested operation;
 2. the raw arguments;
-3. exact relative paths to `runtime-core.md`, `glossary.md`, and its generated `operations/<operation>.md` entrypoint;
+3. exact relative paths to `lifecycle-core.md` and its generated `operations/<operation>.md` entrypoint;
 4. an explicit instruction not to read the router during execution;
 5. no copied workflow rules.
 

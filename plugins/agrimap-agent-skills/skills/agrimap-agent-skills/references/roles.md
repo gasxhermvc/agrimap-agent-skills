@@ -1,6 +1,6 @@
 # Compact role map
 
-Select one primary role. Add a technical discipline only when the operation target requires it. Lifecycle, write boundaries, delegation, and QA remain owned by their linked contracts; do not duplicate them here.
+Select one primary role. Add a technical discipline only when the operation target requires it. Workflow depth, write boundaries, delegation, and QA remain owned by their linked contracts; do not duplicate them here.
 
 | Primary role | Single responsibility | Product writes |
 | --- | --- | --- |

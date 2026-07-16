@@ -33,21 +33,22 @@ test("published aliases use operation-specific progressive-disclosure entrypoint
     assert.ok(operationIndex.includes(`| \`${item.name}\` | \`${item.operation}\` |`));
     const aliasSkill = await read(`plugins/agrimap-agent-skills/skills/${item.name}/SKILL.md`);
     const geminiCommand = await read(`commands/${item.name}.toml`);
-    assert.match(aliasSkill, /references\/runtime-core\.md/);
-    assert.match(aliasSkill, /references\/glossary\.md/);
+    assert.match(aliasSkill, /references\/lifecycle-core\.md/);
+    assert.doesNotMatch(aliasSkill, /references\/(?:runtime-core|glossary)\.md/);
     assert.ok(aliasSkill.includes(`references/operations/${item.operation}.md`));
     assert.ok(aliasSkill.includes(`Run only operation \`${item.operation}\``));
-    assert.match(aliasSkill, /Do \*\*not\*\* read `\.\.\/agrimap-agent-skills\/SKILL\.md` during operation execution/);
+    assert.match(aliasSkill, /Do \*\*not\*\* preload the glossary, umbrella, or another operation/);
     assert.match(aliasSkill, /never fall back to the router/);
-    assert.match(aliasSkill, /standalone `-h` or `--help` token/);
+    assert.match(aliasSkill, /standalone `-h` or `--help`/);
     assert.ok(geminiCommand.includes(`operation ${item.operation}`));
     assert.match(geminiCommand, /compact progressive-disclosure entrypoint/);
-    assert.match(geminiCommand, /do not load the routing SKILL\.md or combine another operation/);
+    assert.match(geminiCommand, /do not preload the glossary, routing SKILL\.md, or another operation/);
     assert.match(geminiCommand, /never fall back to the router/);
     assert.match(geminiCommand, /standalone -h or --help token/);
     const operationEntrypoint = await read(`skills/agrimap-agent-skills/references/operations/${item.operation}.md`);
     assert.ok(operationEntrypoint.includes(`Operation: \`${item.operation}\``));
-    assert.ok(operationEntrypoint.includes(`Lifecycle: \`${item.lifecycle}\``));
+    assert.ok(operationEntrypoint.includes(`Workflow depth: default \`${item.depth.default}\``));
+    for (const depth of item.depth.allowed) assert.ok(operationEntrypoint.includes(`\`${depth}\``));
     assert.match(operationEntrypoint, /PACKAGE_ENTRYPOINT_MISSING/);
     assert.ok(usage.includes(`\`${item.name}\``));
     assert.ok(usage.includes(`$${item.name} `));
@@ -57,12 +58,13 @@ test("published aliases use operation-specific progressive-disclosure entrypoint
   assert.deepEqual(commands.sort(), operations.map((item) => `${item.name}.toml`).sort());
   assert.equal(operations.some((item) => item.name === "agm-fe-engineer"), false);
   assert.deepEqual(
-    Object.fromEntries(["lightweight-eligible", "tracked-only", "stateless"].map((lifecycle) => [
-      lifecycle,
-      operations.filter((item) => item.lifecycle === lifecycle).length,
+    Object.fromEntries(["light", "standard", "regulated"].map((depth) => [
+      depth,
+      operations.filter((item) => item.depth.default === depth).length,
     ])),
-    { "lightweight-eligible": 11, "tracked-only": 4, stateless: 1 },
+    { light: 12, standard: 1, regulated: 3 },
   );
+  assert.deepEqual(operations.find((item) => item.operation === "history").depth.allowed, ["light"]);
   assert.match(operationIndex, /not an execution contract/);
 });
 
@@ -106,9 +108,25 @@ test("usage documentation separates routing from operation activation and help",
   assert.ok(rootIgnore.split(/\r?\n/).includes(".agrimap-agent/"));
   assert.ok(rgIgnore.split(/\r?\n/).includes("/plugins/agrimap-agent-skills/skills/agrimap-agent-skills/**"));
   assert.match(usage, /ไม่เขียนทุก step\/tool call/);
-  assert.match(usage, /lightweight-eligible/);
+  assert.match(usage, /light\|standard\|regulated/);
   assert.match(usage, /ไม่ออก receipt, ไม่สร้าง brief\/checklist\/memory\/log\/QA\/prompt\/result/);
   assert.equal(await read("plugins/agrimap-agent-skills/docs/USAGE.md"), usage);
+});
+
+test("backend request-value normalization routes to main and library operations", async () => {
+  const goldenPath = "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md";
+  for (const operation of ["analyze", "diagnose", "refactor-be", "qa"]) {
+    const item = operations.find((candidate) => candidate.operation === operation);
+    assert.ok(item, `missing operation ${operation}`);
+    assert.equal(
+      [...(item.references || []), ...(item.conditionalReferences || [])].some((reference) => reference.path === goldenPath),
+      true,
+      `${operation} must route to request-value normalization`,
+    );
+  }
+  const backendEngineer = await read("skills/agrimap-agent-skills/references/backend-engineer.md");
+  assert.match(backendEngineer, /both `be-main` and `be-library`/);
+  assert.match(backendEngineer, /require no DI registration/);
 });
 
 test("provider hook discovery is isolated per host", async () => {

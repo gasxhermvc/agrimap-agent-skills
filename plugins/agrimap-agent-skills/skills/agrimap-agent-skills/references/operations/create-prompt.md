@@ -3,7 +3,7 @@
 <!-- Generated from config/operations.json. Do not edit directly. -->
 
 - Operation: `create-prompt`
-- Lifecycle: `tracked-only`
+- Workflow depth: default `regulated`; allowed `regulated`
 - Mode: `workflow-write-only`
 - Purpose: Create provider-specific Leader, executor, and QA prompts.
 - Deliverable: .agrimap-agent/prompts/<task-id>/<role>.prompt.md
@@ -27,6 +27,6 @@
 
 ## Load only when the condition matches
 
-- No additional conditional reference by default; select one target pattern only when runtime-core routing requires it.
+- No additional conditional reference by default; select one target pattern only when lifecycle-core routing requires it.
 
 Do not read the router `SKILL.md` during operation execution. If this generated entrypoint is missing or corrupt, stop with `PACKAGE_ENTRYPOINT_MISSING` and ask for package sync/reinstallation; never broaden into the router.

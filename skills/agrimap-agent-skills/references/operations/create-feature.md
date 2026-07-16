@@ -3,16 +3,16 @@
 <!-- Generated from config/operations.json. Do not edit directly. -->
 
 - Operation: `create-feature`
-- Lifecycle: `lightweight-eligible`
+- Workflow depth: default `light`; allowed `light`, `standard`, `regulated`
 - Mode: `product-write`
 - Purpose: Create a target-specific FE, BE, batch, library, or SQL feature.
-- Deliverable: confirmed vertical slice plus verification and Result Package
+- Deliverable: confirmed vertical slice plus direct verified result at light or schema result at standard/regulated
 
 ## Inputs and help
 
 - Required: objective.
 - Conditional: target_kind when placement evidence is absent; backend_profile for be-main; full command approval for a new project scaffold.
-- Minimal example: `$agm-create-feature requested_by=Billy target_kind=be-main backend_profile=agmws objective="Add cancel-order endpoint"`
+- Minimal example: `$agm-create-feature depth=light target_kind=be-main backend_profile=agmws objective="Add cancel-order endpoint"`
 
 ## Execute this contract
 

@@ -3,9 +3,9 @@
 <!-- Generated from config/operations.json. Do not edit directly. -->
 
 - Operation: `qa`
-- Lifecycle: `tracked-only`
+- Workflow depth: default `regulated`; allowed `regulated`
 - Mode: `verification-only`
-- Purpose: Verify tracked work in a separate product-read-only context.
+- Purpose: Verify regulated work in a separate product-read-only context.
 - Deliverable: .agrimap-agent/tasks/<task-id>/qa.md
 
 ## Inputs and help
@@ -26,5 +26,6 @@
 ## Load only when the condition matches
 
 - When the task is FE, BE, or SQL: [patterns/pattern-status.md](../patterns/pattern-status.md) — select exactly the matching pattern and Detect gates
+- When BE work reads or refactors cookie, header, query, form, JSON body, or device-ID resolution: [patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md](../patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md) — request-value QA behavior matrix for main/library code
 
 Do not read the router `SKILL.md` during operation execution. If this generated entrypoint is missing or corrupt, stop with `PACKAGE_ENTRYPOINT_MISSING` and ask for package sync/reinstallation; never broaden into the router.

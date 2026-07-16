@@ -14,6 +14,7 @@
 - Agent: `{{agent_name}}`
 - Provider: `{{provider}}`
 - Operation: `{{operation}}`
+- Workflow depth: `{{workflow_depth}}`
 - Objective: {{objective}}
 - Scope: {{scope}}
 - Non-goals: {{non_goals}}

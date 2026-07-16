@@ -3,16 +3,16 @@
 <!-- Generated from config/operations.json. Do not edit directly. -->
 
 - Operation: `refactor-be`
-- Lifecycle: `lightweight-eligible`
+- Workflow depth: default `light`; allowed `light`, `standard`, `regulated`
 - Mode: `product-write`
 - Purpose: Refactor backend code using an explicit behavior mode.
-- Deliverable: bounded backend changes plus verification and Result Package
+- Deliverable: bounded backend changes plus direct verified result at light or schema result at standard/regulated
 
 ## Inputs and help
 
 - Required: target; refactor_mode.
 - Conditional: backend_profile for be-main; decision-owner approval for logic or contract change.
-- Minimal example: `$agm-refactor-be requested_by=Billy target_kind=be-main backend_profile=agmws refactor_mode=strict-preserve-logic target_files=Application/Orders.cs`
+- Minimal example: `$agm-refactor-be depth=light target_kind=be-main backend_profile=agmws refactor_mode=strict-preserve-logic target_files=Application/Orders.cs`
 
 ## Execute this contract
 
@@ -27,6 +27,6 @@
 
 ## Load only when the condition matches
 
-- No additional conditional reference by default; select one target pattern only when runtime-core routing requires it.
+- When the refactor touches direct request/header/cookie/query/form/body access or repeated blank/trim/fallback logic: [patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md](../patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md) — behavior-preserving normalization target for main/library code
 
 Do not read the router `SKILL.md` during operation execution. If this generated entrypoint is missing or corrupt, stop with `PACKAGE_ENTRYPOINT_MISSING` and ask for package sync/reinstallation; never broaden into the router.

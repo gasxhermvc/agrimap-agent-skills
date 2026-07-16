@@ -12,7 +12,7 @@ The task-artifact structure is likewise centralized: [`task-artifact-schema.json
 - **Owner approval / owner decision**: an explicit decision by the decision owner, or by a requester whose recorded authority is `owner` or `delegated`. Silence, task submission, prior requester identity, and approval by a `requester-only`/`unknown` requester are not owner approval.
 - **Owner reference**: project material curated or accepted by a decision owner. This describes authority over the reference, not necessarily who requested the current task.
 
-Every tracked task brief and generated prompt records `requested_by`, `requester_authority`, `decision_owner`, and `authority_evidence`. Lightweight/stateless work creates neither artifact. If a material decision is required while authority is `requester-only` or `unknown`, safe product-read-only investigation may continue, but the affected decision and any dependent write must stop.
+Every `standard` or `regulated` task brief and generated prompt records `requested_by`, `requester_authority`, `decision_owner`, and `authority_evidence`. `light` work creates neither artifact. If a material decision is required while authority is `requester-only` or `unknown`, safe product-read-only investigation may continue, but the affected decision and any dependent write must stop.
 
 ## Work and artifact boundaries
 
@@ -20,11 +20,11 @@ Every tracked task brief and generated prompt records `requested_by`, `requester
 - **Workflow artifact**: files used only to run and audit this workflow, including `.agrimap-agent/tasks/**`, prompts, memory, decisions, knowledge, logs, and ignored runtime progress/session files.
 - **Preparatory inspection**: locating the project root; reading workflow configuration, task state, and Git status; or checking whether required input exists. It is non-mutating and does not advance the technical objective.
 - **Substantive work**: any task-specific reading or diagnostic that advances the objective, creating task/workflow state, analysis, planning, delegation, QA, editing a product artifact, or causing an external side effect. Target-code reading, task-specific grep, tests, typechecks, and diagnostics are substantive even when non-mutating. Preparatory inspection and help-only output are not.
-- **Verification-only QA**: the tracked-lane verifier defined once in [qa-and-done.md](qa-and-done.md); “read-only” describes product artifacts, not its bounded workflow-evidence writes.
+- **Verification-only QA**: the `regulated` verifier defined once in [qa-and-done.md](qa-and-done.md); “read-only” describes product artifacts, not its bounded workflow-evidence writes.
 
 ## Task size, decisions, and checkpoints
 
-- **Checkpoint unit**: exactly one durable state transition: task creation; an authorized scope/decision change; completion of one logical implementation batch; integration of one delegated handoff; one verification or QA outcome; or a terminal task transition. Append one checkpoint per unit. A file read, tool call, liveness update, unchanged retry, or conversational update is not a checkpoint unit.
+- **Milestone checkpoint**: one authorized scope/decision change, behaviorally complete acceptance slice, delegated integration, or verification gate with a changed outcome. `start` and `complete|close` own creation/terminal events. Files, tool calls, reads, diagnostics, atomic subtasks, unchanged retries, liveness, and conversations are never milestones.
 - **Material statement**: a statement which, if wrong, could change scope, behavior, contract, data, ownership, verification, or acceptance. It requires an evidence label.
 - **Material choice/change**: a choice that can alter business logic, externally visible behavior, a public contract, persisted data or migration behavior, security/access, service/architecture ownership, destructive scope, release behavior, or acceptance criteria. It requires decision-owner authority.
 - **Complex work**: work is complex when any one is true: it crosses a service/database/public-contract boundary; changes data or migration behavior; changes more than one logical contract; needs more than one writer or integration wave; changes shared generators/registries; or has an unproven cause requiring multiple bounded experiments. File count alone does not make work complex.

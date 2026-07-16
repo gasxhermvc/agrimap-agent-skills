@@ -57,6 +57,7 @@ export async function identityAndCheckpoint(harness) {
   const checkpointA = run(workspaceScript, ["checkpoint", "--cwd", temp, "--session", "session-a", "--task", "task-a", "--summary", "Analyzed task A", "--files", "src/a.ts", "--verification", "inspection passed", "--model", "gpt-5.4", "--role", "executor", "--agent", "be", "--provider", "codex"]);
   const checkpointB = run(workspaceScript, ["checkpoint", "--cwd", temp, "--session", "session-b", "--task", "task-b", "--summary", "Analyzed task B", "--files", "src/b.ts"]);
   assert.equal(checkpointA.requestedBy, "Alice");
+  assert.equal(checkpointA.milestone, "acceptance-slice");
   assert.equal(checkpointB.requestedBy, "Bob");
   assert.match(await readFile(path.join(temp, ".agrimap-agent", "memory", "current", "task-a.md"), "utf8"), /Requested by: Alice/);
   assert.match(await readFile(path.join(temp, ".agrimap-agent", "memory", "current", "task-b.md"), "utf8"), /Requested by: Bob/);
@@ -71,7 +72,9 @@ export async function identityAndCheckpoint(harness) {
   assert.equal(taskALog.includes('"osUser"'), false);
   const taskALogEntries = await readTaskLog("task-a");
   assert.equal(taskALogEntries[0].request, "Analyze task A audit behavior");
-  assert.equal(taskALogEntries.every((entry) => entry.schemaVersion === 2 && new Date(entry.timestamp).toISOString() === entry.timestamp), true);
+  assert.equal(taskALogEntries.every((entry) => entry.schemaVersion === 3 && new Date(entry.timestamp).toISOString() === entry.timestamp), true);
+  assert.equal(taskALogEntries[0].workflowDepth, "regulated");
+  assert.equal(taskALogEntries[1].milestone, "acceptance-slice");
   assert.equal(taskALogEntries.every((entry) => logEventSet.has(entry.event)), true);
   assert.equal(taskALogEntries.every((entry) => entry.gitHead === null && entry.gitDirty === null), true);
 
@@ -88,6 +91,13 @@ export async function identityAndCheckpoint(harness) {
   assert.match(invalidEventResult.message, new RegExp(`${QA_FAILED_EVENT}\\|blocked\\|cancelled`));
   assert.equal(JSON.stringify(await readTaskLog("task-b")), taskBLogBeforeInvalidEvent);
   assert.equal(await readFile(taskBMemoryPath, "utf8"), taskBMemoryBeforeInvalidEvent);
+
+  const invalidTerminalCheckpoint = spawn(workspaceScript, [
+    "checkpoint", "--cwd", temp, "--session", "session-b", "--task", "task-b",
+    "--summary", "Terminal event belongs to close", "--event", "completed",
+  ]);
+  assert.equal(invalidTerminalCheckpoint.status, 1);
+  assert.equal(JSON.parse(invalidTerminalCheckpoint.stdout).code, "CHECKPOINT_EVENT_NOT_MILESTONE");
 
   const missingChangedFiles = spawn(workspaceScript, [
     "checkpoint", "--cwd", temp, "--session", "session-b", "--task", "task-b",

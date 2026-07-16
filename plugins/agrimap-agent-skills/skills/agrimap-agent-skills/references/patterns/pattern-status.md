@@ -25,6 +25,7 @@ Evidence mode is separate from authority:
 | BE main with `backend_profile=agmws` examples | `legacy-compatible` | Layer flow is useful; exact port location, route/response conventions, and Domain versus persistence examples still need owner evidence. |
 | BE main with `backend_profile=agmbo` scheduler | `missing-owner-example` | Requires `TaskScheduler.cs`, registration, retry, and concurrency examples. |
 | BE library behavior, configuration, README-style usage, and Playground | `current` | Use `golden/backend-libraries`; the active package's published API and source remain authoritative. |
+| BE main/library HTTP request-value normalization | `current` | Use `013-1-extensions-request-value-normalize.md`; verify the active `AgriMap.Platform.Extensions` package surface before migrating callers. |
 | SQL collection | `mixed` | Read every entry's status in `golden/sql/manifest.json`; never infer data semantics from collection status. |
 | SQL relationship/data semantics | `unverified` | Cascade, seed IDs, list input, indexing, and replace semantics require active-project evidence or owner decision. |
 | BE/SQL unit and integration tests | `missing-owner-example` | Read the target framework and neighboring tests first. FE test baselines are documented separately above. |

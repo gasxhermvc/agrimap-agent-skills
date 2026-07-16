@@ -3,10 +3,9 @@ name: agm-create-prompt
 description: Create provider-specific Leader, executor, and QA prompts. Use only for the dedicated AgriMap `create-prompt` operation or when the requester explicitly invokes this alias; do not use it as a general AgriMap router.
 ---
 
-Run only operation `create-prompt` through its compact progressive-disclosure path. Read exactly these files relative to this skill before loading any conditional discipline:
+Run only operation `create-prompt`. Read exactly these two files relative to this skill before any conditional discipline:
 
-1. `../agrimap-agent-skills/references/runtime-core.md`
-2. `../agrimap-agent-skills/references/glossary.md`
-3. `../agrimap-agent-skills/references/operations/create-prompt.md`
+1. `../agrimap-agent-skills/references/lifecycle-core.md`
+2. `../agrimap-agent-skills/references/operations/create-prompt.md`
 
-Do **not** read `../agrimap-agent-skills/SKILL.md` during operation execution or combine another operation implicitly. The compact entrypoint is authoritative for this one operation and names every additional reference that may be loaded. Pass the requester's current arguments unchanged. If they contain a standalone `-h` or `--help` token, return the compact entrypoint's purpose, required inputs, conditional inputs, and minimal example without starting a task or writing project state. If a required compact file is missing or corrupt, stop with `PACKAGE_ENTRYPOINT_MISSING` and ask for package sync/reinstallation; never fall back to the router.
+Do **not** preload the glossary, umbrella, or another operation. The operation entrypoint names every conditional reference. Pass the requester's arguments unchanged. A standalone `-h` or `--help` returns compact help at `light` depth without identity, task state, or artifact writes. If either required file is missing or corrupt, stop with `PACKAGE_ENTRYPOINT_MISSING`; never fall back to the router.
