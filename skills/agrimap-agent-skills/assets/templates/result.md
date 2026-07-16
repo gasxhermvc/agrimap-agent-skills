@@ -36,6 +36,6 @@
 
 {{outstanding_items_or_no_pending_issues}}
 
-## Next-task prompt when QA failed
+## Terminal follow-up when QA cannot be corrected in-task
 
 {{new_prompt_path_or_not_applicable}}

@@ -1,4 +1,4 @@
 interface:
-  display_name: "AgriMap Agent Skills"
-  short_description: "Cross-agent engineering workflows for AgriMap"
-  default_prompt: "Use $agrimap-agent-skills to analyze and complete this engineering task with AgriMap workflows."
+  display_name: "AgriMap Operation Router"
+  short_description: "Choose one dedicated AgriMap operation skill"
+  default_prompt: "Use $agrimap-agent-skills to choose the one dedicated AgriMap operation skill for this request."

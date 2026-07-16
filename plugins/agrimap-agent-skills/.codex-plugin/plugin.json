@@ -1,7 +1,7 @@
 {
   "name": "agrimap-agent-skills",
   "version": "0.1.2",
-  "description": "Cross-agent AgriMap engineering workflows, patterns, memory, and QA",
+  "description": "Routing skill plus dedicated one-operation AgriMap engineering skills",
   "author": {
     "name": "Billy",
     "url": "https://github.com/gasxhermvc"
@@ -10,9 +10,9 @@
   "repository": "https://github.com/gasxhermvc/agrimap-agent-skills",
   "skills": "./skills/",
   "interface": {
-    "displayName": "AgriMap Agent Skills",
-    "shortDescription": "Engineering workflows with durable project memory.",
-    "longDescription": "Use one AgriMap workflow source of trust for analysis, delivery, QA, prompt delegation, coding patterns, and concise multi-person project memory.",
+    "displayName": "AgriMap Dedicated Skills",
+    "shortDescription": "One focused skill per AgriMap operation.",
+    "longDescription": "Choose through the routing skill, then execute exactly one dedicated AgriMap operation skill with selective references and durable project evidence.",
     "developerName": "Billy",
     "category": "Developer Tools",
     "capabilities": [
@@ -20,7 +20,7 @@
       "Write"
     ],
     "defaultPrompt": [
-      "$agrimap-agent-skills route and execute this engineering task."
+      "$agrimap-agent-skills choose the one dedicated operation skill for this request."
     ]
   },
   "hooks": "./hooks/codex-hooks.json"

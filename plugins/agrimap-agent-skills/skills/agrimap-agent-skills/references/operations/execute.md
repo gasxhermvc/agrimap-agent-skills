@@ -3,9 +3,10 @@
 <!-- Generated from config/operations.json. Do not edit directly. -->
 
 - Operation: `execute`
+- Lifecycle: `tracked-only`
 - Mode: `product-write`
 - Purpose: Execute one decision-owner-approved generated prompt as the execution source of truth with checkpoints, deviation stops, and a Result Package.
-- Deliverable: integrated Result Package awaiting independent QA
+- Deliverable: integrated Result Package awaiting canonical QA
 
 ## Inputs and help
 
@@ -22,10 +23,10 @@
 
 - [create-prompt.md](../create-prompt.md) — prompt SoT and deviation contract
 - [subagents-and-branches.md](../subagents-and-branches.md) — native activity, workspace, and integration contract
-- [qa-and-done.md](../qa-and-done.md) — handoff into independent QA and completion
+- [qa-and-done.md](../qa-and-done.md) — tracked QA and completion source
 
 ## Load only when the condition matches
 
 - No additional conditional reference by default; select one target pattern only when runtime-core routing requires it.
 
-Do not read the umbrella `SKILL.md` during a normal alias invocation. Use it only when this generated entrypoint is missing/corrupt or the requester directly invoked the umbrella with an unknown operation.
+Do not read the router `SKILL.md` during operation execution. If this generated entrypoint is missing or corrupt, stop with `PACKAGE_ENTRYPOINT_MISSING` and ask for package sync/reinstallation; never broaden into the router.

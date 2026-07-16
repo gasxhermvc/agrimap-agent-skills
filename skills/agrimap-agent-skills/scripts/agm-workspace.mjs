@@ -23,12 +23,12 @@ import {
   localAuditMetadata,
   normalizeIdentity,
 } from "./identity.mjs";
-import { isLogEvent, logEventError } from "./log-events.mjs";
+import { isLogEvent, logEventError, QA_FAILED_EVENT } from "./log-events.mjs";
 import { loadTaskArtifactSchema } from "./task-artifact-schema.mjs";
 
 const AUDIT_SCHEMA_VERSION = 2;
 const SUPPORTED_AUDIT_SCHEMA_VERSIONS = new Set([1, AUDIT_SCHEMA_VERSION]);
-const TERMINAL_AUDIT_EVENTS = new Set(["qa-failed", "blocked", "cancelled", "completed"]);
+const TERMINAL_AUDIT_EVENTS = new Set([QA_FAILED_EVENT, "blocked", "cancelled", "completed"]);
 const skillRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const taskArtifactSchema = await loadTaskArtifactSchema(skillRoot);
 const completionTemplateTokenNames = new Set();
@@ -575,6 +575,22 @@ async function checkpoint(root, args) {
     };
   }
   const state = await ensureLayout(root);
+  if (event === "qa-finding") {
+    if (files.length > 0) {
+      return {
+        ok: false,
+        code: "QA_FINDING_PRODUCT_FILES_FORBIDDEN",
+        message: "qa-finding is verification-only evidence and must not claim changed product files.",
+      };
+    }
+    if (await countTaskEvents(state, taskId, "qa-finding") >= 1) {
+      return {
+        ok: false,
+        code: "QA_CORRECTION_LIMIT",
+        message: `This task already used its one in-scope correction cycle. Record terminal ${QA_FAILED_EVENT} and move further correction to a new approved task/prompt.`,
+      };
+    }
+  }
 
   const activeMatch = await findActiveForTask(state, taskId, safeSessionId(args.session));
   if (activeMatch?.ambiguous) return activeTaskAmbiguityError(taskId, activeMatch.matches);
@@ -617,6 +633,27 @@ async function filesUnder(directory) {
     else files.push(entryPath);
   }
   return files;
+}
+
+async function countTaskEvents(state, taskId, eventName) {
+  let count = 0;
+  const logFiles = (await filesUnder(path.join(state, "logs"))).filter((file) => file.endsWith(".jsonl"));
+  for (const file of logFiles) {
+    for (const line of (await readFile(file, "utf8")).split(/\r?\n/).filter(Boolean)) {
+      try {
+        const entry = JSON.parse(line);
+        if (
+          entry.taskId === taskId
+          && entry.event === eventName
+          && SUPPORTED_AUDIT_SCHEMA_VERSIONS.has(entry.schemaVersion)
+          && auditEventIssues(entry).length === 0
+        ) count += 1;
+      } catch {
+        // Invalid audit lines remain diagnostic and never consume the correction allowance.
+      }
+    }
+  }
+  return count;
 }
 
 async function recordedTaskFiles(state, taskId) {
@@ -1096,9 +1133,9 @@ async function complete(root, args) {
 async function closeTask(root, args) {
   const taskId = safeTaskId(args.task);
   const status = String(args.status || "").trim();
-  const allowed = new Set(["qa-failed", "blocked", "cancelled"]);
+  const allowed = new Set([QA_FAILED_EVENT, "blocked", "cancelled"]);
   if (!taskId || !allowed.has(status)) {
-    return { ok: false, message: "--task and --status qa-failed|blocked|cancelled are required." };
+    return { ok: false, message: `--task and --status ${QA_FAILED_EVENT}|blocked|cancelled are required.` };
   }
 
   const state = path.join(root, ".agrimap-agent");
@@ -1107,7 +1144,7 @@ async function closeTask(root, args) {
   if (!(await exists(resultPath))) return { ok: false, message: "result.md is required before closing a non-complete task." };
 
   const qaPath = path.join(taskPath, "qa.md");
-  if (status === "qa-failed") {
+  if (status === QA_FAILED_EVENT) {
     const qa = await readFile(qaPath, "utf8").catch(() => "");
     const result = await readFile(resultPath, "utf8");
     const nextPrompt = String(args.nextPrompt || args["next-prompt"] || "").trim();
@@ -1115,10 +1152,10 @@ async function closeTask(root, args) {
     const promptsRoot = path.resolve(state, "prompts");
     const promptRelative = nextPromptPath ? path.relative(promptsRoot, nextPromptPath) : "";
     if (!/^\s*(?:-\s*)?Status:\s*failed\s*$/im.test(qa)) {
-      return { ok: false, message: "qa.md must record Status: failed before closing as qa-failed." };
+      return { ok: false, message: `qa.md must record Status: failed before closing as ${QA_FAILED_EVENT}.` };
     }
-    if (!/Outcome:\s*`?qa-failed`?/i.test(result)) {
-      return { ok: false, message: "result.md must record Outcome: qa-failed." };
+    if (!new RegExp(`Outcome:\\s*\`?${QA_FAILED_EVENT}\`?`, "i").test(result)) {
+      return { ok: false, message: `result.md must record Outcome: ${QA_FAILED_EVENT}.` };
     }
     if (!nextPromptPath || promptRelative.startsWith("..") || path.isAbsolute(promptRelative) || !(await exists(nextPromptPath))) {
       return { ok: false, message: "--next-prompt must point to an existing file under .agrimap-agent/prompts/." };
@@ -1148,7 +1185,7 @@ async function closeTask(root, args) {
     reason: String(args.reason || "Closed without claiming completion."),
     files,
     verification: [
-      ...(status === "qa-failed" ? [`QA failed; next prompt: ${args.nextPrompt || args["next-prompt"]}`] : []),
+      ...(status === QA_FAILED_EVENT ? [`QA failed; next prompt: ${args.nextPrompt || args["next-prompt"]}`] : []),
       ...(prompts.moved ? [`prompts archived: ${prompts.destination}`] : []),
     ],
   });
@@ -1160,7 +1197,7 @@ async function closeTask(root, args) {
     complete: false,
     archived: `memory/recent/${taskId}.md`,
     prompts,
-    nextPrompt: status === "qa-failed" ? args.nextPrompt || args["next-prompt"] : null,
+    nextPrompt: status === QA_FAILED_EVENT ? args.nextPrompt || args["next-prompt"] : null,
   };
 }
 

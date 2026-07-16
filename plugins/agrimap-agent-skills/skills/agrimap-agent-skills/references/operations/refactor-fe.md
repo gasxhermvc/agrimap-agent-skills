@@ -3,6 +3,7 @@
 <!-- Generated from config/operations.json. Do not edit directly. -->
 
 - Operation: `refactor-fe`
+- Lifecycle: `lightweight-eligible`
 - Mode: `product-write`
 - Purpose: Refactor frontend code using an explicit behavior mode.
 - Deliverable: bounded frontend changes plus verification and Result Package
@@ -28,4 +29,4 @@
 
 - No additional conditional reference by default; select one target pattern only when runtime-core routing requires it.
 
-Do not read the umbrella `SKILL.md` during a normal alias invocation. Use it only when this generated entrypoint is missing/corrupt or the requester directly invoked the umbrella with an unknown operation.
+Do not read the router `SKILL.md` during operation execution. If this generated entrypoint is missing or corrupt, stop with `PACKAGE_ENTRYPOINT_MISSING` and ask for package sync/reinstallation; never broaden into the router.

@@ -4,6 +4,23 @@ export function operationEntrypointFile(item) {
   return `${item.operation}.md`;
 }
 
+export function renderOperationIndex(config) {
+  return [
+    "# AgriMap operation routing index",
+    "",
+    "<!-- Generated from config/operations.json. Do not edit directly. -->",
+    "",
+    "Use this file only to select one dedicated `agm-*` skill. It is not an execution contract.",
+    "",
+    "| Dedicated skill | Operation | Purpose | Mode | Lifecycle |",
+    "| --- | --- | --- | --- | --- |",
+    ...config.operations.map((item) => `| \`${item.name}\` | \`${item.operation}\` | ${item.description} | \`${item.mode}\` | \`${item.lifecycle}\` |`),
+    "",
+    "After selecting one row, hand off to that skill and stop the router. Never combine multiple operation skills implicitly.",
+    "",
+  ].join("\n");
+}
+
 export function operationConfigIssues(config) {
   const issues = [];
   if (config?.schemaVersion !== 2) issues.push("schemaVersion must be 2");
@@ -11,13 +28,14 @@ export function operationConfigIssues(config) {
   const names = new Set();
   const operations = new Set();
   for (const item of config.operations) {
-    for (const field of ["name", "operation", "description", "mode", "deliverable", "example"]) {
+    for (const field of ["name", "operation", "lifecycle", "description", "mode", "deliverable", "example"]) {
       if (!String(item?.[field] || "").trim()) issues.push(`${item?.name || "unknown"}: ${field} is required`);
     }
     if (names.has(item.name)) issues.push(`duplicate alias: ${item.name}`);
     if (operations.has(item.operation)) issues.push(`duplicate operation: ${item.operation}`);
     names.add(item.name);
     operations.add(item.operation);
+    if (!["lightweight-eligible", "tracked-only", "stateless"].includes(item.lifecycle)) issues.push(`${item.name}: lifecycle must be lightweight-eligible|tracked-only|stateless`);
     for (const field of ["requiredInputs", "conditionalInputs", "instructions", "references"]) {
       if (!Array.isArray(item?.[field]) || item[field].length === 0) issues.push(`${item.name}: ${field} must be non-empty`);
     }
@@ -44,6 +62,7 @@ export function renderOperationEntrypoint(item) {
     "<!-- Generated from config/operations.json. Do not edit directly. -->",
     "",
     `- Operation: \`${item.operation}\``,
+    `- Lifecycle: \`${item.lifecycle}\``,
     `- Mode: \`${item.mode}\``,
     `- Purpose: ${item.description}.`,
     `- Deliverable: ${item.deliverable}`,
@@ -66,21 +85,21 @@ export function renderOperationEntrypoint(item) {
     "",
     ...conditional,
     "",
-    "Do not read the umbrella `SKILL.md` during a normal alias invocation. Use it only when this generated entrypoint is missing/corrupt or the requester directly invoked the umbrella with an unknown operation.",
+    "Do not read the router `SKILL.md` during operation execution. If this generated entrypoint is missing or corrupt, stop with `PACKAGE_ENTRYPOINT_MISSING` and ask for package sync/reinstallation; never broaden into the router.",
     "",
   ].join("\n");
 }
 
 export function renderAliasSkill(item) {
   const base = "../agrimap-agent-skills/references";
-  return `---\nname: ${item.name}\ndescription: ${item.description}. Use when the requester invokes this AgriMap alias.\n---\n\nRun operation \`${item.operation}\` through the compact progressive-disclosure path. Read exactly these files relative to this alias before routing any conditional discipline:\n\n1. \`${base}/runtime-core.md\`\n2. \`${base}/glossary.md\`\n3. \`${base}/operations/${operationEntrypointFile(item)}\`\n\nDo **not** read \`../agrimap-agent-skills/SKILL.md\` during a normal alias invocation. The compact entrypoint is authoritative for this operation and names every additional reference that may be loaded. Pass the requester's current arguments unchanged. If they contain a standalone \`-h\` or \`--help\` token, return the compact entrypoint's purpose, required inputs, conditional inputs, and minimal example without starting a task or writing project state. Use the umbrella only as an explicit fallback when a compact file is missing/corrupt or the requester invoked the umbrella directly with an unknown operation.\n`;
+  return `---\nname: ${item.name}\ndescription: ${item.description}. Use only for the dedicated AgriMap \`${item.operation}\` operation or when the requester explicitly invokes this alias; do not use it as a general AgriMap router.\n---\n\nRun only operation \`${item.operation}\` through its compact progressive-disclosure path. Read exactly these files relative to this skill before loading any conditional discipline:\n\n1. \`${base}/runtime-core.md\`\n2. \`${base}/glossary.md\`\n3. \`${base}/operations/${operationEntrypointFile(item)}\`\n\nDo **not** read \`../agrimap-agent-skills/SKILL.md\` during operation execution or combine another operation implicitly. The compact entrypoint is authoritative for this one operation and names every additional reference that may be loaded. Pass the requester's current arguments unchanged. If they contain a standalone \`-h\` or \`--help\` token, return the compact entrypoint's purpose, required inputs, conditional inputs, and minimal example without starting a task or writing project state. If a required compact file is missing or corrupt, stop with \`PACKAGE_ENTRYPOINT_MISSING\` and ask for package sync/reinstallation; never fall back to the router.\n`;
 }
 
 export function renderGeminiCommandPrompt(item) {
   return [
-    `Run AgriMap operation ${item.operation} through its compact progressive-disclosure entrypoint.`,
-    `Read only skills/agrimap-agent-skills/references/runtime-core.md, references/glossary.md, and references/operations/${operationEntrypointFile(item)} first; do not load the umbrella SKILL.md during a normal alias invocation.`,
-    "The operation entrypoint names any additional conditional references. Treat those compact files as the workflow source of trust.",
+    `Run only AgriMap operation ${item.operation} through its compact progressive-disclosure entrypoint.`,
+    `Read only skills/agrimap-agent-skills/references/runtime-core.md, references/glossary.md, and references/operations/${operationEntrypointFile(item)} first; do not load the routing SKILL.md or combine another operation.`,
+    "The operation entrypoint names any additional conditional references. Treat those compact files as the workflow source of trust. If one is missing or corrupt, stop with PACKAGE_ENTRYPOINT_MISSING; never fall back to the router.",
     "When requester arguments contain a standalone -h or --help token, return compact operation help without starting a task or writing project state.",
     "Requester arguments:",
     "{{args}}",

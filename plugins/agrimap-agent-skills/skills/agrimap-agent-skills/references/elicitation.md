@@ -63,7 +63,7 @@ Agent: สร้างด้วย company template — ยืนยันคำ
 Decision owner: approve
 ```
 
-New project scaffolds run the company `dotnet new agmwa|agmws|agmbo` templates per the scaffolding contract in [workflows.md](workflows.md): derive recommended parameters from the confirmed name, present the complete command and its working directory verbatim, and run only after decision-owner approval. For work inside an existing repository, the destination needs no question — every created or modified path is already visible in the confirmed slice plan.
+New project scaffolds run the company `dotnet new agmwa|agmws|agmbo` templates per the generated [create-feature operation](operations/create-feature.md): derive recommended parameters from the confirmed name, present the complete command and its working directory verbatim, and run only after decision-owner approval. For work inside an existing repository, the destination needs no question — every created or modified path is already visible in the confirmed slice plan.
 
 ## Do not rush
 

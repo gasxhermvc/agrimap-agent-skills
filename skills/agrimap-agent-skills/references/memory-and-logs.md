@@ -97,7 +97,7 @@ Maintain a `## Pending issues` section inside `.agrimap-agent/memory/project.md`
 
 **Lifecycle (บังคับสามจังหวะ):**
 
-1. **เจอระหว่างงาน → ทัก + จด, ห้ามทำตอนนั้น**: เมื่อพบปัญหา/บัค/debt นอก scope ปัจจุบัน (รวม `qa-failed` ที่ปิดงานไป) — บอก owner สั้น ๆ ในแชท, append หนึ่งบรรทัดลง ledger, แล้วกลับมางานเดิม. การจดลง ledger คือรูปธรรมของกฎ "record follow-on concerns separately" — ไม่ใช่เขียนไว้ในแชทเฉย ๆ แล้วหาย.
+1. **เจอระหว่างงาน → ทัก + จด, ห้ามทำตอนนั้น**: เมื่อพบปัญหา/บัค/debt นอก scope ปัจจุบัน (รวม terminal QA closure ที่แก้ใน task เดิมไม่ได้) — บอก owner สั้น ๆ ในแชท, append หนึ่งบรรทัดลง ledger, แล้วกลับมางานเดิม. QA finding ที่แก้ได้ภายใน authorized scope ไม่ใช่ follow-on issue. การจดลง ledger คือรูปธรรมของกฎ "record follow-on concerns separately" — ไม่ใช่เขียนไว้ในแชทเฉย ๆ แล้วหาย.
 2. **เริ่มงาน → เตือน + reconcile**: session-start memory load ทำให้ ledger โผล่เอง; ก่อนเริ่มงานให้กวาดดูรายการเปิด — งานปัจจุบันจะแก้ข้อไหนได้ให้บอก, ข้อไหนถูกงานอื่นแก้ไปแล้วให้ mark `[x]` พร้อม task ที่แก้.
 3. **ปิดงาน → สรุปเสมอ**: ทุก result/รายงานปิดงาน ลงท้ายด้วยส่วน **"Outstanding items"** — รายการค้างที่ยังเปิดอยู่ (ของเก่า + ที่เกิดใหม่ในงานนี้) หรือระบุชัดว่า `no pending issues`. ห้ามปิดงานเงียบ ๆ โดยไม่แตะเรื่องนี้.
 
@@ -119,7 +119,7 @@ Write durable knowledge as JSONL with `id`, `type`, `status`, `summary`, `keywor
 
 ## Durable state-transition checkpoint
 
-Append exactly one checkpoint after each glossary-defined durable state transition—task creation, authorized scope/decision change, logical implementation batch, delegated integration, verification/QA outcome, or terminal transition. Do not checkpoint individual reads, tool calls, unchanged retries, heartbeats, or conversational updates. Record:
+Append exactly one checkpoint after each glossary-defined durable state transition—task creation, authorized scope/decision change, logical implementation batch, delegated integration, verification/QA outcome, or terminal transition. Do not checkpoint individual reads, tool calls, unchanged retries, liveness updates, or conversational updates. Record:
 
 - objective and status;
 - files/symbols affected;
@@ -146,7 +146,7 @@ Append one JSON object per line:
   "role": "leader|executor|qa|reviewer|analyst",
   "agent": "primary|fe|be|sql|designer|qa|custom-label",
   "provider": "codex|claude|gemini|unknown",
-  "event": "created|changed|verified|decision|qa-failed|blocked|cancelled|completed",
+  "event": "created|changed|verified|decision|qa-finding|qa-failed|blocked|cancelled|completed",
   "summary": "concise action",
   "reason": "problem addressed",
   "files": ["path"],
@@ -163,7 +163,7 @@ The first event for every new task is `created` and also contains `request`, the
 
 For a current run, `provider` is exactly `codex`, `claude`, or `gemini`; provider-specific hooks pass that value explicitly and runtime guard logic corrects a stale cross-loaded Codex/Claude hook. `provider=unknown` remains readable only for legacy/imported or pre-resolution audit data and cannot satisfy the task-artifact completion schema.
 
-The canonical event enum is defined in `scripts/log-events.mjs`. `qa-failed` is a task outcome event; keep the QA status `failed` in `qa.md` rather than writing `failed` as a log event.
+The canonical event enum is defined in `scripts/log-events.mjs`; event semantics and the one-correction boundary live only in [qa-and-done.md](qa-and-done.md). Keep QA status `failed` in `qa.md`; never invent a bare `failed` log event.
 
 ## Audit/history query
 

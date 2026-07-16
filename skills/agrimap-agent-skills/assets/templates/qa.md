@@ -42,6 +42,6 @@
 
 {{limitations}}
 
-## Findings for the next task
+## Findings and attempt history
 
-{{findings_only_no_edits}}
+{{findings_prior_attempts_and_corrections_no_qa_edits}}

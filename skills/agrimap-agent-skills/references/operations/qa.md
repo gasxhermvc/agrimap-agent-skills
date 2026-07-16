@@ -3,8 +3,9 @@
 <!-- Generated from config/operations.json. Do not edit directly. -->
 
 - Operation: `qa`
+- Lifecycle: `tracked-only`
 - Mode: `verification-only`
-- Purpose: Run independent verification-only QA over product artifacts.
+- Purpose: Verify tracked work in a separate product-read-only context.
 - Deliverable: .agrimap-agent/tasks/<task-id>/qa.md
 
 ## Inputs and help
@@ -15,16 +16,15 @@
 
 ## Execute this contract
 
-1. Use an independent agent/context, reopen the integrated product artifacts, map requirements to evidence, and rerun selected claims.
-2. Never fix findings; product artifacts are read-only and only QA workflow evidence is writable.
+1. Apply qa-and-done.md as the complete policy; reopen integrated artifacts, map requirements to evidence, and rerun selected claims.
+2. Return only the canonical status and evidence; do not copy policy text into the report.
 
 ## Load now
 
-- [qa-and-done.md](../qa-and-done.md) — QA scope, depth, sequence, and statuses
-- [roles.md](../roles.md) — independent QA role boundary
+- [qa-and-done.md](../qa-and-done.md) — single QA, correction, and completion policy
 
 ## Load only when the condition matches
 
 - When the task is FE, BE, or SQL: [patterns/pattern-status.md](../patterns/pattern-status.md) — select exactly the matching pattern and Detect gates
 
-Do not read the umbrella `SKILL.md` during a normal alias invocation. Use it only when this generated entrypoint is missing/corrupt or the requester directly invoked the umbrella with an unknown operation.
+Do not read the router `SKILL.md` during operation execution. If this generated entrypoint is missing or corrupt, stop with `PACKAGE_ENTRYPOINT_MISSING` and ask for package sync/reinstallation; never broaden into the router.

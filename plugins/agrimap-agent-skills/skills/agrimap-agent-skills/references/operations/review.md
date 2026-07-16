@@ -3,6 +3,7 @@
 <!-- Generated from config/operations.json. Do not edit directly. -->
 
 - Operation: `review`
+- Lifecycle: `lightweight-eligible`
 - Mode: `product-read-only`
 - Purpose: Review code or artifacts with evidence-backed findings.
 - Deliverable: .agrimap-agent/tasks/<task-id>/review.md
@@ -26,4 +27,4 @@
 
 - When the target is FE, BE, or SQL: [patterns/pattern-status.md](../patterns/pattern-status.md) — route to the current target pattern only
 
-Do not read the umbrella `SKILL.md` during a normal alias invocation. Use it only when this generated entrypoint is missing/corrupt or the requester directly invoked the umbrella with an unknown operation.
+Do not read the router `SKILL.md` during operation execution. If this generated entrypoint is missing or corrupt, stop with `PACKAGE_ENTRYPOINT_MISSING` and ask for package sync/reinstallation; never broaden into the router.

@@ -81,7 +81,7 @@ Continue through routine choices that preserve this contract and record them. If
 - decision required
 - proposed next prompt change
 
-## Tests and independent QA
+## Tests and canonical QA handoff
 
 {{constraints_tests}}
 

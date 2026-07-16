@@ -15,7 +15,7 @@
 - [Generated prompt sections](#generated-prompt-sections)
 - [Prompt QA](#prompt-qa)
 
-Generate prompts that a lightweight executor can run without reconstructing the Leader model's reasoning. The approved prompt is the execution source of truth for one task: use plain, direct language while keeping every material contract explicit under [glossary.md](glossary.md). Create separate prompts for Leader, executor, and independent verification-only QA when implementation is delegated.
+Generate prompts that an executor can run without reconstructing the Leader's reasoning. The approved prompt is the execution source of truth for one tracked task. Use plain language and reference canonical contracts instead of copying them.
 
 ## Staged elicitation contract
 
@@ -94,7 +94,7 @@ Allow the decision owner to override `model_label` in the generated prompt file.
 8. Verify the real workspace mode. Do not assume sandbox commits, branches, worktrees, or uncommitted parent changes are visible to the Leader.
 9. Build a file/logical-contract ownership map. One writer model owns a file or contract per integration wave; combine or sequence overlapping tasks.
 10. Assign branch/worktree names only when the selected workspace mode supports them. If required state is uncommitted and absent from the base commit, use shared/sequential work or obtain an explicit decision-owner-approved commit boundary; never pretend an isolated worker can see it.
-11. Write a Leader/executor prompt per task to `.agrimap-agent/prompts/<task-id>/` using the `<role>.prompt.md` naming above. For implementation work, also write a separate verification-only QA prompt whose model/agent identity is independent from the writer, whose product-artifact access is read-only, and whose only writes are `qa.md`, its heartbeat, and its checkpoint/log evidence.
+11. Write the required role prompts under `.agrimap-agent/prompts/<task-id>/`. A QA prompt imports [qa-and-done.md](qa-and-done.md) as its complete boundary; do not duplicate that policy here or in generated Leader/executor prompts.
 12. Add the exact skill/reference files the executor must load.
 13. For cross-service or ownership-sensitive work, point to exact `service_id` entries in `.agrimap-agent/knowledge/service-ownership.yaml`; never paste a second ownership map into the prompt.
 14. Validate that each prompt contains the fields below.
@@ -103,9 +103,9 @@ Allow the decision owner to override `model_label` in the generated prompt file.
 
 Before rendering prompts, compare each executor's target files, generators, shared registries, exports, routes, DI files, schemas, callers, and contracts. A file may appear in only one writer's `file_ownership` for the wave. Put every other writer's set in `forbidden_files`.
 
-QA/review prompts may inspect all product artifacts but must not modify them; they may write only their assigned workflow evidence and must return findings rather than fixes. A failed finding closes the current implementation attempt as `qa-failed`; the Leader prepares a new correction prompt for requester discussion and decision-owner approval instead of routing an edit inside the task under verification. When overlap cannot be removed, use one executor for that scope or execute the prompts sequentially.
+QA/review prompts use the canonical boundary in [qa-and-done.md](qa-and-done.md). Generated prompts name that source and task-specific evidence only; they do not restate status, correction, or terminal rules. When writer overlap cannot be removed, use one executor or sequence the prompts.
 
-The Leader must name the integration artifact expected for the chosen workspace mode: shared-workspace file set, visible commit SHA, or portable patch/changed artifacts. Integration, QA dispatch, and evidence synthesis remain Leader responsibilities, never requester or decision-owner cleanup; detailed final verification belongs to the independent QA model.
+The Leader names the integration artifact for the chosen workspace mode: shared-workspace file set, visible commit SHA, or portable patch/changed artifacts. Integration and evidence synthesis remain Leader responsibilities, never requester cleanup.
 
 ## Workspace-need contract
 
@@ -169,7 +169,7 @@ Carry the normalized input manifest into the prompt. For large text, list read c
 
 ### Gemini
 
-- Use the installed `/agm-*` custom command or the umbrella skill name supported by the active Gemini CLI extension; do not emit Codex `$skill-name` or Claude `/plugin:skill` syntax.
+- Use the installed operation-specific `/agm-*` custom command supported by the active Gemini CLI extension. The `agrimap-agent-skills` router may recommend that command but never executes prompt generation; do not emit Codex `$skill-name` or Claude `/plugin:skill` syntax.
 - Record `provider: gemini` and the exact active Gemini model when the host exposes it. If the matrix selects `gemini-cli-default`, resolve that routing label at dispatch and record the actual model in execution identity.
 - Keep generated execution prompts in plain Markdown. Use `{{args}}` only in generated Gemini command adapters, never inside the execution prompt itself.
 
@@ -186,7 +186,7 @@ Carry the normalized input manifest into the prompt. For large text, list read c
 9. Target files, lines, and anchors
 10. Ordered execution steps
 11. Behavior/logic constraints and deviation policy
-12. Tests and independent QA evidence
+12. Tests and canonical QA handoff when tracked
 13. Memory/log checkpoint
 14. Structured Result Package and integration artifact
 

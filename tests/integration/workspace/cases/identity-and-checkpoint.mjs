@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { LOG_EVENTS } from "../../../../skills/agrimap-agent-skills/scripts/log-events.mjs";
+import { LOG_EVENTS, QA_FAILED_EVENT } from "../../../../skills/agrimap-agent-skills/scripts/log-events.mjs";
 
 const logEventSet = new Set(LOG_EVENTS);
 
@@ -85,7 +85,7 @@ export async function identityAndCheckpoint(harness) {
   assert.equal(invalidEventCheckpoint.status, 1);
   const invalidEventResult = JSON.parse(invalidEventCheckpoint.stdout);
   assert.equal(invalidEventResult.code, "INVALID_LOG_EVENT");
-  assert.match(invalidEventResult.message, /qa-failed\|blocked\|cancelled/);
+  assert.match(invalidEventResult.message, new RegExp(`${QA_FAILED_EVENT}\\|blocked\\|cancelled`));
   assert.equal(JSON.stringify(await readTaskLog("task-b")), taskBLogBeforeInvalidEvent);
   assert.equal(await readFile(taskBMemoryPath, "utf8"), taskBMemoryBeforeInvalidEvent);
 

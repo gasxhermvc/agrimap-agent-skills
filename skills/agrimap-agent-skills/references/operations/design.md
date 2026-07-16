@@ -3,6 +3,7 @@
 <!-- Generated from config/operations.json. Do not edit directly. -->
 
 - Operation: `design`
+- Lifecycle: `lightweight-eligible`
 - Mode: `product-read-only`
 - Purpose: Design a user flow, behavior, and acceptance criteria.
 - Deliverable: .agrimap-agent/tasks/<task-id>/design.md
@@ -28,4 +29,4 @@
 - When target_kind is fe-main or fe-library: [frontend-engineer.md](../frontend-engineer.md) — frontend design discipline
 - When target_kind is be-main or be-library: [backend-engineer.md](../backend-engineer.md) — backend boundary discipline
 
-Do not read the umbrella `SKILL.md` during a normal alias invocation. Use it only when this generated entrypoint is missing/corrupt or the requester directly invoked the umbrella with an unknown operation.
+Do not read the router `SKILL.md` during operation execution. If this generated entrypoint is missing or corrupt, stop with `PACKAGE_ENTRYPOINT_MISSING` and ask for package sync/reinstallation; never broaden into the router.

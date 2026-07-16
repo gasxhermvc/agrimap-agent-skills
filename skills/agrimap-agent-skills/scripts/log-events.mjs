@@ -1,9 +1,12 @@
+export const QA_FAILED_EVENT = "qa-failed";
+
 export const LOG_EVENTS = Object.freeze([
   "created",
   "changed",
   "verified",
   "decision",
-  "qa-failed",
+  "qa-finding",
+  QA_FAILED_EVENT,
   "blocked",
   "cancelled",
   "completed",

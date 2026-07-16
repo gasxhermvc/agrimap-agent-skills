@@ -11,7 +11,7 @@
     {
       "name": "agrimap-agent-skills",
       "source": "./plugins/agrimap-agent-skills",
-      "description": "Cross-agent AgriMap workflows, patterns, memory, and QA",
+      "description": "Routing skill plus dedicated one-operation AgriMap workflows",
       "version": "0.1.2",
       "homepage": "https://github.com/gasxhermvc/agrimap-agent-skills"
     }

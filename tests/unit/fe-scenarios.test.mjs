@@ -4,12 +4,12 @@ import path from "node:path";
 import test from "node:test";
 import { projectRoot } from "../helpers/harness.mjs";
 
-const skill = await readFile(path.join(projectRoot, "skills", "agrimap-agent-skills", "SKILL.md"), "utf8");
+const frontendDiscipline = await readFile(path.join(projectRoot, "skills", "agrimap-agent-skills", "references", "frontend-engineer.md"), "utf8");
 const evals = await readFile(path.join(projectRoot, "skills", "agrimap-agent-skills", "references", "evals", "fe-scenarios.md"), "utf8");
 
 test("frontend eval catalog is reachable and structurally executable", () => {
-  assert.match(skill, /\[fe-scenarios\.md\]\(references\/evals\/fe-scenarios\.md\)/);
-  assert.match(skill, /do not load that eval catalog for ordinary task execution/);
+  assert.match(frontendDiscipline, /\[fe-scenarios\.md\]\(evals\/fe-scenarios\.md\)/);
+  assert.match(frontendDiscipline, /do not load the eval catalog during ordinary frontend work/i);
 
   const matches = [...evals.matchAll(/^## S(\d+) —[^\n]+\n([\s\S]*?)(?=^## S\d+ —|^## สรุป coverage)/gm)];
   assert.deepEqual(matches.map((match) => Number(match[1])), Array.from({ length: 12 }, (_, index) => index + 1));

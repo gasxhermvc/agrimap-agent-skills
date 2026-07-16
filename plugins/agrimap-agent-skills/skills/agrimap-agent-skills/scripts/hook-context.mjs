@@ -145,20 +145,18 @@ const previousHookState = mode === "task" && hookStatePath
   ? await readJson(hookStatePath)
   : null;
 
-// task mode (fires on every prompt) is silent by design: identity is asked once per
-// 24h at session start, and memory is loaded once per session — never re-injected
-// into every model call. Only two conditions may speak here.
+// Task mode stays silent except for tracked-lane state that genuinely needs attention.
 const context = [];
 
 if (mode === "task") {
   if (!confirmedIdentity) {
     context.push(
       identity?.expired
-        ? `AgriMap: requester confirmation expired (last: ${identity.requestedBy}). Ask the human once for today's requester name, persist it with agm-workspace.mjs identify --session ${effectiveSessionId || "<stable-local-id>"} --owner <name>, then this reminder stops for 24h.`
-        : `AgriMap: session requester is unknown. Ask the human once for today's requester name, persist it with agm-workspace.mjs identify --session ${effectiveSessionId || "<stable-local-id>"} --owner <name>, then this reminder stops for 24h.`,
+        ? `AgriMap: requester confirmation expired (last: ${identity.requestedBy}). Consult the operation Lifecycle; reconfirm/persist only for tracked work. Lightweight/stateless work must not ask solely for attribution.`
+        : "AgriMap: requester is not persisted. Consult the operation Lifecycle; identify the human only for tracked work. Lightweight/stateless work proceeds without workflow attribution.",
     );
   }
-  if (previousHookState && previousHookState.memoryFingerprint !== memoryFingerprint) {
+  if (activeTask && previousHookState && previousHookState.memoryFingerprint !== memoryFingerprint) {
     context.push(
       "AgriMap: task/project memory changed on disk since the last refresh — if you did not write that change yourself, reopen .agrimap-agent/memory/ before continuing.",
     );
@@ -174,23 +172,23 @@ context.push(
   "- Record executing model and provider from your own runtime identity: you always know your model family and host CLI. The resolved hook provider is runtime evidence, but your own host/model identity still wins if any external configuration is stale; `model: unknown` is a recording defect unless you genuinely cannot name your own model.",
   effectiveSessionId
     ? `- Session: ${effectiveSessionId}${sessionId ? "" : " (derived from transcript path)"}`
-    : "- Session ID is unavailable. Create a stable local conversation ID before substantive task work.",
+    : "- Session ID is unavailable. Create one only if the selected operation enters tracked work.",
   confirmedIdentity
     ? `- Confirmed session requester: ${confirmedIdentity.requestedBy}; valid until ${confirmedIdentity.expiresAt}.`
     : identity?.expired
-      ? `- Requester confirmation expired. Last confirmed requester was ${identity.requestedBy}; ask the human to confirm again before substantive work.`
-      : "- Session requester is unknown. Ask the human before substantive work; never infer attribution from shared logs, machine/OS user, or Git config.",
+      ? `- Requester confirmation expired. Last confirmed requester was ${identity.requestedBy}; reconfirm only for tracked work.`
+      : "- Session requester is unknown. Resolve it only after the operation selects tracked work; lightweight/stateless work skips persistence.",
   taskRequester
     ? `- Active task requested by: ${taskRequester}; immutable task attribution comes from its tracked brief and created log event.`
     : "- No active task requester is recorded for this session.",
   `- Previously recorded execution identity (may be stale — your own runtime identity wins): model=${execution.model || "unrecorded"}, role=${execution.role || "leader"}, agent=${execution.agent || "primary"}, provider=${execution.provider || "unrecorded"}.`,
   effectiveSessionId
-    ? `- Persist or reconfirm identity with agm-workspace.mjs identify --session ${effectiveSessionId} --owner <confirmed-human-name>; runtime identity is ignored by Git.`
-    : "- Persist identity with agm-workspace.mjs identify --session <stable-local-id> --owner <confirmed-human-name>; runtime identity is ignored by Git.",
+    ? `- For tracked work only, persist/reconfirm with agm-workspace.mjs identify --session ${effectiveSessionId} --owner <confirmed-human-name>.`
+    : "- For tracked work only, create a stable session ID and persist the confirmed human.",
   suggestedRequester
     ? `- Unconfirmed Git-name suggestion: ${suggestedRequester}. Ask the human to confirm it; never attribute work automatically from this value.`
     : "- Do not substitute machine, OS, or Git identity for explicit human confirmation.",
-  "- Durable audit rule: every task must record who requested what in its tracked brief and created log; checkpoint each durable state transition (not each read/tool call) with an accurate UTC timestamp.",
+  "- Lifecycle rule: lightweight/stateless work creates no task artifacts or audit events. Tracked work records requester/objective and durable transitions.",
   "- For audit/history questions, run agm-workspace.mjs history with person/date/task filters; inspect attributionSemantics, auditStorage, invalidLines, and returned brief/result/QA/memory paths. Distinguish requester, workflow executor, claimed files, and Git author; never answer from conversational recall alone.",
   "- Durable project memory is .agrimap-agent/memory/project.md; reopen it when context was compacted or current project facts are needed.",
 );
@@ -204,7 +202,7 @@ if (mode === "subagent") {
   context.push(
     "- Inherit requestedBy and authority fields from the Leader handoff/session; record configurable modelLabel separately from actual model, role, agent, and provider.",
     "- Native agent-thread activity is the primary progress channel. Keep the delegated display label and bounded task visible in your thread; the requester can inspect it from the app thread, CLI /agent, or IDE background-agent panel on current Codex releases.",
-    "- Write .agrimap-agent/runtime/progress/<task-id>.jsonl only when the handoff explicitly declares it as a fallback because native activity is unavailable; then write started, one line per ordered step, and finished/blocked.",
+    "- Write .agrimap-agent/runtime/progress/<task-id>.jsonl only when the handoff explicitly declares a fallback because native activity is unavailable. Write started, meaningful phase/status transitions, and finished/blocked; never write per step, tool call, file read, or unchanged poll. Optional unchanged liveness is capped at once per five minutes.",
     "- Read workspace_need before any write. Verify the required mode, base commit, visibility, ownership, and integration-return method; report unsupported isolation and use only the named fallback.",
     "- Write only the files and logical contract assigned to you. One writer owns them per integration wave; stop and report overlap not resolved by the Leader.",
     "- Do not assume a sandbox branch or commit is visible. Return the requested integration artifact for the verified workspace mode.",
@@ -214,15 +212,12 @@ if (mode === "subagent") {
 
 if (mode !== "task") {
   context.push(
-    "- For a generated agm alias, read compact runtime-core.md, glossary.md, and its operations/<operation>.md entrypoint; do not load the umbrella unless directly invoked or the compact route is missing/corrupt.",
+    "- For a generated agm alias, read compact runtime-core.md, glossary.md, and exactly its operations/<operation>.md entrypoint; never load the routing-only umbrella during execution. A missing/corrupt compact route is PACKAGE_ENTRYPOINT_MISSING and requires sync/reinstallation.",
     "- Do not add permission gates. Discuss only material logic/contract/data/architecture trade-offs.",
-    "- Current Codex releases enable subagents by default. Before spawning, announce each descriptive agent label, bounded task, expected output, and inspection path (app thread, CLI /agent, or IDE background-agent panel).",
-    "- Never wait silently for minutes: continue safe work or inspect status in intervals no longer than 60 seconds and report running/completed/blocked with agent/task detail. Native threads are primary; use a progress JSONL file only as an explicit fallback.",
-    "- Update memory and concise logs after every glossary-defined durable state transition; do not claim completion with unchecked items.",
-    "- Memory loading policy: this one-time load (plus the pending-work summary above) is the memory context for the whole session. It is not re-injected on later prompts; reopen the memory files yourself only after context compaction or an on-disk change notice.",
+    "- Select Lifecycle before attribution or workflow writes. Lightweight/stateless work skips receipt, task artifacts, memory/logs, and separate QA.",
+    "- For tracked work, reopen project memory on demand and update it only at durable transitions; do not inject it into unrelated lightweight work.",
   );
-  if (projectMemory) context.push("\nCurrent project memory:\n", projectMemory);
-  if (currentTaskMemory) context.push("\nCurrent task memory (pending work to reconcile):\n", currentTaskMemory);
+  if (currentTaskMemory) context.push("\nCurrent tracked-task memory:\n", currentTaskMemory);
 }
 
 const hookEventName = input.hook_event_name || input.hookEventName || "SessionStart";

@@ -1,129 +1,52 @@
-# Subagents and branches
+# Delegation, workspace, and progress
 
-## สารบัญ
+Load this file only for tracked work that actually delegates. Lightweight/stateless work never delegates.
 
-- [Decompose](#decompose)
-- [Workspace modes](#workspace-modes)
-- [Branch and worktree](#branch-and-worktree)
-- [Overlap check before dispatch](#overlap-check-before-dispatch)
-- [Delegation packet](#delegation-packet)
-- [Visible progress](#visible-progress--native-first-no-silent-wait)
-- [Required handoff](#required-handoff)
+## Dispatch boundary
 
-## Decompose
+- Delegate only bounded units with distinct ownership; use at most five active agents.
+- Keep one writer model per wave for each file and logical contract. Sequence overlap.
+- The Leader owns integration, conflict resolution, verification dispatch, and synthesis. Neither the requester nor decision owner is responsible for collecting or merging agent fragments.
+- For QA delegation, import [qa-and-done.md](qa-and-done.md) as the single policy source; do not restate its write/status/correction rules here.
 
-- Use at most five active subagents.
-- Current Codex releases enable subagent workflows by default; never route Codex to a sequential fallback merely because an older contract claimed native subagents were unavailable.
-- Delegate only independent, bounded work with a clear integration boundary.
-- Keep unresolved material decisions with the Leader until the recorded decision owner approves them.
-- Before dispatch, map every target and forbidden file to exactly one writer for the integration wave.
-- One file and one logical contract have one writer model per wave. Read-only analysis and QA may overlap; writes may not.
-- If two tasks need the same file, shared registry, route table, DI setup, public export, schema object, generated artifact, or contract, combine them under one writer or run them sequentially.
-- The Leader owns integration files by default and prevents instructions whose scopes overlap indirectly.
-- QA is a verification-only subagent/context with no product-artifact write set. It may inspect every integrated artifact and may write only its `qa.md`, heartbeat, and checkpoint/log evidence; it cannot own or modify source, tests, product docs, generated output, implementation prompts, checklists, scope, or acceptance criteria.
+## Workspace contract
 
-## Workspace modes
+Every packet defines `workspace_need`: isolation, requested mode, `base_ref`, exact base commit, provider instruction, visibility check, integration return, and fallback mode.
 
-Do not assume that a provider's subagent, sandbox, branch, or commit is visible to another agent.
-
-| Mode | Dispatch rule | Required return |
+| Mode | Use | Integration return |
 | --- | --- | --- |
-| `shared-workspace` | Assign disjoint write sets; branches are optional. | Changed files, tests, and handoff. |
-| `isolated-worktree` | Use only after verifying the worktree and Git refs are visible to the Leader. | Branch plus commit SHA or patch, tests, and handoff. |
-| `isolated-sandbox` | Do not rely on a branch name for integration. | Portable patch/diff or complete changed artifacts, tests, and handoff. |
-| `unknown` | Do not parallelize writers. Execute sequentially until visibility is proven. | Normal handoff after each step. |
+| shared workspace | bounded non-overlapping writers or sequential work | changed file set |
+| worktree | provider proves supported isolated branch/worktree | visible commit SHA |
+| isolated-sandbox | filesystem is isolated without a shared Git ref | portable patch or changed artifacts |
+| unknown | do not parallelize writers until visibility is proven | sequential handoff |
 
-The Leader defines `workspace_need`, verifies and records `workspace_mode`, integrates every artifact, resolves conflicts, dispatches independent verification-only QA, and synthesizes the final evidence. Neither the requester nor decision owner is responsible for discovering or merging scattered agent work.
-
-## Branch and worktree
-
-The Leader assigns branch names using:
-
-`agm/<task-id>/<role>-<short-scope>`
-
-Branches are optional isolation aids, not the delegation contract. Prefer an isolated worktree only when the provider supports it and the Leader has verified integration visibility. Do not create branches for read-only analysis. If the repository is dirty, preserve owner changes and establish the integration boundary before branch/worktree creation. An isolated worker starts from the recorded base commit; uncommitted parent changes are unavailable unless the provider explicitly proves otherwise.
-
-Never tell multiple agents to create independent commits against the same file set and expect Git to resolve the design. If a branch/worktree is not visible, require a portable patch or changed artifact in the handoff.
-
-Provider capability is not the workspace mode. For example, Claude Code can isolate a custom subagent with `isolation: worktree`, but a normal subagent starts in the current working directory. Codex managed worktrees are surface-dependent and do not prove that every local subagent is isolated. Verify the current run rather than infer from the provider name.
-
-## Overlap check before dispatch
-
-The Leader must reject or reshape a delegation wave when any two tasks overlap on:
-
-- the same target file or generated output;
-- the same public symbol, API route, DTO/schema, database object, or behavior contract;
-- a writer's target and another writer's formatter/generator output;
-- a shared registration/index/export/migration file;
-- caller and callee changes that cannot be verified independently.
-
-Record the final map as `file_ownership`, including the Leader-owned integration set. A later wave may reassign a file only after the earlier handoff has been integrated and checked.
+- Claude custom agents may use `isolation: worktree` when the installed version supports it.
+- A normal subagent starts in the current working directory unless the provider proves isolation.
+- Codex managed worktrees are surface-dependent; never infer them from agent creation alone.
+- If required uncommitted parent state is absent from the base commit, use shared/sequential work or obtain an authorized commit boundary.
 
 ## Delegation packet
 
-Include:
+Include only task-local data:
 
-- task ID, `requestedBy`, requester authority, decision owner, authority evidence, model profile, configurable model label, executing actual `model`, `role`, `agent`, `provider`, objective, and non-goals;
-- required skill/reference files;
-- complete `workspace_need`, verified `workspace_mode`, integration owner, and branch/worktree name when applicable;
-- exact `file_ownership` plus other writers' forbidden files;
-- exact target files, current line numbers, and stable symbols;
-- the primary native progress channel; include `.agrimap-agent/runtime/progress/<task-id>.jsonl` and per-step write instructions only when native activity is genuinely unavailable;
-- a descriptive native display label/nickname, the user-facing one-line task description, expected output, and inspection instructions for the active surface;
-- status cadence: the Leader reports `running|completed|blocked` at dispatch, on a meaningful transition, and at least every 60 seconds while it is otherwise waiting;
-- ordered implementation steps and reason for each;
-- logic/contract/data constraints;
-- tests and acceptance criteria;
-- files the agent must not modify;
-- handoff format.
+- task/objective/non-goals and inherited authority when tracked;
+- display label, actual model identity, bounded output, and provider-native inspection path;
+- exact files/symbols, ownership, forbidden files, required reference excerpts, constraints, verification, and handoff format;
+- workspace contract and integration artifact;
+- ordered steps only when the executor needs them.
 
-For a QA packet, replace product write ownership with `product_artifacts: read-only` and `workflow_writes: qa.md|heartbeat|checkpoint-log`, name the integrated artifact/commit/file set to inspect, list claimed checks to sample independently, and require findings only. Do not include an implementation step.
+Do not tell a subagent to load the umbrella or an entire reference tree.
 
-## Visible progress — native first, no silent wait
+## Visible progress
 
-Current Codex releases enable subagent workflows by default and surface activity in all local clients. Use the native channel first:
+Current Codex surfaces expose native agent activity: app thread, CLI `/agent`, and IDE background-agent panel. Announce each label/task/output/inspection path before spawn. Continue safe Leader work; when only waiting, inspect and report `running|completed|blocked` at least every 60 seconds. Never emit an unexplained multi-minute wait.
 
-- **Codex app:** each delegated agent has an inspectable thread; open it from activity in the main task.
-- **Codex CLI:** run `/agent` to inspect and switch between active agent threads.
-- **Codex IDE extension:** expand the background-agent panel above the composer when available, then open an individual thread or stop active agents.
+Native activity is the detailed trace. Only when the active surface genuinely lacks it, declare `.agrimap-agent/runtime/progress/<task-id>.jsonl` as fallback. Write `started`, meaningful phase/status transitions, and `finished|blocked`; do not write per step, tool call, read, or unchanged poll. Optional unchanged liveness is capped at once per five minutes.
 
-Before calling spawn, the Leader posts a dispatch receipt such as:
+Official Codex behavior: [Subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents).
 
-```text
-Delegating 2 independent tasks:
-- api-contract-review — inspect route/DTO regressions — returns findings with file references
-- test-gap-scan — inspect missing failure-path coverage — returns proposed tests only
-Inspect: app agent threads | CLI /agent | IDE background-agent panel
-```
+## Handoff and integration
 
-Use a descriptive task name and, where custom agents are configured, `nickname_candidates` so the UI does not show indistinguishable repeated agent names. While agents run, the Leader continues safe independent work. If it has nothing useful to do, it waits/polls for no more than 60 seconds at a time, inspects live agent state, and posts one concise update with each agent's `running|completed|blocked` status and last known bounded task. A blind 5–7 minute wait or repeated status with no agent/task detail is a workflow defect.
+Return status, summary, execution identity, display/thread/progress channel, files/symbols, behavior, decisions, commands/results, risks, memory facts, workspace mode, and integration artifact. A `done` status is testimony only.
 
-The native thread is the primary detailed trace; do not duplicate every tool call into chat. When a provider/surface genuinely cannot expose native activity, explicitly declare the fallback and use `.agrimap-agent/runtime/progress/<task-id>.jsonl` as append-only workflow runtime state:
-
-```json
-{"t":"2026-07-16T05:40:12Z","agent":"fe","event":"step","step":"3/6","doing":"checking affected consumers"}
-```
-
-For that fallback only, write `started`, one `step` line per ordered step, and `finished|blocked`. The Leader tells the requester how to tail/open the file. It remains ignored runtime state, never durable audit evidence. Codex native threads do not require this fallback file.
-
-Official Codex behavior reference: [Subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents).
-
-## Required handoff
-
-Every executing subagent returns:
-
-- `status`: `completed`, `partial`, or `blocked`;
-- `requestedBy` inherited from the Leader handoff;
-- configurable `model_label` plus actual `model`, `role`, `agent`, and `provider` recorded separately;
-- native display label/thread identifier and progress channel used;
-- `summary`;
-- `files_changed` with symbols/lines;
-- `behavior_changed`;
-- `decisions_and_reasons`;
-- `commands_and_tests` with results;
-- `remaining_risks`;
-- `memory_facts`;
-- `integration_artifact`: visible commit SHA, portable patch, or shared-workspace file set;
-- `commit_or_branch` when applicable.
-
-The Leader verifies that the artifact is integrated, then sends it to an independent QA model resolved on the active host. A subagent saying “done” or returning a Result Package is not completion evidence.
+The Leader verifies visibility and ownership before integration, integrates once, resolves conflicts without overwriting unrelated work, and then follows the selected lifecycle's completion contract.

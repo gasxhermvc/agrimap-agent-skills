@@ -90,8 +90,9 @@ export async function hooks(harness) {
     session_id: "session-b",
     hook_event_name: "SessionStart",
   });
-  assert.match(claudeSessionB.hookSpecificOutput.additionalContext, /Current project memory:/);
-  assert.match(claudeSessionB.hookSpecificOutput.additionalContext, /Current task memory \(pending work to reconcile\):/);
+  assert.doesNotMatch(claudeSessionB.hookSpecificOutput.additionalContext, /Current project memory:/);
+  assert.match(claudeSessionB.hookSpecificOutput.additionalContext, /Current tracked-task memory:/);
+  assert.match(claudeSessionB.hookSpecificOutput.additionalContext, /Lightweight\/stateless work skips receipt, task artifacts, memory\/logs, and separate QA/);
 
   const unchangedClaudePrompt = run(hookScript, ["--provider", "claude", "--mode", "task"], {
     cwd: temp,
@@ -125,6 +126,7 @@ export async function hooks(harness) {
     hook_event_name: "SessionStart",
   });
   assert.match(hookUnknown.hookSpecificOutput.additionalContext, /Session requester is unknown/);
+  assert.match(hookUnknown.hookSpecificOutput.additionalContext, /Resolve it only after the operation selects tracked work/);
   assert.doesNotMatch(hookUnknown.hookSpecificOutput.additionalContext, /Confirmed session requester: Bob/);
 
   run(workspaceScript, ["identify", "--cwd", temp, "--session", "transcript-fallback.jsonl", "--owner", "Carol", "--provider", "gemini"]);
@@ -172,6 +174,9 @@ export async function hooks(harness) {
   assert.match(subagentHook.hookSpecificOutput.additionalContext, /base commit/);
   assert.match(subagentHook.hookSpecificOutput.additionalContext, /Native agent-thread activity is the primary progress channel/);
   assert.match(subagentHook.hookSpecificOutput.additionalContext, /CLI \/agent/);
-  assert.match(subagentHook.hookSpecificOutput.additionalContext, /only when the handoff explicitly declares it as a fallback/);
+  assert.match(subagentHook.hookSpecificOutput.additionalContext, /only when the handoff explicitly declares a fallback/);
+  assert.match(subagentHook.hookSpecificOutput.additionalContext, /meaningful phase\/status transitions/);
+  assert.match(subagentHook.hookSpecificOutput.additionalContext, /never write per step, tool call, file read, or unchanged poll/);
+  assert.doesNotMatch(subagentHook.hookSpecificOutput.additionalContext, /one line per ordered step/);
   assert.doesNotMatch(subagentHook.hookSpecificOutput.additionalContext, /First action before any work: append your identity line/);
 }

@@ -45,7 +45,7 @@
     },
     "qa.md": {
       "template": "qa.md",
-      "purpose": "Independent verification-only QA evidence with product artifacts read-only.",
+      "purpose": "Tracked QA evidence under the canonical product-read-only verifier contract.",
       "requiredForCompletion": true,
       "requiredFields": [
         { "label": "Status", "enum": ["passed", "failed", "blocked", "not-applicable"] },
@@ -124,7 +124,7 @@
   "qaFullTriggers": [
     "commit, publish, or release boundary",
     "public contract, data behavior, generated-code regeneration, or migration",
-    "retest after failed QA",
+    "same-task full re-QA after a qa-finding",
     "third consecutive passed-fast closure for the same coverage key",
     "authorized decision-owner request"
   ]

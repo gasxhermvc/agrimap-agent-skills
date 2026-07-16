@@ -159,3 +159,5 @@ Stabilization gate:
 - reuse index and consumer links current;
 - no unchecked cleanup hidden inside a bug-fix task;
 - remaining debt is prioritized with impact and owner decision.
+
+For a release evaluation after changing this frontend discipline or its golden guidance, run [fe-scenarios.md](evals/fe-scenarios.md). Do not load the eval catalog during ordinary frontend work.

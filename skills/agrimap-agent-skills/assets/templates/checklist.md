@@ -10,5 +10,5 @@
 - [ ] Smallest complete implementation/analysis finished.
 - [ ] Changed points and nearby regressions checked.
 - [ ] Glossary-defined proportional-verification tier recorded and passed.
-- [ ] Independent verification-only QA reopened product artifacts, sampled claimed checks, wrote only workflow evidence, and passed.
+- [ ] Canonical tracked QA passed with required evidence.
 - [ ] Task result, memory, knowledge/decisions, and logs updated.

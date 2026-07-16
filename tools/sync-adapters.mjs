@@ -13,6 +13,7 @@ import {
   operationEntrypointPath,
   renderAliasSkill,
   renderGeminiCommandPrompt,
+  renderOperationIndex,
   renderOperationEntrypoint,
 } from "./operation-entrypoints.mjs";
 
@@ -34,6 +35,11 @@ await mkdir(operationEntrypointsDirectory, { recursive: true });
 for (const item of operations.operations) {
   await writeFile(operationEntrypointPath(canonicalSkill, item), renderOperationEntrypoint(item), "utf8");
 }
+await writeFile(
+  path.join(canonicalSkill, "references", "operation-index.md"),
+  renderOperationIndex(operations),
+  "utf8",
+);
 const taskArtifactSchema = await loadTaskArtifactSchema(canonicalSkill);
 const schemaIssues = taskArtifactSchemaIssues(taskArtifactSchema);
 if (schemaIssues.length) throw new Error(`Invalid task artifact schema:\n- ${schemaIssues.join("\n- ")}`);
@@ -81,7 +87,7 @@ await writeFile(
   path.join(claudeManifestDirectory, "plugin.json"),
   `${JSON.stringify({
     name: "agrimap-agent-skills",
-    description: "Cross-agent AgriMap engineering workflows, patterns, memory, and QA",
+    description: "Routing skill plus dedicated one-operation AgriMap engineering skills",
     version: packageVersion,
     author: { name: "Billy" },
     hooks: "./hooks/claude-hooks.json",
@@ -196,7 +202,7 @@ await writeFile(
   `${JSON.stringify({
     name: "agrimap-agent-skills",
     version: packageVersion,
-    description: "Cross-agent AgriMap engineering workflows, patterns, memory, and QA",
+    description: "Routing skill plus dedicated one-operation AgriMap engineering skills",
   }, null, 2)}\n`,
   "utf8",
 );

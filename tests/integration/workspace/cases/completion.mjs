@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { LOG_EVENTS } from "../../../../skills/agrimap-agent-skills/scripts/log-events.mjs";
+import { LOG_EVENTS, QA_FAILED_EVENT } from "../../../../skills/agrimap-agent-skills/scripts/log-events.mjs";
 
 const logEventSet = new Set(LOG_EVENTS);
 
@@ -77,6 +77,10 @@ function validQa({ mode = "fast", fastSequence = "1" } = {}) {
 ## Commands and observed results
 
 - Targeted inspection passed.
+
+## Findings and attempt history
+
+- Any prior qa-finding was corrected by the assigned writer; this fresh independent QA context reran full verification when required.
 `;
 }
 
@@ -132,7 +136,7 @@ export async function completion(harness) {
   await writeFile(path.join(taskADirectory, "brief.md"), "# Task brief\n\n- Requested by: {{requested_by}}\n- Objective: Define before implementation.\n- Scope: <scope>\n- Non-goals: TODO\n", "utf8");
   await writeFile(path.join(taskADirectory, "checklist.md"), "# Checklist\n\n- [x] {{checklist_status}}\n- [x] <remaining-check>\n", "utf8");
   await writeFile(path.join(taskADirectory, "qa.md"), "# QA\n\n- Status: `passed|failed|blocked|not-applicable`\n- Product artifacts modified: <false>\n- Workflow artifacts written: {{qa_workflow_artifacts_written}}\n\n## Requirement evidence\n\n{{requirement_to_evidence}}\n\n## Commands and observed results\n\n{{verification}}\n", "utf8");
-  await writeFile(path.join(taskADirectory, "result.md"), "# Result\n\n- Outcome: `completed|qa-failed|blocked|cancelled`\n- Requested by: {{requested_by}}\n- QA status: `passed|failed|blocked|not-applicable`\n\n## Changes and verification\n\n{{files_behavior_and_evidence}}\n\n## Checklist and memory\n\n{{checklist_status}}\n", "utf8");
+  await writeFile(path.join(taskADirectory, "result.md"), `# Result\n\n- Outcome: \`completed|${QA_FAILED_EVENT}|blocked|cancelled\`\n- Requested by: {{requested_by}}\n- QA status: \`passed|failed|blocked|not-applicable\`\n\n## Changes and verification\n\n{{files_behavior_and_evidence}}\n\n## Checklist and memory\n\n{{checklist_status}}\n`, "utf8");
   const placeholderCompletion = spawn(workspaceScript, ["complete", "--cwd", temp, "--session", "session-a", "--task", "task-a"]);
   assert.equal(placeholderCompletion.status, 1);
   const placeholderValidation = JSON.parse(placeholderCompletion.stdout);
@@ -195,6 +199,9 @@ export async function completion(harness) {
   assert.equal(nonIndependent.ok, false);
   assert.equal(nonIndependent.contentFailures.some((failure) => failure.field === "QA identity" && failure.reason === "not-independent"), true);
 
+  const qaFinding = run(workspaceScript, ["checkpoint", "--cwd", temp, "--session", "session-a", "--task", "task-a", "--event", "qa-finding", "--summary", "Initial QA attempt found an in-scope defect"]);
+  assert.equal(qaFinding.ok, true);
+  assert.equal(JSON.parse(await readFile(taskAActivePath, "utf8")).taskId, "task-a");
   await writeFile(path.join(taskADirectory, "qa.md"), validQa({ mode: "full", fastSequence: "0" }), "utf8");
   await writeFile(path.join(taskADirectory, "result.md"), validResult({ mode: "full", boundary: "release" }), "utf8");
   assert.equal(run(workspaceScript, ["validate", "--cwd", temp, "--task", "task-a"]).ok, true);
@@ -243,7 +250,10 @@ export async function completion(harness) {
   await assert.rejects(readFile(path.join(temp, ".agrimap-agent", "runtime", "active", "session-a.json"), "utf8"));
   assert.equal(JSON.parse(await readFile(path.join(temp, ".agrimap-agent", "runtime", "active", "session-b.json"), "utf8")).taskId, "task-b");
   assert.match(await readFile(taskARecentPath, "utf8"), /Task A passed targeted inspection/);
-  assert.deepEqual((await readTaskLog("task-a")).at(-1).files, ["src/a.ts"]);
+  const completedTaskALog = await readTaskLog("task-a");
+  assert.equal(completedTaskALog.some((entry) => entry.event === "qa-finding"), true);
+  assert.equal(completedTaskALog.at(-1).event, "completed");
+  assert.deepEqual(completedTaskALog.at(-1).files, ["src/a.ts"]);
 
   const taskC = run(workspaceScript, ["start", "--cwd", temp, "--session", "session-a", "--task", "task-c", "--operation", "create-feature", "--title", "Implement task C and send it to QA"]);
   assert.equal(taskC.activeTask.requestedBy, "Alice");
@@ -279,21 +289,37 @@ export async function completion(harness) {
     verification: [],
   };
   await writeFile(taskCLogPath, `${JSON.stringify(invalidTaskCFileClaim)}\n${JSON.stringify(legacyTaskCFileClaim)}\n`, { encoding: "utf8", flag: "a" });
+  const qaFindingWithFiles = spawn(workspaceScript, [
+    "checkpoint", "--cwd", temp, "--session", "session-a", "--task", "task-c", "--event", "qa-finding",
+    "--summary", "QA found a defect", "--files", "src/c.ts",
+  ]);
+  assert.equal(qaFindingWithFiles.status, 1);
+  assert.equal(JSON.parse(qaFindingWithFiles.stdout).code, "QA_FINDING_PRODUCT_FILES_FORBIDDEN");
+  assert.equal(run(workspaceScript, [
+    "checkpoint", "--cwd", temp, "--session", "session-a", "--task", "task-c", "--event", "qa-finding",
+    "--summary", "First QA attempt found an in-scope defect",
+  ]).ok, true);
+  const repeatedQaFinding = spawn(workspaceScript, [
+    "checkpoint", "--cwd", temp, "--session", "session-a", "--task", "task-c", "--event", "qa-finding",
+    "--summary", "Fresh full re-QA still failed",
+  ]);
+  assert.equal(repeatedQaFinding.status, 1);
+  assert.equal(JSON.parse(repeatedQaFinding.stdout).code, "QA_CORRECTION_LIMIT");
   await writeFile(path.join(taskCDirectory, "qa.md"), "# QA\n\n- Status: failed\n\nReproducible defect.\n", "utf8");
-  await writeFile(path.join(taskCDirectory, "result.md"), "# Result\n\n- Outcome: `qa-failed`\n", "utf8");
+  await writeFile(path.join(taskCDirectory, "result.md"), `# Result\n\n- Outcome: \`${QA_FAILED_EVENT}\`\n`, "utf8");
   const nextPrompt = path.join(temp, ".agrimap-agent", "prompts", "task-c-fix", "executor.prompt.md");
   await mkdir(path.dirname(nextPrompt), { recursive: true });
   await writeFile(nextPrompt, "# Proposed correction prompt\n", "utf8");
   const closedC = run(workspaceScript, [
-    "close", "--cwd", temp, "--session", "session-a", "--task", "task-c", "--status", "qa-failed",
+    "close", "--cwd", temp, "--session", "session-a", "--task", "task-c", "--status", QA_FAILED_EVENT,
     "--next-prompt", ".agrimap-agent/prompts/task-c-fix/executor.prompt.md",
   ]);
   assert.equal(closedC.complete, false);
-  assert.equal(closedC.status, "qa-failed");
+  assert.equal(closedC.status, QA_FAILED_EVENT);
   await assert.rejects(readFile(path.join(temp, ".agrimap-agent", "runtime", "active", "session-a.json"), "utf8"));
-  assert.match(await readFile(path.join(temp, ".agrimap-agent", "memory", "recent", "task-c.md"), "utf8"), /qa-failed/);
+  assert.match(await readFile(path.join(temp, ".agrimap-agent", "memory", "recent", "task-c.md"), "utf8"), new RegExp(QA_FAILED_EVENT));
   const taskCLog = await readTaskLog("task-c");
-  assert.equal(taskCLog.at(-1).event, "qa-failed");
+  assert.equal(taskCLog.at(-1).event, QA_FAILED_EVENT);
   assert.deepEqual(taskCLog.at(-1).files, ["src/c.ts"]);
   assert.equal(taskCLog.at(-1).files.includes("src/evil.ts"), false);
   assert.equal(taskCLog.at(-1).files.includes("src/legacy.ts"), false);

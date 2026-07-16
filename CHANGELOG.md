@@ -2,11 +2,18 @@
 
 ## 0.1.2 - 2026-07-16
 
+- Reduced subagent fallback progress from per-step heartbeat writes to meaningful state transitions, with native threads remaining the primary trace.
+- Added a lightweight lane for bounded work: no requester receipt, task artifacts, memory/log writes, separate QA, or delegation; scope growth promotes to tracked before further product writes.
+- Centralized lifecycle selection in `runtime-core.md` and tracked QA/correction/completion policy in `qa-and-done.md`, replacing copies in workflows, roles, delegation, and prompt references.
+- Allowed one bounded in-scope correction plus a fresh full verification pass in the same tracked task; repeated or material/scope failures use terminal closure.
+- Excluded the byte-for-byte generated plugin mirror from default ripgrep searches while retaining full package validation.
+- Reduced `agrimap-agent-skills` to a routing-only skill; each of the 16 generated `agm-*` skills now owns exactly one operation and never falls back to the router for execution.
+- Added a generated operation routing index and fail-closed `PACKAGE_ENTRYPOINT_MISSING` behavior for absent/corrupt compact contracts.
 - Isolated Codex, Claude, and Gemini hook discovery so each host records only its own provider.
 - Added runtime provider correction for stale cross-loaded Codex/Claude hook artifacts.
 - Added a normative workflow glossary separating requester from decision-owner authority and defining substantive work, checkpoint units, material/complex/small work, proportional verification, verification-only QA, the exact two-fast-then-full QA counter, and configured versus actual model identity.
 - Centralized task artifact fields, required sections, QA/full-release rules, templates, generated documentation, and completion validation in `assets/task-artifact-schema.json`.
-- Added historical QA-counter enforcement, independent QA identity checks, workflow-write/product-read-only evidence, and schema/template/docs contract tests.
+- Added historical QA-counter enforcement, separate verifier identity checks, workflow-write/product-read-only evidence, and schema/template/docs contract tests.
 - Replaced stale Codex subagent fallback guidance with the current native app/CLI/IDE workflow, including `/agent`, inspectable threads, descriptive labels, and a mandatory non-silent 60-second status cadence.
 - Changed generated aliases and Gemini commands from umbrella reloads to compact runtime-core + glossary + operation-specific entrypoints generated from `config/operations.json`.
 - Bumped the package version so provider-hook fixes replace cached `0.1.1` installations.

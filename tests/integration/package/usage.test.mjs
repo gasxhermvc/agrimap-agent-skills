@@ -8,8 +8,10 @@ const read = (relativePath) => readFile(path.join(projectRoot, relativePath), "u
 const operations = JSON.parse(await read("config/operations.json")).operations;
 const usage = await read("docs/USAGE.md");
 const canonical = await read("skills/agrimap-agent-skills/SKILL.md");
+const operationIndex = await read("skills/agrimap-agent-skills/references/operation-index.md");
 const platformSyntax = await read("skills/agrimap-agent-skills/references/platform-syntax.md");
 const rootIgnore = await read(".gitignore");
+const rgIgnore = await read(".rgignore");
 const codexManifest = JSON.parse(await read("plugins/agrimap-agent-skills/.codex-plugin/plugin.json"));
 const claudeManifest = JSON.parse(await read("plugins/agrimap-agent-skills/.claude-plugin/plugin.json"));
 const geminiManifest = JSON.parse(await read("gemini-extension.json"));
@@ -28,19 +30,25 @@ async function filesUnder(directory) {
 test("published aliases use operation-specific progressive-disclosure entrypoints", async () => {
   assert.ok(operations.some((item) => item.name === "agm-history" && item.operation === "history"));
   for (const item of operations) {
+    assert.ok(operationIndex.includes(`| \`${item.name}\` | \`${item.operation}\` |`));
     const aliasSkill = await read(`plugins/agrimap-agent-skills/skills/${item.name}/SKILL.md`);
     const geminiCommand = await read(`commands/${item.name}.toml`);
     assert.match(aliasSkill, /references\/runtime-core\.md/);
     assert.match(aliasSkill, /references\/glossary\.md/);
     assert.ok(aliasSkill.includes(`references/operations/${item.operation}.md`));
-    assert.ok(aliasSkill.includes(`Run operation \`${item.operation}\``));
-    assert.match(aliasSkill, /Do \*\*not\*\* read `\.\.\/agrimap-agent-skills\/SKILL\.md` during a normal alias invocation/);
+    assert.ok(aliasSkill.includes(`Run only operation \`${item.operation}\``));
+    assert.match(aliasSkill, /Do \*\*not\*\* read `\.\.\/agrimap-agent-skills\/SKILL\.md` during operation execution/);
+    assert.match(aliasSkill, /never fall back to the router/);
     assert.match(aliasSkill, /standalone `-h` or `--help` token/);
     assert.ok(geminiCommand.includes(`operation ${item.operation}`));
     assert.match(geminiCommand, /compact progressive-disclosure entrypoint/);
-    assert.match(geminiCommand, /do not load the umbrella SKILL\.md during a normal alias invocation/);
+    assert.match(geminiCommand, /do not load the routing SKILL\.md or combine another operation/);
+    assert.match(geminiCommand, /never fall back to the router/);
     assert.match(geminiCommand, /standalone -h or --help token/);
-    assert.ok((await read(`skills/agrimap-agent-skills/references/operations/${item.operation}.md`)).includes(`Operation: \`${item.operation}\``));
+    const operationEntrypoint = await read(`skills/agrimap-agent-skills/references/operations/${item.operation}.md`);
+    assert.ok(operationEntrypoint.includes(`Operation: \`${item.operation}\``));
+    assert.ok(operationEntrypoint.includes(`Lifecycle: \`${item.lifecycle}\``));
+    assert.match(operationEntrypoint, /PACKAGE_ENTRYPOINT_MISSING/);
     assert.ok(usage.includes(`\`${item.name}\``));
     assert.ok(usage.includes(`$${item.name} `));
   }
@@ -48,42 +56,58 @@ test("published aliases use operation-specific progressive-disclosure entrypoint
   const commands = (await readdir(path.join(projectRoot, "commands"))).filter((name) => name.endsWith(".toml"));
   assert.deepEqual(commands.sort(), operations.map((item) => `${item.name}.toml`).sort());
   assert.equal(operations.some((item) => item.name === "agm-fe-engineer"), false);
+  assert.deepEqual(
+    Object.fromEntries(["lightweight-eligible", "tracked-only", "stateless"].map((lifecycle) => [
+      lifecycle,
+      operations.filter((item) => item.lifecycle === lifecycle).length,
+    ])),
+    { "lightweight-eligible": 11, "tracked-only": 4, stateless: 1 },
+  );
+  assert.match(operationIndex, /not an execution contract/);
 });
 
-test("plugin umbrella is a byte-for-byte generated mirror of the canonical skill", async () => {
+test("plugin routing skill and shared resources mirror the canonical source", async () => {
   const canonicalRoot = path.join(projectRoot, "skills", "agrimap-agent-skills");
   const mirrorRoot = path.join(projectRoot, "plugins", "agrimap-agent-skills", "skills", "agrimap-agent-skills");
   const canonicalFiles = (await filesUnder(canonicalRoot)).map((file) => path.relative(canonicalRoot, file)).sort();
   const mirrorFiles = (await filesUnder(mirrorRoot)).map((file) => path.relative(mirrorRoot, file)).sort();
-  assert.deepEqual(mirrorFiles, canonicalFiles, "Run npm run sync: plugin umbrella file list drifted from canonical.");
+  assert.deepEqual(mirrorFiles, canonicalFiles, "Run npm run sync: plugin routing/shared file list drifted from canonical.");
   for (const relativeFile of canonicalFiles) {
     assert.deepEqual(
       await readFile(path.join(mirrorRoot, relativeFile)),
       await readFile(path.join(canonicalRoot, relativeFile)),
-      `Run npm run sync: plugin umbrella content drifted at ${relativeFile}.`,
+      `Run npm run sync: plugin routing/shared content drifted at ${relativeFile}.`,
     );
   }
   assert.match(await read("plugins/agrimap-agent-skills/README.md"), /Do not edit generated copies directly/);
 });
 
-test("usage documentation covers activation, help, and provider syntax", async () => {
-  assert.match(canonical, /AgriMap skill active/);
-  assert.match(canonical, /activation receipt/i);
-  assert.match(canonical, /standalone `-h` or `--help` token/);
+test("usage documentation separates routing from operation activation and help", async () => {
+  assert.match(canonical, /AgriMap router active/);
+  assert.match(canonical, /Perform one task only/);
+  assert.match(canonical, /For `-h`, `--help`/);
+  assert.doesNotMatch(canonical, /## Start every task|## Delegate deliberately|## Verify and close/);
+  assert.ok(canonical.split(/\r?\n/).length <= 80);
   assert.doesNotMatch(canonical, /\.\.\/\.\.\/docs\/USAGE\.md/);
   assert.doesNotMatch(platformSyntax, /\.\.\/\.\.\/\.\.\/docs\/USAGE\.md/);
-  assert.match(platformSyntax, /umbrella-only standalone: `\/agrimap-agent-skills operation=analyze -h`/);
+  assert.match(platformSyntax, /router catalog: `\/agrimap-agent-skills:agrimap-agent-skills -h`/);
   assert.match(usage, /Larger text \/ ข้อความยาว/);
   assert.match(usage, /รูปภาพและ visual reference/);
   assert.match(usage, /Attachments, pointed files, directories, and exact lines/);
   assert.match(usage, /Automated smoke test vs\. live-provider check/);
   assert.match(usage, /\$agm-analyze -h/);
   assert.match(usage, /\/agrimap-agent-skills:agm-analyze -h/);
-  assert.match(usage, /\/agrimap-agent-skills operation=analyze -h/);
+  assert.match(usage, /\$agrimap-agent-skills -h/);
+  assert.match(usage, /\/agrimap-agent-skills:agrimap-agent-skills -h/);
+  assert.doesNotMatch(usage, /agrimap-agent-skills operation=analyze/);
   assert.match(usage, /Start-Process "https:\/\/github\.com\/gasxhermvc\/agrimap-agent-skills\/blob\/main\/docs\/USAGE\.md"/);
   assert.match(usage, /code \.\\docs\\USAGE\.md/);
   assert.match(usage, /notepad \.\\docs\\USAGE\.md/);
   assert.ok(rootIgnore.split(/\r?\n/).includes(".agrimap-agent/"));
+  assert.ok(rgIgnore.split(/\r?\n/).includes("/plugins/agrimap-agent-skills/skills/agrimap-agent-skills/**"));
+  assert.match(usage, /ไม่เขียนทุก step\/tool call/);
+  assert.match(usage, /lightweight-eligible/);
+  assert.match(usage, /ไม่ออก receipt, ไม่สร้าง brief\/checklist\/memory\/log\/QA\/prompt\/result/);
   assert.equal(await read("plugins/agrimap-agent-skills/docs/USAGE.md"), usage);
 });
 

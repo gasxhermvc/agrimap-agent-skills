@@ -1,5 +1,5 @@
 {
   "name": "agrimap-agent-skills",
   "version": "0.1.2",
-  "description": "Cross-agent AgriMap engineering workflows, patterns, memory, and QA"
+  "description": "Routing skill plus dedicated one-operation AgriMap engineering skills"
 }
