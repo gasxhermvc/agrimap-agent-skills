@@ -892,8 +892,9 @@ async function priorPassedQaRuns(state, currentTaskId, coverageKey) {
     const qa = await readFile(path.join(state, "tasks", taskId, "qa.md"), "utf8").catch(() => "");
     if (plainMarkdownValue(markdownField(qa, "Status")).toLowerCase() !== "passed") continue;
     if (plainMarkdownValue(markdownField(qa, "Coverage key")).toLowerCase() !== normalizedCoverageKey) continue;
-    const mode = plainMarkdownValue(markdownField(qa, "QA mode")).toLowerCase();
-    if (!new Set(["fast", "full"]).has(mode)) continue;
+    const recordedMode = plainMarkdownValue(markdownField(qa, "QA mode")).toLowerCase();
+    const mode = recordedMode === "fast" ? "light" : recordedMode;
+    if (!new Set(["light", "full"]).has(mode)) continue;
     runs.push({ taskId, timestamp, mode });
   }
   return runs.sort((left, right) => left.timestamp - right.timestamp || left.taskId.localeCompare(right.taskId));
@@ -1024,22 +1025,22 @@ async function validate(root, args) {
     contentFailures.push({ file: "qa.md", field: "QA identity", reason: "not-independent" });
   }
 
-  const fastSequence = String(artifactFields["qa.md"]?.[rules.fastSequenceField] || "");
-  if (regulated && qaMode === "full" && fastSequence !== String(rules.fullFastSequence)) {
-    contentFailures.push({ file: "qa.md", field: rules.fastSequenceField, reason: "full-must-reset-counter" });
+  const lightSequence = String(artifactFields["qa.md"]?.[rules.lightSequenceField] || "");
+  if (regulated && qaMode === "full" && lightSequence !== String(rules.fullLightSequence)) {
+    contentFailures.push({ file: "qa.md", field: rules.lightSequenceField, reason: "full-must-reset-counter" });
   }
-  if (regulated && qaMode === "fast" && !(rules.fastAllowedSequences || []).map(String).includes(fastSequence)) {
-    contentFailures.push({ file: "qa.md", field: rules.fastSequenceField, reason: "fast-sequence-limit" });
+  if (regulated && qaMode === "light" && !(rules.lightAllowedSequences || []).map(String).includes(lightSequence)) {
+    contentFailures.push({ file: "qa.md", field: rules.lightSequenceField, reason: "light-sequence-limit" });
   }
   const coverageKey = artifactFields["qa.md"]?.[rules.coverageKeyField] || "";
   const priorQaRuns = regulated ? await priorPassedQaRuns(state, taskId, coverageKey) : [];
-  let priorConsecutiveFast = 0;
-  for (const run of priorQaRuns) priorConsecutiveFast = run.mode === "full" ? 0 : priorConsecutiveFast + 1;
-  const expectedFastSequence = priorConsecutiveFast + 1;
-  if (regulated && qaMode === "fast" && priorConsecutiveFast >= (rules.fastAllowedSequences || []).length) {
+  let priorConsecutiveLight = 0;
+  for (const run of priorQaRuns) priorConsecutiveLight = run.mode === "full" ? 0 : priorConsecutiveLight + 1;
+  const expectedLightSequence = priorConsecutiveLight + 1;
+  if (regulated && qaMode === "light" && priorConsecutiveLight >= (rules.lightAllowedSequences || []).length) {
     contentFailures.push({ file: "qa.md", field: rules.qaModeField, reason: "historical-full-required" });
-  } else if (regulated && qaMode === "fast" && fastSequence !== String(expectedFastSequence)) {
-    contentFailures.push({ file: "qa.md", field: rules.fastSequenceField, reason: "historical-sequence-mismatch" });
+  } else if (regulated && qaMode === "light" && lightSequence !== String(expectedLightSequence)) {
+    contentFailures.push({ file: "qa.md", field: rules.lightSequenceField, reason: "historical-sequence-mismatch" });
   }
 
   const resultQaStatus = String(artifactFields["result.md"]?.[rules.resultQaStatusField] || "").toLowerCase();
@@ -1109,8 +1110,8 @@ async function validate(root, args) {
     qaCounter: {
       coverageKey,
       priorPassedRuns: priorQaRuns,
-      priorConsecutiveFast,
-      expectedFastSequence,
+      priorConsecutiveLight,
+      expectedLightSequence,
     },
     taskLogged,
     createdRequestRecorded,

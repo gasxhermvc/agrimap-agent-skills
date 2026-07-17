@@ -20,7 +20,7 @@ Every `standard` or `regulated` task brief and generated prompt records `request
 - **Workflow artifact**: files used only to run and audit this workflow, including `.agrimap-agent/tasks/**`, prompts, memory, decisions, knowledge, logs, and ignored runtime progress/session files.
 - **Preparatory inspection**: locating the project root; reading workflow configuration, task state, and Git status; or checking whether required input exists. It is non-mutating and does not advance the technical objective.
 - **Substantive work**: any task-specific reading or diagnostic that advances the objective, creating task/workflow state, analysis, planning, delegation, QA, editing a product artifact, or causing an external side effect. Target-code reading, task-specific grep, tests, typechecks, and diagnostics are substantive even when non-mutating. Preparatory inspection and help-only output are not.
-- **Verification-only QA**: the `regulated` verifier defined once in [qa-and-done.md](qa-and-done.md); “read-only” describes product artifacts, not its bounded workflow-evidence writes.
+- **Verification-only QA**: the product-read-only verifier defined once in [qa-and-done.md](qa-and-done.md). Direct QA defaults to `depth=light`; regulated QA adds bounded workflow-evidence writes.
 
 ## Task size, decisions, and checkpoints
 
@@ -35,18 +35,18 @@ Every `standard` or `regulated` task brief and generated prompt records `request
 “Proportional verification” means the minimum evidence tier that covers every changed risk, never merely “some tests”:
 
 1. Workflow/docs-only: format/schema/link checks plus the directly affected contract test.
-2. Small single-contract product change: relevant parse/typecheck/lint plus targeted primary and affected failure-path tests.
-3. Complex or material product change: all relevant static/build checks plus targeted tests and the affected integration/regression suite.
-4. Public contract, data/migration, generated-code regeneration, or commit/publish/release boundary: `qa_mode=full` and the required release/data evidence; forbidden QA side effects remain the executor/Leader's responsibility.
+2. Small single-contract product change: relevant static evidence plus targeted primary and affected failure-path evidence.
+3. Complex or material product change: broader static evidence and the affected integration/regression evidence already produced by the writer.
+4. An explicit commit/publish/release boundary or explicit highest-verification request: `qa_mode=full`; forbidden QA side effects remain the executor/Leader's responsibility.
 
-Record each selected or omitted check with its risk rationale. If a required tier cannot run, report `blocked` or an explicit limitation; do not silently lower the tier.
+Record each selected or omitted check with its risk rationale. During `agm-qa`, the executable allowlist in `qa-and-done.md` overrides generic verification options. If required evidence cannot run, report `blocked` or an explicit limitation; do not silently lower the tier.
 
 ## QA depth counter
 
 - **QA coverage key**: a stable service, library, application area, database object family, or repository-relative module path used to decide whether QA runs cover the same area.
-- A `passed` `full` run resets the fast counter to `0` for every coverage key it covers.
-- A `passed` `fast` run increments the counter for each coverage key. At most two consecutive passed-fast task closures are allowed for one key; the third closure for that key must use `full`.
-- Failed, blocked, or not-applicable QA does not reset or increment the passed-fast counter. Record `coverage_key` and `fast_sequence` in `qa.md`.
+- A `passed` `full` run resets the light counter to `0` for every coverage key it covers.
+- A `passed` `light` run increments the counter for each coverage key. At most two consecutive passed-light tracked closures are allowed for one key; the third closure for that key must use `full`.
+- Failed, blocked, or not-applicable QA does not reset or increment the passed-light counter. Record `Coverage key` and `Light sequence` in tracked `qa.md`.
 
 ## Model identity
 

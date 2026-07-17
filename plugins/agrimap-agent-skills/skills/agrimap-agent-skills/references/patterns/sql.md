@@ -21,10 +21,11 @@ Use golden AgriMap structure above a neighboring project's structure. Existing p
 1. Owner-approved requirements and decisions for the current task.
 2. Active database schema, callers, result sets, relationships, and deployed behavior as compatibility facts. Preserve these unless the owner approves a behavior or data change.
 3. This normalized SQL contract plus matching `current` entries under `golden/sql/` for structure, naming, types, comments, and file organization.
-4. Neighboring project structure only where the normalized contract and selected golden evidence are silent.
-5. `legacy-compatible` golden evidence and general engineering practice.
+4. Matching `legacy-compatible` or `unverified` golden evidence for its declared structural scope, after applying the conflict matrix; never copy a documented defect or infer business/data semantics from it.
+5. Neighboring project structure only where the normalized contract and all applicable golden evidence are silent.
+6. General engineering practice.
 
-When project structure conflicts with golden structure, use golden structure for every new artifact and report the mismatch; do not copy the project inconsistency. Never use structural precedence to change an existing deployed data or behavior contract without authority.
+When project structure conflicts with applicable golden structure after conflict resolution, use the golden structure for every new artifact and report the mismatch; do not copy the project inconsistency. This precedence includes matching `legacy-compatible` structural evidence, but never promotes its business semantics. Never use structural precedence to change an existing deployed data or behavior contract without authority.
 
 ## Output artifact contract
 
@@ -234,6 +235,22 @@ Name every procedure by its behavior and keep the filename identical to the obje
 
 Reject an invented suffix for these behaviors. A procedure file contains one procedure only. Use the selected current golden procedure shell for the comment block: object header, `Author`, `Create date`, `Description`, runnable `Data test`, `Modified by`, `Modified date`, and modification `Description`. Preserve complete `PI_*` inputs and `PO_*` outputs required by the active contract.
 
+### Actor and target user parameters
+
+- `@PI_SESSION_USER_ID NUMERIC(38, 0)` (or legacy `@SESSION_USER_ID`) is the actor authenticated in the current session—the user performing the operation. Use it for authorization context and audit writes such as `USER_CREATED` or `USER_MODIFIED`.
+- `@PI_USER_ID NUMERIC(38, 0)` (or legacy `@USER_ID`) is the subject/target user that the operation searches, reads, updates, or deletes. Use it in the target predicate such as `WHERE [USER_ID] = @PI_USER_ID`.
+- Keep both parameters when actor and target are distinct concepts. Never substitute session user for target user or assume they are equal; a self-service caller may pass the same numeric value while the procedure contract still preserves both roles.
+
+Example:
+
+```sql
+WHERE [USER_ID] = @PI_USER_ID;              -- target record
+
+UPDATE [agrimap_app].[UM_USER]
+SET [USER_MODIFIED] = @PI_SESSION_USER_ID   -- actor/audit identity
+WHERE [USER_ID] = @PI_USER_ID;
+```
+
 ### Stored procedure section comments
 
 Every new procedure uses compact three-line section comments for control-flow gates and major business steps. Copy the separator exactly, keep the three lines adjacent, and align the block with the statement it describes:
@@ -348,9 +365,9 @@ For `readability-organization` and `strict-preserve-logic`, collection is contra
 
 ## Golden examples and conflicts
 
-The SQL collection manifest covers every file under `golden/sql/`. It intentionally mixes current AgriMap schema/deployment references, one curated idempotent message example, and immutable legacy-compatible evidence. Read `golden/sql/manifest.json` before selecting an entry. Use the normalized contract in this file plus a matching `current` entry above neighboring project structure.
+The SQL collection manifest covers every file under `golden/sql/`. It intentionally mixes current AgriMap schema/deployment references, one curated idempotent message example, and immutable legacy-compatible evidence. Read `golden/sql/manifest.json` before selecting an entry. Use the normalized contract and every applicable golden structural rule, after conflict resolution, above neighboring project structure.
 
-Read [conflict-resolution.md](conflict-resolution.md) before using them. Legacy entries contain competing styles and business semantics, including default constraints, splitter/cursor choices, cascade actions, fixed seed IDs, duplicate index candidates, and replace-all role/permission updates. Current entries and this normalized contract override project structure for new artifacts; active schema, callers, and deployed behavior remain compatibility facts. Never copy business semantics from an example without project evidence and, where logical/data behavior changes, owner approval.
+Read [conflict-resolution.md](conflict-resolution.md) before using them. Legacy entries contain competing styles and business semantics, including default constraints, splitter/cursor choices, cascade actions, fixed seed IDs, duplicate index candidates, and replace-all role/permission updates. This normalized contract and applicable golden structural evidence override project structure for new artifacts; the conflict matrix removes known defects before that precedence is applied. Active schema, callers, and deployed behavior remain compatibility facts. Never copy business semantics from an example without project evidence and, where logical/data behavior changes, owner approval.
 
 For release evaluation after changing this SQL discipline or its golden guidance, run [sql-scenarios.md](../evals/sql-scenarios.md). Do not load the eval catalog during ordinary SQL work.
 

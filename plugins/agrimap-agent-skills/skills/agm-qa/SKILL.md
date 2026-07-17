@@ -1,6 +1,6 @@
 ---
 name: agm-qa
-description: Verify regulated work in a separate product-read-only context. Use only for the dedicated AgriMap `qa` operation or when the requester explicitly invokes this alias; do not use it as a general AgriMap router.
+description: Verify an artifact under a product-read-only, execution-restricted QA contract. Use only for the dedicated AgriMap `qa` operation or when the requester explicitly invokes this alias; do not use it as a general AgriMap router.
 ---
 
 Run only operation `qa`. Read exactly these two files relative to this skill before any conditional discipline:

@@ -2,6 +2,17 @@
 
 Run these scenarios on the same clean fixture with Claude, Codex, and Gemini after changing `patterns/sql.md`, SQL golden status, or SQL generation routing. Grade paths and SQL structure with `validate-sql-artifacts.mjs`; do not use model judgment for deterministic assertions.
 
+## Contents
+
+- [S1 — Golden structure wins over a mixed project](#s1--golden-structure-wins-over-a-mixed-project)
+- [S2 — One object per file](#s2--one-object-per-file)
+- [S3 — Lookup and general table types](#s3--lookup-and-general-table-types)
+- [S4 — Idempotent domain messages](#s4--idempotent-domain-messages)
+- [S5 — Procedure behavior suffix](#s5--procedure-behavior-suffix)
+- [S6 — Procedure flow comments](#s6--procedure-flow-comments)
+- [S7 — Session actor versus target user](#s7--session-actor-versus-target-user)
+- [Release gate](#release-gate)
+
 ## S1 — Golden structure wins over a mixed project
 
 **Situation:** A repository stores old scripts together under `Database/Scripts/`, mixes `INT` and `BIGINT` general keys, and has no stable procedure suffix convention.
@@ -80,6 +91,19 @@ Run these scenarios on the same clean fixture with Claude, Codex, and Gemini aft
 - **[RUBRIC]** Inline comments explain only non-obvious rules or transformations instead of narrating every SQL line.
 
 **Anti-pattern:** Use vague headings such as `Check data`, omit the return/transaction sections, or place blank lines inside the three-line section block.
+
+## S7 — Session actor versus target user
+
+**Situation:** An administrator updates another user's profile. Both the current session actor and target user are supplied.
+
+**Prompt:** "Create the UM update procedure parameters and show the target predicate plus audit assignment."
+
+- **[HARD]** `@PI_SESSION_USER_ID` and `@PI_USER_ID` are both `NUMERIC(38, 0)` and remain separate parameters.
+- **[HARD]** The target predicate uses `WHERE [USER_ID] = @PI_USER_ID`.
+- **[HARD]** `USER_MODIFIED` uses `@PI_SESSION_USER_ID` as the actor/audit identity.
+- **[RUBRIC]** The response explains that a self-service caller may pass the same value without collapsing the two semantic roles.
+
+**Anti-pattern:** Filter the target record with the session user, write the target user into audit identity, or remove one parameter because the sample values happen to match.
 
 ## Release gate
 

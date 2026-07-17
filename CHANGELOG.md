@@ -6,6 +6,9 @@
 - Added AgriMap lookup/general key types, audit fields, stored-procedure suffixes, guarded `LUT_APP_MESSAGES (ID, DESCR)` inserts, a deterministic SQL artifact validator, and cross-provider SQL scenarios.
 - Captured the host-reported model in session hook context and propagated it to requester identification instead of reporting `unknown` when the host supplies a model.
 - Standardized stored-procedure section comments for validation gates, transaction boundaries, numbered business steps, and `PO_DATA` returns, with deterministic validation.
+- Distinguished SQL session actor (`SESSION_USER_ID`) from target subject (`USER_ID`) and documented their audit-versus-filter usage.
+- Made QA direct/light by default, renamed tracked fast QA to light QA, restricted full selection to explicit triggers, and added a closed QA execution allowlist that forbids database/runtime validation.
+- Made QA depth, mode, tools, and acceptance provider-neutral so reasoning-heavy model labels cannot silently broaden verification.
 - Split alias loading into `lifecycle-core.md` plus exactly one operation contract, with glossary/discipline references conditional.
 - Added enforced `light|standard|regulated` workflow depth: light is stateless, standard omits separate QA, and regulated retains the full gate.
 - Replaced atomic-task checkpoint guidance with four milestone types and command-level rejection of created/terminal checkpoint events.

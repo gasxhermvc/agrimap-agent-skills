@@ -123,6 +123,22 @@ function lineNumberAt(sql, index) {
   return sql.slice(0, index).split(/\r?\n/).length;
 }
 
+function validateUserParameterTypes(sql, file, issues) {
+  const source = stripComments(sql);
+  const bodyIndex = source.search(/\bAS\s+BEGIN\b/i);
+  const header = bodyIndex >= 0 ? source.slice(0, bodyIndex) : source;
+  for (const [parameter, issueCode] of [
+    ["SESSION_USER_ID", "SESSION_USER_ID_TYPE_INVALID"],
+    ["USER_ID", "USER_ID_TYPE_INVALID"],
+  ]) {
+    const pattern = new RegExp(`@(?:PI_)?${parameter}\\s+\\[?([A-Z][A-Z0-9_]*)\\]?\\s*(?:\\(\\s*(\\d+)\\s*,\\s*(\\d+)\\s*\\))?`, "gi");
+    for (const match of header.matchAll(pattern)) {
+      const valid = match[1].toUpperCase() === "NUMERIC" && match[2] === "38" && match[3] === "0";
+      if (!valid) issues.push({ file, code: issueCode, message: `@${match[0].split(/\s+/)[0].slice(1)} must be NUMERIC(38, 0)` });
+    }
+  }
+}
+
 function validateProcedureComments(sql, file, issues) {
   const sections = procedureSections(sql);
   const code = maskCommentsPreserveLayout(sql);
@@ -271,7 +287,10 @@ export async function validateSqlArtifacts({ cwd = process.cwd(), files = [] } =
       if (tables.length) issues.push({ file: relative, code: "PROCEDURE_FILE_TABLE_FORBIDDEN", message: "procedure file must not define a table" });
       if (procedures.length === 1 && procedures[0] !== fileStem) issues.push({ file: relative, code: "PROCEDURE_FILENAME_MISMATCH", message: `filename ${fileStem}.sql must match procedure ${procedures[0]}` });
       if (!procedureSuffix(fileStem)) issues.push({ file: relative, code: "PROCEDURE_SUFFIX_INVALID", message: "procedure must end with _I, _U, _D, _Q, or _CHECK_Q" });
-      if (procedures.length === 1) validateProcedureComments(sql, relative, issues);
+      if (procedures.length === 1) {
+        validateUserParameterTypes(sql, relative, issues);
+        validateProcedureComments(sql, relative, issues);
+      }
       results.push({ file: relative, domain, kind, object: procedures[0] || null });
     }
   }

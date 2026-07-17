@@ -62,7 +62,7 @@ test("published aliases use operation-specific progressive-disclosure entrypoint
       depth,
       operations.filter((item) => item.depth.default === depth).length,
     ])),
-    { light: 12, standard: 1, regulated: 3 },
+    { light: 13, standard: 1, regulated: 2 },
   );
   assert.deepEqual(operations.find((item) => item.operation === "history").depth.allowed, ["light"]);
   assert.match(operationIndex, /not an execution contract/);

@@ -100,6 +100,8 @@ test("accepts canonical procedure comments for gates, steps, transactions, and P
   const root = await fixture(t);
   await put(root, "sql/DD/procedure/DD_DASHBOARD_WIDGET_I.sql", `
 CREATE PROCEDURE [agrimap_app].[DD_DASHBOARD_WIDGET_I]
+  @PI_SESSION_USER_ID NUMERIC(38, 0) = NULL,
+  @PI_USER_ID NUMERIC(38, 0) = NULL,
   @PI_WIDGET_TYPE_ID INT = NULL,
   @PO_DATA NUMERIC(38, 0) = NULL OUTPUT
 AS
@@ -154,6 +156,26 @@ END;
 
   const result = await validateSqlArtifacts({ cwd: root, files: ["sql/DD/procedure/DD_DASHBOARD_WIDGET_I.sql"] });
   assert.equal(result.ok, true, JSON.stringify(result.issues));
+});
+
+test("rejects actor and target user parameters with non-canonical types", async (t) => {
+  const root = await fixture(t);
+  await put(root, "sql/UM/procedure/UM_USER_Q.sql", `
+CREATE PROCEDURE [agrimap_app].[UM_USER_Q]
+  @PI_SESSION_USER_ID INT = NULL,
+  @PI_USER_ID BIGINT = NULL
+AS
+BEGIN
+  -- =============================================
+  -- Step 1: Query target user
+  -- =============================================
+  SELECT 1;
+END;
+`);
+  const result = await validateSqlArtifacts({ cwd: root, files: ["sql/UM/procedure/UM_USER_Q.sql"] });
+  const codes = new Set(result.issues.map((issue) => issue.code));
+  assert.ok(codes.has("SESSION_USER_ID_TYPE_INVALID"));
+  assert.ok(codes.has("USER_ID_TYPE_INVALID"));
 });
 
 test("rejects procedures whose control-flow gates have missing or vague comments", async (t) => {

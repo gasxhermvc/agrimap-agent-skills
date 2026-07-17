@@ -17,7 +17,7 @@ Use this file only to select one dedicated `agm-*` skill. It is not an execution
 | `agm-refactor-fe` | `refactor-fe` | Refactor frontend code using an explicit behavior mode | `product-write` | default `light`; allowed `light`, `standard`, `regulated` |
 | `agm-refactor-be` | `refactor-be` | Refactor backend code using an explicit behavior mode | `product-write` | default `light`; allowed `light`, `standard`, `regulated` |
 | `agm-refactor-sql` | `refactor-sql` | Refactor SQL using an explicit behavior mode | `product-write` | default `light`; allowed `light`, `standard`, `regulated` |
-| `agm-qa` | `qa` | Verify regulated work in a separate product-read-only context | `verification-only` | default `regulated`; allowed `regulated` |
+| `agm-qa` | `qa` | Verify an artifact under a product-read-only, execution-restricted QA contract | `verification-only` | default `light`; allowed `light`, `regulated` |
 | `agm-create-unit-test` | `create-unit-test` | Create target-specific unit or regression tests | `product-write` | default `light`; allowed `light`, `standard`, `regulated` |
 | `agm-create-feature` | `create-feature` | Create a target-specific FE, BE, batch, library, or SQL feature | `product-write` | default `light`; allowed `light`, `standard`, `regulated` |
 | `agm-create-prompt` | `create-prompt` | Create provider-specific Leader, executor, and QA prompts | `workflow-write-only` | default `regulated`; allowed `regulated` |

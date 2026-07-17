@@ -1,10 +1,10 @@
 # QA
 
 - Status: `passed|failed|blocked|not-applicable`
-- QA mode: `fast|full`
+- QA mode: `light|full`
 - QA mode reason: {{qa_mode_reason}}
 - Coverage key: {{qa_coverage_key}}
-- Fast sequence: `{{fast_sequence_0_1_or_2}}`
+- Light sequence: `{{light_sequence_0_1_or_2}}`
 - Patterns: {{loaded_pattern_files_or_none_with_reason}}
 - Requested by: {{requested_by}}
 - Decision owner: {{decision_owner_or_not_required}}

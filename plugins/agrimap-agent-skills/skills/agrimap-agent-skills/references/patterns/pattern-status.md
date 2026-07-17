@@ -4,7 +4,7 @@ These authority statuses apply to catalog collections and entries. Conflict-matr
 
 - `current`: maintained AgriMap guidance confirmed from a current standard, project, or owner set.
 - `verified`: authoritative for the stated scope, but not necessarily the newest cross-project convention.
-- `legacy-compatible`: retained because deployed code may follow it; compare with the active project.
+- `legacy-compatible`: retained because deployed code may follow it; after conflict resolution it outranks neighboring project structure only within its declared structural scope, never for unproven behavior/data semantics.
 - `unverified`: useful evidence with unresolved correctness or placement concerns.
 - `missing-owner-example`: do not establish a new shared convention from this skill.
 - `mixed`: collection-only status; inspect every entry because authority differs within the collection.

@@ -1,51 +1,54 @@
-# Canonical regulated QA and completion
+# Canonical QA and completion
 
-This file is the single policy source for `regulated` QA, correction, and completion. `light` and `standard` do not load it; standard completion uses proportional self-verification with QA marked not applicable.
+This file is the single policy source for direct `light` QA, tracked `regulated` QA, correction, and regulated completion. Standard work uses proportional writer verification and records QA as not applicable.
 
 ## Verifier boundary
 
-Use a verifier context that did not write the product change. Product artifacts are read-only. It may write only the current `qa.md`, its checkpoint/log evidence, and an explicitly declared progress fallback. It never fixes findings, changes scope/checklists/prompts, deploys, mutates data, runs servers, installs, publishes, regenerates, or mutates Git.
+Product artifacts are read-only. At `light`, return evidence directly and create no `.agrimap-agent` state. At `regulated`, use a verifier context that did not write the product change; it may write only `qa.md`, checkpoint/log evidence, and an explicitly declared progress fallback. QA never fixes findings, deploys, mutates data, installs, publishes, regenerates, changes Git, or changes product files/configuration.
 
-Allowed checks are non-mutating inspection, pattern Detect gates, parse/static validation, typecheck/lint, and existing build/tests proportional to risk. If required evidence needs a forbidden action, return `blocked`.
+Treat the implementation Result Package as testimony: reopen actual files and diffs. A stronger model or provider does not receive broader tools or permission.
 
-## QA depth
+## Default and full selection
 
-| Mode | Evidence | Use |
-| --- | --- | --- |
-| `fast` | pattern gates, diff/requirements, parse/typecheck/lint; no suite/full build | default tracked iteration |
-| `full` | fast evidence plus proportional build/tests/integration checks | commit/publish/release; public/data/migration/generated boundary; re-QA; third same-key closure after two fast passes; authorized request |
+Start every QA request at `depth=light` and `qa_mode=light` unless one of these exact triggers is already present:
 
-Record mode, reason, coverage key, and fast sequence. Passed full resets sequence to `0`; passed fast may close only at `1` or `2`.
+1. the requester explicitly asks for `qa_mode=full` or highest verification;
+2. the requested delivery boundary is explicitly commit, publish, or release;
+3. this is fresh re-QA after the task's first `qa-finding` correction; or
+4. this is the third consecutive passed-light tracked closure for the same coverage key.
 
-## Verification sequence
+SQL/BE/FE scope, database-related code, public/data behavior, diff size, regulated implementation depth, provider, and model capability never select `full` by themselves. Record the selected mode and exact trigger; if none applies, the mode is `light`.
 
-1. Reopen the objective, authorized decisions, checklist, integrated artifacts, and selected scope pattern.
-2. Treat the implementation Result Package as testimony; inspect actual files/diff.
-3. Map requirements to evidence and rerun one primary-path plus one risk-focused claim when available.
-4. Inspect affected callers, contracts/data, regression surface, and required companion artifacts.
-5. Record exact commands/results, limitations, and findings without product edits.
+Workflow depth and QA mode are separate. A direct explicit full request may remain `depth=light qa_mode=full`; tracked task QA is `depth=regulated`, and commit/publish/release, correction re-QA, or the third passed-light tracked closure requires `depth=regulated qa_mode=full`.
 
-Conditional technical evidence belongs to the selected FE/BE/SQL pattern, not this file. Load only that pattern's relevant Detect gates and manifest entries.
+## Verification tool allowlist
 
-## Status and one correction cycle
+Read-only file inspection, `git diff`, repository search, and AgriMap skill scripts are allowed. For executable validation, the allowlist is closed:
 
-- `passed`: required evidence exists and no blocking defect remains.
+1. scripts shipped under `agrimap-agent-skills/scripts/`;
+2. `dotnet build <existing-project-or-solution>` for BE only when compile evidence is necessary—do not restore/install packages or change source/configuration; and
+3. `npm run start:agrimap:development` for FE only at `qa_mode=full`, only when startup compilation evidence is explicitly necessary, and stop after ready/error evidence without browser interaction.
+
+Do not use LocalDB, dbserver, SQL Server, `sqlcmd`, SSMS, database connections, migrations, seeds, containers, services, HTTP calls, browser automation, package installation, external scanners, test runners, or any other product command. In particular, do not run other `npm run ...`, `dotnet test`, or database validation. Existing writer-produced results may be inspected as evidence but are not rerun. If required evidence exceeds the allowlist, return `blocked` or a limitation; do not expand tools.
+
+## QA evidence
+
+| Mode | Required evidence |
+| --- | --- |
+| `light` | requirements/diff review, relevant pattern Detect gates, static inspection, allowed AgriMap scripts, and a BE build only when compile evidence is necessary |
+| `full` | broader light evidence plus only the necessary allowlisted BE build or FE startup check |
+
+Map each requirement to evidence, inspect affected callers/contracts/data, and record exact commands actually run plus omitted checks and reasons.
+
+## Status and correction
+
+- `passed`: required allowlisted evidence exists and no blocking defect remains.
 - `failed`: a reproducible defect or missing required item remains.
-- `blocked`: required external evidence or authorized decision is unavailable.
+- `blocked`: required external evidence or authority is unavailable under the allowlist.
 - `not-applicable`: only for a product-read-only artifact with a recorded reason.
 
-There is no conditional pass. On the first failure, end the verifier context, preserve the finding in `qa.md`, and append non-terminal `qa-finding`. The assigned writer may correct once in the same task only within existing scope/acceptance and without a new material decision; then a fresh verifier runs full QA. A repeated failure or correction outside that boundary closes without completion and moves to a new approved task. The terminal audit event is `qa-failed`.
+There is no conditional pass. On the first regulated failure, end the verifier context, preserve the finding in `qa.md`, and append non-terminal `qa-finding`. The assigned writer may correct once within existing scope; then a fresh verifier runs full QA. A repeated failure closes without completion; the terminal audit event is `qa-failed`.
 
 ## Regulated completion gate
 
-Complete only when:
-
-- scope/checklist and authorized decisions are reconciled;
-- proportional verification passed;
-- the latest verifier passed or justified not-applicable, with required identity/mode/pattern fields;
-- any prior finding has a correction checkpoint plus fresh full result;
-- schema-owned brief/checklist/QA/result fields contain no unresolved placeholders;
-- memory/log updates, delivery boundary, concerns, and Outstanding items are final;
-- commit/publish/release has passed full QA.
-
-The machine validator owns exact artifact fields and sections through `assets/task-artifact-schema.json`; do not restate them here.
+Complete only when scope/decisions/checklist are reconciled; proportional verification passed; the latest verifier passed or justified not-applicable; any correction has a fresh full result; schema fields contain no placeholders; memory/logs and delivery boundary are final; and commit/publish/release has full QA. The machine validator owns exact fields through `assets/task-artifact-schema.json`.

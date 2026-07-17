@@ -116,7 +116,7 @@ Receipt นี้ไม่ใช่ permission gate เพิ่มเติม.
 | --- | --- | --- | --- | --- | --- |
 | `brief.md` | `standard`<br>`regulated` | `task-brief.md` | Requester, authority, execution identity, objective, scope, ownership, and decisions. | `Task ID`<br>`Requested by`<br>`Identity source`<br>`Requester authority`<br>`Decision owner`<br>`Authority evidence`<br>`Model label`<br>`Actual model`<br>`Role`<br>`Agent`<br>`Provider`<br>`Operation`<br>`Workflow depth`<br>`Objective`<br>`Scope`<br>`Non-goals` | `File and logical-contract ownership`<br>`Inputs`<br>`Authorized decisions and trade-offs`<br>`Service ownership references`<br>`Concerns` |
 | `checklist.md` | `standard`<br>`regulated` | `checklist.md` | Checked completion ledger derived from the task contract. | — | — |
-| `qa.md` | `regulated` | `qa.md` | Tracked QA evidence under the canonical product-read-only verifier contract. | `Status`<br>`QA mode`<br>`QA mode reason`<br>`Coverage key`<br>`Fast sequence`<br>`Patterns`<br>`Requested by`<br>`Decision owner`<br>`QA model label`<br>`QA actual model`<br>`QA role`<br>`QA agent`<br>`QA provider`<br>`Product artifacts modified`<br>`Workflow artifacts written`<br>`Implementation model label`<br>`Implementation actual model`<br>`Implementation role`<br>`Implementation agent`<br>`Implementation provider` | `Requirement evidence`<br>`Commands and observed results`<br>`Limitations` |
+| `qa.md` | `regulated` | `qa.md` | Tracked QA evidence under the canonical product-read-only verifier contract. | `Status`<br>`QA mode`<br>`QA mode reason`<br>`Coverage key`<br>`Light sequence`<br>`Patterns`<br>`Requested by`<br>`Decision owner`<br>`QA model label`<br>`QA actual model`<br>`QA role`<br>`QA agent`<br>`QA provider`<br>`Product artifacts modified`<br>`Workflow artifacts written`<br>`Implementation model label`<br>`Implementation actual model`<br>`Implementation role`<br>`Implementation agent`<br>`Implementation provider` | `Requirement evidence`<br>`Commands and observed results`<br>`Limitations` |
 | `result.md` | `standard`<br>`regulated` | `result.md` | Leader closure result, QA boundary, verification, memory, and outstanding work. | `Outcome`<br>`Requested by`<br>`Decision owner`<br>`Leader model label`<br>`Leader actual model`<br>`Leader role`<br>`Leader agent`<br>`Leader provider`<br>`Workflow depth`<br>`QA status`<br>`QA mode`<br>`Delivery boundary` | `Authorized decisions`<br>`Changes and verification`<br>`Checklist and memory`<br>`Concerns and commit boundary`<br>`Outstanding items` |
 
 Completion cross-artifact gates:
@@ -126,15 +126,14 @@ Completion cross-artifact gates:
 - At regulated depth, `Requested by` and `Decision owner` match across brief, QA, and result.
 - Regulated QA identity (`QA actual model`<br>`QA agent`<br>`QA provider`) must differ from implementation identity (`Implementation actual model`<br>`Implementation agent`<br>`Implementation provider`).
 - Delivery boundaries `commit`<br>`publish`<br>`release` require regulated depth and `QA mode: full`.
-- A regulated full run records `Fast sequence: 0`; fast runs may record only `1`<br>`2`.
+- A regulated full run records `Light sequence: 0`; light runs may record only `1`<br>`2`.
 
 Full QA is mandatory when any schema trigger applies:
 
 1. commit, publish, or release boundary
-2. public contract, data behavior, generated-code regeneration, or migration
-3. same-task full re-QA after a qa-finding
-4. third consecutive passed-fast closure for the same coverage key
-5. authorized decision-owner request
+2. same-task full re-QA after a qa-finding
+3. third consecutive passed-light tracked closure for the same coverage key
+4. explicit requester request for qa_mode=full or highest verification
 <!-- END GENERATED TASK ARTIFACT SCHEMA -->
 
 ## 3. วิธีใช้หลัก — สั้นก่อน, สนทนาเมื่อจำเป็น, key=value คือทางลัด
@@ -219,7 +218,7 @@ Decision owner: approve
 | `agm-refactor-fe` | `$agm-refactor-fe depth=light target_kind=fe-main phase=stabilization refactor_mode=strict-preserve-logic target_files=src/order-table.component.ts` |
 | `agm-refactor-be` | `$agm-refactor-be depth=light target_kind=be-main backend_profile=agmws phase=stabilization refactor_mode=performance-preserve-behavior target_files=Application/Orders/OrderUseCase.cs` |
 | `agm-refactor-sql` | `$agm-refactor-sql depth=light target_kind=sql-procedure refactor_mode=performance-preserve-behavior target_files=sql/usp_Order_Search.sql` |
-| `agm-qa` | `$agm-qa requested_by=Billy task_id=order-cancel-001 artifact="current integrated workspace" product_artifacts=read-only workflow_writes="qa.md,progress-fallback-if-required,checkpoint-log" acceptance="tests pass; cancellation remains idempotent"` |
+| `agm-qa` | `$agm-qa depth=light qa_mode=light artifact="current integrated workspace" acceptance="cancellation remains idempotent"` |
 | `agm-create-unit-test` | `$agm-create-unit-test depth=light target_kind=be-main backend_profile=agmws phase=active-development target_files=Application/Orders/OrderUseCase.cs objective="cover duplicate cancellation"` |
 | `agm-create-feature` | `$agm-create-feature depth=light target_kind=be-main backend_profile=agmws phase=active-development objective="Add cancel-order endpoint"` |
 | `agm-create-prompt` | `$agm-create-prompt requested_by=Billy provider=codex objective="Delegate cancel-order implementation" target_kind=be-main backend_profile=agmws phase=active-development` |
@@ -344,7 +343,7 @@ tests: ask before implementation if existing coverage is insufficient
 5. หลัง integration เรียก QA แยก:
 
 ```text
-$agm-qa requested_by=Billy task_id=<feature-task-id> artifact="integrated workspace" product_artifacts=read-only workflow_writes="qa.md,progress-fallback-if-required,checkpoint-log" acceptance="all authorized states covered; shared UI reused; regression checks pass"
+$agm-qa depth=regulated qa_mode=light requested_by=Billy task_id=<feature-task-id> artifact="integrated workspace" acceptance="all authorized states covered; shared UI reused; regression evidence is present"
 ```
 
 6. ตรวจ task result, QA เมื่อเป็น regulated, milestone memory และ JSONL log ก่อนรับคำว่าเสร็จ.

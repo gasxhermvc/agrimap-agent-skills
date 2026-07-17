@@ -26,74 +26,77 @@ GO
 -- Description  :
 -- =============================================
 CREATE PROCEDURE [agrimap_app].[AUTH_FLOW_DETAIL_Q]
-	@PI_AUTH_FLOW_ID		NVARCHAR(100)		= NULL,
-	@PI_SESSION_USER_ID		NUMERIC(38, 0)		= NULL,
+    @PI_AUTH_FLOW_ID		NVARCHAR(100)		= NULL,
+    @PI_SESSION_USER_ID		NUMERIC(38, 0)		= NULL,
 
-	@PO_STATUS				INT					OUTPUT,
-	@PO_STATUS_MSG			NVARCHAR(4000)		OUTPUT,
-	@PO_ERROR_DETAIL		NVARCHAR(4000)		OUTPUT
+    @PO_STATUS				INT					OUTPUT,
+    @PO_STATUS_MSG			NVARCHAR(4000)		OUTPUT,
+    @PO_ERROR_DETAIL		NVARCHAR(4000)		OUTPUT
 AS
 BEGIN
-	SET NOCOUNT ON;
-	SET @PO_STATUS = 1;
-	SET @PO_STATUS_MSG = '';
-	SET @PO_ERROR_DETAIL = '';
+    SET NOCOUNT ON;
+    SET @PO_STATUS = 1;
+    SET @PO_STATUS_MSG = '';
+    SET @PO_ERROR_DETAIL = '';
 
-	BEGIN TRY
+    BEGIN TRY
 
-		-- =============================================
-		-- Validate required parameters
-		-- =============================================
-		IF (@PI_AUTH_FLOW_ID IS NULL OR LTRIM(RTRIM(@PI_AUTH_FLOW_ID)) = '')
-			THROW 50001, 'auth_flow_id_required', 1;
+        -- =============================================
+        -- Validate required parameters
+        -- =============================================
+        IF (@PI_AUTH_FLOW_ID IS NULL OR LTRIM(RTRIM(@PI_AUTH_FLOW_ID)) = '')
+            THROW 50001, 'auth_flow_id_required', 1;
 
-		IF (@PI_SESSION_USER_ID IS NULL)
-			THROW 50001, 'session_user_required', 1;
+        IF (@PI_SESSION_USER_ID IS NULL)
+            THROW 50001, 'session_user_required', 1;
 
-		-- =============================================
-		-- Check AUTH_FLOW exists and belongs to user
-		-- =============================================
-		IF NOT EXISTS (
-			SELECT 1
-			FROM [agrimap_app].[AUTH_FLOW]
-			WHERE [ID] = @PI_AUTH_FLOW_ID
-				AND [USER_ID] = @PI_SESSION_USER_ID
-				AND [DEL_FLAG] = 0
-		)
-		BEGIN
-			THROW 50001, 'auth_flow_not_found', 1;
-		END
+        -- =============================================
+        -- Check AUTH_FLOW exists and belongs to user
+        -- =============================================
+        IF
+            NOT EXISTS (
+                SELECT 1
+                FROM [agrimap_app].[AUTH_FLOW]
+                WHERE
+                    [ID] = @PI_AUTH_FLOW_ID
+                    AND [USER_ID] = @PI_SESSION_USER_ID
+                    AND [DEL_FLAG] = 0
+            )
+            BEGIN
+                THROW 50001, 'auth_flow_not_found', 1;
+            END
 
-		-- =============================================
-		-- Query AUTH_FLOW detail
-		-- =============================================
-		SELECT
-			AF.[ID]					AS [AUTH_FLOW_ID],
-			AF.[USER_ID],
-			AF.[COOKIE_ID],
-			AF.[APP_ID],
-			AF.[PROVIDER],
-			AF.[PURPOSE],
-			AF.[PROMPT],
-			AF.[PAYLOAD],
-			AF.[DATE_EXPIRED],
-			AF.[REVOKED],
-			AF.[DATE_CREATED]
-		FROM [agrimap_app].[AUTH_FLOW] AF
-		WHERE AF.[ID] = @PI_AUTH_FLOW_ID
-			AND AF.[USER_ID] = @PI_SESSION_USER_ID
-			AND AF.[DEL_FLAG] = 0;
+        -- =============================================
+        -- Query AUTH_FLOW detail
+        -- =============================================
+        SELECT
+            AF.[ID]					AS [AUTH_FLOW_ID],
+            AF.[USER_ID],
+            AF.[COOKIE_ID],
+            AF.[APP_ID],
+            AF.[PROVIDER],
+            AF.[PURPOSE],
+            AF.[PROMPT],
+            AF.[PAYLOAD],
+            AF.[DATE_EXPIRED],
+            AF.[REVOKED],
+            AF.[DATE_CREATED]
+        FROM [agrimap_app].[AUTH_FLOW] AF
+        WHERE
+            AF.[ID] = @PI_AUTH_FLOW_ID
+            AND AF.[USER_ID] = @PI_SESSION_USER_ID
+            AND AF.[DEL_FLAG] = 0;
 
-	END TRY
-	BEGIN CATCH
-		SET @PO_STATUS = 0;
-		SET @PO_STATUS_MSG = ERROR_MESSAGE();
-		SET @PO_ERROR_DETAIL = agrimap_app.FN_GET_ERROR_MESSAGE(
-			ERROR_NUMBER(),
-			(SELECT OBJECT_NAME(@@PROCID)),
-			ERROR_LINE(),
-			ERROR_MESSAGE()
-		);
-	END CATCH
+    END TRY
+    BEGIN CATCH
+        SET @PO_STATUS = 0;
+        SET @PO_STATUS_MSG = ERROR_MESSAGE();
+        SET @PO_ERROR_DETAIL = agrimap_app.FN_GET_ERROR_MESSAGE(
+            ERROR_NUMBER(),
+            (SELECT OBJECT_NAME(@@PROCID)),
+            ERROR_LINE(),
+            ERROR_MESSAGE()
+        );
+    END CATCH
 END
 GO

@@ -22,11 +22,11 @@ Use this file before using any golden material. First read `golden/manifest.json
 1. Owner-approved behavior for the current task.
 2. Current project code, tests, schemas, callers, and deployed contracts as facts about behavior and compatibility.
 3. A verified AgriMap pattern, normalized pattern contract, or golden entry marked `current` for structure, naming, types, comments, and artifact layout.
-4. Neighboring project structure only where current AgriMap guidance is silent.
-5. Annotated `legacy-compatible` or `unverified` golden evidence.
+4. Annotated `legacy-compatible` or `unverified` golden evidence for its declared structural scope after applying this file's conflict matrix; documented defects and unproven business semantics never gain authority.
+5. Neighboring project structure only where normalized guidance and all applicable golden structural evidence are silent.
 6. General engineering practice.
 
-When project structure conflicts with current golden structure, use golden structure for new work because existing projects may contain mixed conventions. Preserve active behavior/data compatibility and show material conflicts to the owner; structural precedence is not permission to break a deployed contract.
+When project structure conflicts with applicable golden structure after this conflict matrix is applied, use golden structure for new work because existing projects may contain mixed conventions. This includes matching legacy-compatible structural evidence, while behavior and data semantics remain governed by active contracts and owner decisions. Preserve active behavior/data compatibility and show material conflicts to the owner; structural precedence is not permission to break a deployed contract.
 
 ## Statuses
 

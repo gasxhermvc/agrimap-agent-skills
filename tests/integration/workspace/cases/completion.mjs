@@ -47,14 +47,14 @@ None.
 `;
 }
 
-function validQa({ mode = "fast", fastSequence = "1" } = {}) {
+function validQa({ mode = "light", lightSequence = "1" } = {}) {
   return `# QA
 
 - Status: passed
 - QA mode: ${mode}
-- QA mode reason: ${mode === "full" ? "Release boundary requires full QA." : "Task-only closure within the fast-QA allowance."}
+- QA mode reason: ${mode === "full" ? "Release boundary requires full QA." : "Task-only closure within the light-QA allowance."}
 - Coverage key: src/angular-order-status
-- Fast sequence: ${fastSequence}
+- Light sequence: ${lightSequence}
 - Patterns: patterns/frontend.md
 - Requested by: Alice
 - Decision owner: Alice
@@ -85,7 +85,7 @@ function validQa({ mode = "fast", fastSequence = "1" } = {}) {
 `;
 }
 
-function validResult({ mode = "fast", boundary = "task", depth = "regulated" } = {}) {
+function validResult({ mode = "light", boundary = "task", depth = "regulated" } = {}) {
   return `# Result
 
 - Outcome: completed
@@ -183,12 +183,12 @@ export async function completion(harness) {
   assert.equal(releaseBoundaryCompletion.status, 1);
   assert.equal(JSON.parse(releaseBoundaryCompletion.stdout).contentFailures.some((failure) => failure.field === "Delivery boundary" && failure.reason === "requires-full-qa"), true);
 
-  await writeFile(path.join(taskADirectory, "qa.md"), validQa({ fastSequence: "3" }), "utf8");
+  await writeFile(path.join(taskADirectory, "qa.md"), validQa({ lightSequence: "3" }), "utf8");
   const overFastLimitProcess = spawn(workspaceScript, ["validate", "--cwd", temp, "--task", "task-a"]);
   assert.equal(overFastLimitProcess.status, 1);
   const overFastLimit = JSON.parse(overFastLimitProcess.stdout);
   assert.equal(overFastLimit.ok, false);
-  assert.equal(overFastLimit.contentFailures.some((failure) => failure.field === "Fast sequence" && failure.reason === "invalid-enum"), true);
+  assert.equal(overFastLimit.contentFailures.some((failure) => failure.field === "Light sequence" && failure.reason === "invalid-enum"), true);
 
   const nonIndependentQa = validQa()
     .replace("gemini-runtime-model", "gpt-5.6-sol-runtime")
@@ -204,7 +204,7 @@ export async function completion(harness) {
   const qaFinding = run(workspaceScript, ["checkpoint", "--cwd", temp, "--session", "session-a", "--task", "task-a", "--event", "qa-finding", "--summary", "Initial QA attempt found an in-scope defect"]);
   assert.equal(qaFinding.ok, true);
   assert.equal(JSON.parse(await readFile(taskAActivePath, "utf8")).taskId, "task-a");
-  await writeFile(path.join(taskADirectory, "qa.md"), validQa({ mode: "full", fastSequence: "0" }), "utf8");
+  await writeFile(path.join(taskADirectory, "qa.md"), validQa({ mode: "full", lightSequence: "0" }), "utf8");
   await writeFile(path.join(taskADirectory, "result.md"), validResult({ mode: "full", boundary: "release" }), "utf8");
   assert.equal(run(workspaceScript, ["validate", "--cwd", temp, "--task", "task-a"]).ok, true);
 
@@ -212,7 +212,11 @@ export async function completion(harness) {
   for (const [index, taskId] of ["prior-fast-1", "prior-fast-2"].entries()) {
     const priorDirectory = path.join(temp, ".agrimap-agent", "tasks", taskId);
     await mkdir(priorDirectory, { recursive: true });
-    await writeFile(path.join(priorDirectory, "qa.md"), validQa({ fastSequence: String(index + 1) }), "utf8");
+    const priorQa = validQa({ lightSequence: String(index + 1) });
+    const historicalQa = index === 0
+      ? priorQa.replace("- QA mode: light", "- QA mode: fast").replace("- Light sequence:", "- Fast sequence:")
+      : priorQa;
+    await writeFile(path.join(priorDirectory, "qa.md"), historicalQa, "utf8");
     priorCounterEvents.push({
       schemaVersion: 2,
       timestamp: new Date(Date.now() - (2 - index) * 60_000).toISOString(),
@@ -226,7 +230,7 @@ export async function completion(harness) {
       agent: "primary",
       provider: "codex",
       event: "completed",
-      summary: "Prior fast-QA task completed.",
+      summary: "Prior light-QA task completed.",
       reason: "Historical QA counter fixture.",
       files: [],
       verification: ["completion gate passed"],
@@ -236,16 +240,16 @@ export async function completion(harness) {
   }
   const counterLogPath = path.join(temp, ".agrimap-agent", "logs", new Date().toISOString().slice(0, 7), "prior-fast-counter.jsonl");
   await writeFile(counterLogPath, `${priorCounterEvents.map((event) => JSON.stringify(event)).join("\n")}\n`, { encoding: "utf8", flag: "a" });
-  await writeFile(path.join(taskADirectory, "qa.md"), validQa({ fastSequence: "1" }), "utf8");
+  await writeFile(path.join(taskADirectory, "qa.md"), validQa({ lightSequence: "1" }), "utf8");
   await writeFile(path.join(taskADirectory, "result.md"), validResult(), "utf8");
   const thirdFastClosureProcess = spawn(workspaceScript, ["validate", "--cwd", temp, "--task", "task-a"]);
   assert.equal(thirdFastClosureProcess.status, 1);
   const thirdFastClosure = JSON.parse(thirdFastClosureProcess.stdout);
   assert.equal(thirdFastClosure.ok, false);
-  assert.equal(thirdFastClosure.qaCounter.priorConsecutiveFast, 2);
+  assert.equal(thirdFastClosure.qaCounter.priorConsecutiveLight, 2);
   assert.equal(thirdFastClosure.contentFailures.some((failure) => failure.field === "QA mode" && failure.reason === "historical-full-required"), true);
 
-  await writeFile(path.join(taskADirectory, "qa.md"), validQa({ mode: "full", fastSequence: "0" }), "utf8");
+  await writeFile(path.join(taskADirectory, "qa.md"), validQa({ mode: "full", lightSequence: "0" }), "utf8");
   await writeFile(path.join(taskADirectory, "result.md"), validResult({ mode: "full" }), "utf8");
   assert.equal(run(workspaceScript, ["validate", "--cwd", temp, "--task", "task-a"]).ok, true);
   assert.equal(run(workspaceScript, ["complete", "--cwd", temp, "--session", "session-a", "--task", "task-a"]).ok, true);

@@ -23,8 +23,8 @@ test("task artifact schema owns scaffold, completion fields, templates, and gene
   assert.deepEqual(schema.workflowDepths, ["standard", "regulated"]);
   assert.deepEqual(schema.artifacts["qa.md"].requiredForDepths, ["regulated"]);
   assert.equal(schema.artifacts["result.md"].requiredSections.includes("Outstanding items"), true);
-  assert.deepEqual(schema.crossArtifactRules.fastAllowedSequences, ["1", "2"]);
-  assert.equal(schema.qaFullTriggers.some((trigger) => trigger.includes("third consecutive passed-fast closure")), true);
+  assert.deepEqual(schema.crossArtifactRules.lightAllowedSequences, ["1", "2"]);
+  assert.equal(schema.qaFullTriggers.some((trigger) => trigger.includes("third consecutive passed-light tracked closure")), true);
 
   for (const definition of Object.values(schema.artifacts)) {
     const template = await readFile(path.join(skillRoot, "assets", "templates", definition.template), "utf8");
@@ -38,7 +38,7 @@ test("task artifact schema owns scaffold, completion fields, templates, and gene
   assert.match(generated, /`standard`/);
   assert.match(generated, /`regulated`/);
   assert.match(generated, /`Outstanding items`/);
-  assert.match(generated, /third consecutive passed-fast closure/);
+  assert.match(generated, /third consecutive passed-light tracked closure/);
   assert.equal(
     replaceTaskArtifactSchemaDocs(`${TASK_ARTIFACT_SCHEMA_START}\nstale\n${TASK_ARTIFACT_SCHEMA_END}`, generated),
     generated,

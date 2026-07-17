@@ -94,6 +94,7 @@ for (const required of [
   "tests/unit/cli-args.test.mjs",
   "tests/unit/extract-code-blocks.test.mjs",
   "tests/unit/fe-scenarios.test.mjs",
+  "tests/unit/qa-policy.test.mjs",
   "tests/unit/sql-artifacts.test.mjs",
   "tests/unit/sql-scenarios.test.mjs",
   "tests/unit/task-artifact-schema.test.mjs",
@@ -165,6 +166,7 @@ if (operations) {
 if (!packageManifest?.scripts?.test?.includes("npm run verify:golden")) errors.push("npm test must include golden verification.");
 if (!packageManifest?.scripts?.test?.includes("npm run validate")) errors.push("npm test must include package validation before behavioral suites.");
 if (!packageManifest?.scripts?.["test:unit"]?.includes("fe-scenarios.test.mjs")) errors.push("Frontend scenario eval is not wired into the automated unit suite.");
+if (!packageManifest?.scripts?.["test:unit"]?.includes("qa-policy.test.mjs")) errors.push("QA provider-neutral policy test is not wired into the automated unit suite.");
 if (!packageManifest?.scripts?.["test:unit"]?.includes("task-artifact-schema.test.mjs")) errors.push("Task artifact schema contract test is not wired into the automated unit suite.");
 if (!packageManifest?.scripts?.["test:unit"]?.includes("token-coverage.test.mjs")) errors.push("Token coverage audit test is not wired into the automated unit suite.");
 if (!packageManifest?.scripts?.["test:unit"]?.includes("sql-artifacts.test.mjs")) errors.push("SQL artifact contract test is not wired into the automated unit suite.");
@@ -328,7 +330,7 @@ for (const marker of ["execution source of truth", "deviation_from_prompt", "ser
   if (!promptReference.includes(marker)) errors.push(`create-prompt contract missing marker: ${marker}`);
 
 const qaReference = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "qa-and-done.md"), "utf8");
-for (const marker of ["single policy source", "Product artifacts are read-only", "Result Package as testimony", "There is no conditional pass", "non-terminal `qa-finding`", "fresh verifier runs full QA", `terminal audit event is \`${QA_FAILED_EVENT}\``, "Regulated completion gate"])
+for (const marker of ["single policy source", "Start every QA request at `depth=light` and `qa_mode=light`", "Product artifacts are read-only", "Result Package as testimony", "Verification tool allowlist", "Do not use LocalDB, dbserver, SQL Server", "dotnet build <existing-project-or-solution>", "npm run start:agrimap:development", "There is no conditional pass", "non-terminal `qa-finding`", "fresh verifier runs full QA", `terminal audit event is \`${QA_FAILED_EVENT}\``, "Regulated completion gate"])
   if (!qaReference.includes(marker)) errors.push(`QA contract missing marker: ${marker}`);
 if ((qaReference.match(new RegExp(QA_FAILED_EVENT, "g")) || []).length !== 1) errors.push("qa-and-done.md must own exactly one literal terminal QA event name.");
 if (qaReference.split(/\r?\n/).length > 80) errors.push("Canonical QA contract exceeds its 80-line budget.");

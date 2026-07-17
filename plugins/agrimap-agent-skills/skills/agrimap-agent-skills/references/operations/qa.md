@@ -3,21 +3,23 @@
 <!-- Generated from config/operations.json. Do not edit directly. -->
 
 - Operation: `qa`
-- Workflow depth: default `regulated`; allowed `regulated`
+- Workflow depth: default `light`; allowed `light`, `regulated`
 - Mode: `verification-only`
-- Purpose: Verify regulated work in a separate product-read-only context.
-- Deliverable: .agrimap-agent/tasks/<task-id>/qa.md
+- Purpose: Verify an artifact under a product-read-only, execution-restricted QA contract.
+- Deliverable: direct QA evidence at light; .agrimap-agent/tasks/<task-id>/qa.md only at regulated
 
 ## Inputs and help
 
-- Required: active task or task_id; integrated artifact to verify.
-- Conditional: qa_mode=full when a schema full-QA trigger applies.
-- Minimal example: `$agm-qa requested_by=Billy task_id=order-cancel-001 artifact="integrated workspace"`
+- Required: artifact or target to verify.
+- Conditional: task_id for regulated tracked QA; qa_mode=full only when an explicit full-QA trigger applies.
+- Minimal example: `$agm-qa depth=light qa_mode=light artifact="integrated workspace"`
 
 ## Execute this contract
 
-1. Apply qa-and-done.md as the complete policy; reopen integrated artifacts, map requirements to evidence, and rerun selected claims.
-2. Return only the canonical status and evidence; do not copy policy text into the report.
+1. Default to depth=light and qa_mode=light; a provider/model, SQL/BE/FE target, regulated implementation, or large diff never selects full by itself.
+2. Apply qa-and-done.md, keep product artifacts read-only, and use only read-only inspection plus AgriMap skill scripts; never connect to LocalDB, dbserver, SQL Server, or another runtime service.
+3. The only product-command exceptions are dotnet build for an existing BE project when compile evidence is necessary, and npm run start:agrimap:development for FE only at qa_mode=full when startup evidence is explicitly necessary; do not run other product commands.
+4. Return only canonical status, evidence, commands actually run, and limitations.
 
 ## Load now
 

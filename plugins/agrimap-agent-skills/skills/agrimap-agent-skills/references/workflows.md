@@ -10,7 +10,7 @@ Use one source for each concern:
 | operation inputs, mode, deliverable, and conditional references | generated `operations/<operation>.md` from `config/operations.json` |
 | operation discovery | [operation-index.md](operation-index.md) |
 | missing-input resolution | [elicitation.md](elicitation.md) |
-| regulated QA, correction cycle, terminal outcome, and completion | [qa-and-done.md](qa-and-done.md) |
+| direct/tracked QA, tool allowlist, correction cycle, terminal outcome, and completion | [qa-and-done.md](qa-and-done.md) |
 | delegation/workspace/progress | [subagents-and-branches.md](subagents-and-branches.md) |
 | FE, BE, and SQL constraints | the single matching engineer/pattern reference named by the operation entrypoint |
 

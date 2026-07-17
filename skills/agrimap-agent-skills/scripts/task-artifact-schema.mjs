@@ -74,7 +74,7 @@ export function renderTaskArtifactSchemaDocs(schema) {
     `At regulated depth, \`${rules.requesterField}\` and \`${rules.decisionOwnerField}\` match across brief, QA, and result.`,
     `Regulated QA identity (${tableCell(rules.qaIdentityFields || [])}) must differ from implementation identity (${tableCell(rules.implementationIdentityFields || [])}).`,
     `Delivery boundaries ${tableCell(rules.fullQaBoundaries || [])} require regulated depth and \`QA mode: full\`.`,
-    `A regulated full run records \`${rules.fastSequenceField}: ${rules.fullFastSequence}\`; fast runs may record only ${tableCell(rules.fastAllowedSequences || [])}.`,
+    `A regulated full run records \`${rules.lightSequenceField}: ${rules.fullLightSequence}\`; light runs may record only ${tableCell(rules.lightAllowedSequences || [])}.`,
   ];
   return [
     TASK_ARTIFACT_SCHEMA_START,
