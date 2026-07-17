@@ -47,10 +47,14 @@ test("SQL writers format directly and fail closed when folder parsing stops", ()
   const folder = 'sqlfluff format --exclude-rules "CP02, LT01, RF06" --dialect tsql .';
   assert.ok(sqlPolicy.includes(single));
   assert.ok(sqlPolicy.includes(folder));
+  assert.match(sqlPolicy, /ensure-sqlfluff\.mjs/);
+  assert.match(sqlPolicy, /Failure blocks SQL writes/);
   assert.match(sqlPolicy, /nonzero folder-format exit is incomplete and may be partial/i);
   assert.match(sqlPolicy, /broken file can stop parsing/i);
   assert.match(sqlPolicy, /single-file command per changed file/i);
   assert.match(sqlPolicy, /rerun the folder command to zero/i);
   assert.match(sqlPolicy, /Then run `validate-sql-artifacts\.mjs`/);
+  assert.match(sqlPolicy, /OS temp directory with guaranteed cleanup/);
+  assert.match(sqlPolicy, /never create `\.tmp-\*` under a project\/workspace/);
   assert.doesNotMatch(sqlPolicy, /--ignore\s+parsing|finalize-sql-artifacts|sqlfluff fix|--force|\.sqlfluff/);
 });

@@ -3,6 +3,7 @@ Thumbs.db
 *.log
 node_modules/
 dist/
+.tmp-*/
 
 # This repository develops the globally installed skill. Its own agent state is local-only.
 .agrimap-agent/

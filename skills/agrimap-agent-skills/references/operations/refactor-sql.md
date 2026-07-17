@@ -18,7 +18,7 @@
 
 1. Load matching schema facts and select one mode. If intent is ambiguous, show all five enums with one-line boundaries and one marked recommendation in the first reply; never return a recommendation alone.
 2. Preserve result sets, transactions, side effects, error mapping, and deployment idempotency unless authorized otherwise.
-3. After each SQL create/edit, ensure SQLFluff exists, run the exact single-file or folder format command, then validate. A nonzero folder run is incomplete: isolate changed files one by one, correct only in-scope parse defects, and rerun the folder command before handoff.
+3. Before SQL writes, run ensure-sqlfluff.mjs and stop if its verified prerequisite fails. After each create/edit, run the exact single-file or folder format command, then validate. A nonzero folder run is incomplete: isolate changed files one by one, correct only in-scope parse defects, and rerun the folder command before handoff.
 
 ## Load now
 

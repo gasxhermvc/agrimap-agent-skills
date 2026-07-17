@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.5 - 2026-07-18
+
+- Added a deterministic first-use SQLFluff prerequisite that installs when missing, verifies the command, and blocks SQL writes on failure without wrapping the formatter.
+- Required temporary probes to use the OS temp directory with guaranteed cleanup; workspace `.tmp-*` directories are forbidden and ignored only as a safety net.
+
 ## 0.1.4 - 2026-07-18
 
 - Made `agm-analyze` light output CLI-readable and required real project code, local db-schema, and representative examples/data shapes before conclusive database analysis.

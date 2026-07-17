@@ -64,6 +64,7 @@ function hookCommands(value) {
 
 for (const required of [
   ".rgignore",
+  ".gitignore",
   "skills/agrimap-agent-skills/SKILL.md",
   "plugins/agrimap-agent-skills/.codex-plugin/plugin.json",
   "plugins/agrimap-agent-skills/.claude-plugin/plugin.json",
@@ -82,6 +83,7 @@ for (const required of [
   "skills/agrimap-agent-skills/references/service-ownership.md",
   "skills/agrimap-agent-skills/references/evals/sql-scenarios.md",
   "skills/agrimap-agent-skills/scripts/log-events.mjs",
+  "skills/agrimap-agent-skills/scripts/ensure-sqlfluff.mjs",
   "skills/agrimap-agent-skills/scripts/identity.mjs",
   "skills/agrimap-agent-skills/scripts/task-artifact-schema.mjs",
   "skills/agrimap-agent-skills/scripts/token-coverage.mjs",
@@ -101,6 +103,7 @@ for (const required of [
   "tests/unit/sql-artifacts.test.mjs",
   "tests/unit/sql-contract-preflight.test.mjs",
   "tests/unit/sql-scenarios.test.mjs",
+  "tests/unit/sqlfluff-prerequisite.test.mjs",
   "tests/unit/task-artifact-schema.test.mjs",
   "tests/unit/verify-golden.test.mjs",
   "tests/integration/package/usage.test.mjs",
@@ -119,6 +122,12 @@ for (const required of [
   "plugins/agrimap-agent-skills/examples/inputs/references/checkout-flow.svg",
 ]) {
   if (!(await exists(path.join(root, required)))) errors.push(`${required}: missing`);
+}
+
+const gitignore = await readFile(path.join(root, ".gitignore"), "utf8");
+if (!/^\.tmp-\*\/$/m.test(gitignore)) errors.push(".gitignore must keep .tmp-*/ as a residue safety net.");
+for (const entry of await readdir(root, { withFileTypes: true })) {
+  if (entry.isDirectory() && entry.name.startsWith(".tmp-")) errors.push(`Workspace temp residue is forbidden: ${entry.name}`);
 }
 
 for (const legacyTestRunner of ["tools/test-scripts.mjs", "tools/test-usage-examples.mjs"]) {
@@ -325,7 +334,7 @@ const rolesReference = await readFile(path.join(root, "skills", "agrimap-agent-s
 if (rolesReference.split(/\r?\n/).length > 40) errors.push("Role map has regrown into a duplicated execution contract.");
 
 const sqlPattern = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "patterns", "sql.md"), "utf8");
-for (const marker of ["sql-contract-preflight.mjs", "sqlfluff --version", "pip install sqlfluff", "sqlfluff format --exclude-rules \"CP02, LT01, RF06\" --dialect tsql <FILE>.sql", "sqlfluff format --exclude-rules \"CP02, LT01, RF06\" --dialect tsql .", "nonzero folder-format exit is incomplete", "validate-sql-artifacts.mjs", "Every new table and procedure belongs to `[agrimap_app]`", "## Message collection gate", "`messages.sql`", "[agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR])", "same code + same meaning", "same code + different or ambiguous meaning", "`IF NOT EXISTS`", "`no message changes`", "`readability-organization`", "`strict-preserve-logic`", "Neither lane uses ScriptDom"])
+for (const marker of ["sql-contract-preflight.mjs", "ensure-sqlfluff.mjs", "Failure blocks SQL writes", "sqlfluff --version", "pip install sqlfluff", "sqlfluff format --exclude-rules \"CP02, LT01, RF06\" --dialect tsql <FILE>.sql", "sqlfluff format --exclude-rules \"CP02, LT01, RF06\" --dialect tsql .", "nonzero folder-format exit is incomplete", "OS temp directory with guaranteed cleanup", "never create `.tmp-*` under a project/workspace", "validate-sql-artifacts.mjs", "Every new table and procedure belongs to `[agrimap_app]`", "## Message collection gate", "`messages.sql`", "[agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR])", "same code + same meaning", "same code + different or ambiguous meaning", "`IF NOT EXISTS`", "`no message changes`", "`readability-organization`", "`strict-preserve-logic`", "Neither lane uses ScriptDom"])
   if (!sqlPattern.includes(marker)) errors.push(`SQL message-collection contract missing marker: ${marker}`);
 for (const marker of ["### Stored procedure section comments", "-- Validate required parameters", "-- Validate WIDGET_TYPE_ID", "-- Begin Transaction", "-- Step 1: Insert dashboard widget", "-- Return PO_DATA", "-- Commit Transaction", "-- Rollback Transaction"])
   if (!sqlPattern.includes(marker)) errors.push(`SQL procedure-comment contract missing marker: ${marker}`);
