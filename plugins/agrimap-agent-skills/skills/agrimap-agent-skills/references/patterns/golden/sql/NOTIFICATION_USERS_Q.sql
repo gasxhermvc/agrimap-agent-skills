@@ -35,80 +35,87 @@ GO
 -- Description  :
 -- =============================================
 CREATE PROCEDURE [agrimap_app].[NOTIFICATION_USERS_Q]
-	@PI_USER_LIST			VARCHAR(MAX)	= NULL,		-- '1^2^3^...^n'
-	@PI_SESSION_USER_ID		NUMERIC(38,0)	= NULL,
+    @PI_USER_LIST			VARCHAR(MAX)	= NULL,		-- '1^2^3^...^n'
+    @PI_SESSION_USER_ID		NUMERIC(38,0)	= NULL,
 
-	@PO_STATUS				INT				OUTPUT,
-	@PO_STATUS_MSG			NVARCHAR(4000)	OUTPUT,
-	@PO_ERROR_DETAIL		NVARCHAR(4000)	OUTPUT
+    @PO_STATUS				INT				OUTPUT,
+    @PO_STATUS_MSG			NVARCHAR(4000)	OUTPUT,
+    @PO_ERROR_DETAIL		NVARCHAR(4000)	OUTPUT
 AS
 BEGIN
-	SET NOCOUNT ON;
-	SET @PO_STATUS = 1;
-	SET @PO_STATUS_MSG = '';
-	SET @PO_ERROR_DETAIL = '';
+    SET NOCOUNT ON;
+    SET @PO_STATUS = 1;
+    SET @PO_STATUS_MSG = '';
+    SET @PO_ERROR_DETAIL = '';
 
-	BEGIN TRY
+    BEGIN TRY
 
-		-- =============================================
-		-- Validate required parameters
-		-- =============================================
-		IF (@PI_USER_LIST IS NULL OR LTRIM(RTRIM(@PI_USER_LIST)) = '')
-		BEGIN
-			THROW 50001, 'noti_user_list_required', 1;
-		END
+        -- =============================================
+        -- Validate required parameters
+        -- =============================================
+        IF (@PI_USER_LIST IS NULL OR LTRIM(RTRIM(@PI_USER_LIST)) = '')
+            BEGIN
+                THROW 50001, 'noti_user_list_required', 1;
+            END
 
-		IF (@PI_SESSION_USER_ID IS NULL)
-		BEGIN
-			THROW 50001, 'session_user_required', 1;
-		END
+        IF (@PI_SESSION_USER_ID IS NULL)
+            BEGIN
+                THROW 50001, 'session_user_required', 1;
+            END
 
-		-- =============================================
-		-- Check permission: Root / SuperAdmin / System เท่านั้น
-		-- =============================================
-		IF NOT EXISTS (
-			SELECT 1
-			FROM [agrimap_app].[UM_USER_ROLE] UR
-			INNER JOIN [agrimap_app].[UM_ROLE] R ON UR.[ROLE_ID] = R.[ROLE_ID]
-			WHERE UR.[USER_ID] = @PI_SESSION_USER_ID
-				AND R.[DEL_FLAG] = 0
-				AND UPPER(LTRIM(RTRIM(R.[ROLE_NAME]))) IN ('ROOT', 'SUPERADMIN', 'SYSTEM')
-		)
-		BEGIN
-			THROW 50001, 'permission_denied', 1;
-		END
+        -- =============================================
+        -- Check permission: Root / SuperAdmin / System เท่านั้น
+        -- =============================================
+        IF
+            NOT EXISTS (
+                SELECT 1
+                FROM [agrimap_app].[UM_USER_ROLE] UR
+                INNER JOIN
+                    [agrimap_app].[UM_ROLE] R
+                    ON UR.[ROLE_ID] = R.[ROLE_ID]
+                WHERE
+                    UR.[USER_ID] = @PI_SESSION_USER_ID
+                    AND R.[DEL_FLAG] = 0
+                    AND UPPER(LTRIM(RTRIM(R.[ROLE_NAME]))) IN (
+                        'ROOT', 'SUPERADMIN', 'SYSTEM'
+                    )
+            )
+            BEGIN
+                THROW 50001, 'permission_denied', 1;
+            END
 
-		-- =============================================
-		-- Query APP_USER_TOKEN for active FCM Tokens
-		-- =============================================
-		-- หา User ทุกคนใน USER_LIST ที่มี Token ที่:
-		--   1. FCM_TOKEN ไม่ว่าง
-		--   2. ยังไม่หมดอายุ
-		--   3. DEL_FLAG = 0 (ไม่ถูก Revoke)
-		-- 1 User อาจมีหลาย Token (หลายอุปกรณ์ / หลาย Session)
-		SELECT
-			T.[USER_ID],
-			T.[FCM_TOKEN],
-			T.[DATE_EXPIRED]
-		FROM [agrimap_app].[APP_USER_TOKEN] T
-		INNER JOIN STRING_SPLIT(@PI_USER_LIST, '^') S
-			ON TRY_CAST(LTRIM(RTRIM(S.[value])) AS NUMERIC(38, 0)) = T.[USER_ID]
-		WHERE T.[DEL_FLAG]		= 0
-			AND T.[DATE_EXPIRED]	> GETDATE()
-			AND T.[FCM_TOKEN]		IS NOT NULL
-			AND LTRIM(RTRIM(T.[FCM_TOKEN])) <> ''
-			AND LTRIM(RTRIM(S.[value])) <> '';
+        -- =============================================
+        -- Query APP_USER_TOKEN for active FCM Tokens
+        -- =============================================
+        -- หา User ทุกคนใน USER_LIST ที่มี Token ที่:
+        --   1. FCM_TOKEN ไม่ว่าง
+        --   2. ยังไม่หมดอายุ
+        --   3. DEL_FLAG = 0 (ไม่ถูก Revoke)
+        -- 1 User อาจมีหลาย Token (หลายอุปกรณ์ / หลาย Session)
+        SELECT
+            T.[USER_ID],
+            T.[FCM_TOKEN],
+            T.[DATE_EXPIRED]
+        FROM [agrimap_app].[APP_USER_TOKEN] T
+        INNER JOIN STRING_SPLIT(@PI_USER_LIST, '^') S
+            ON TRY_CAST(LTRIM(RTRIM(S.[value])) AS NUMERIC(38, 0)) = T.[USER_ID]
+        WHERE
+            T.[DEL_FLAG]		= 0
+            AND T.[DATE_EXPIRED]	> GETDATE()
+            AND T.[FCM_TOKEN]		IS NOT NULL
+            AND LTRIM(RTRIM(T.[FCM_TOKEN])) <> ''
+            AND LTRIM(RTRIM(S.[value])) <> '';
 
-	END TRY
-	BEGIN CATCH
-		SET @PO_STATUS = 0;
-		SET @PO_STATUS_MSG = ERROR_MESSAGE();
-		SET @PO_ERROR_DETAIL = agrimap_app.FN_GET_ERROR_MESSAGE(
-			ERROR_NUMBER(),
-			(SELECT OBJECT_NAME(@@PROCID)),
-			ERROR_LINE(),
-			ERROR_MESSAGE()
-		);
-	END CATCH
+    END TRY
+    BEGIN CATCH
+        SET @PO_STATUS = 0;
+        SET @PO_STATUS_MSG = ERROR_MESSAGE();
+        SET @PO_ERROR_DETAIL = agrimap_app.FN_GET_ERROR_MESSAGE(
+            ERROR_NUMBER(),
+            (SELECT OBJECT_NAME(@@PROCID)),
+            ERROR_LINE(),
+            ERROR_MESSAGE()
+        );
+    END CATCH
 END
 GO

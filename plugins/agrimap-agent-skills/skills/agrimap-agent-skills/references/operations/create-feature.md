@@ -18,6 +18,7 @@
 
 1. Inspect existing structure and propose the smallest complete slice with every output path before writing.
 2. Use the matching target discipline; new project scaffolds require the exact command and working-directory approval.
+3. For SQL creation, apply golden structure above mixed project structure, write one object per canonical sql/<GROUP_OR_DOMAIN>/table|procedure file, use domain messages.sql for guarded LUT_APP_MESSAGES inserts, and run validate-sql-artifacts.mjs.
 
 ## Load now
 

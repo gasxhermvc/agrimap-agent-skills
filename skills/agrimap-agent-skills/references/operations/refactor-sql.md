@@ -18,6 +18,7 @@
 
 1. Load matching schema references as facts before editing and select exactly one refactor mode.
 2. Preserve result sets, transactions, side effects, error mapping, and deployment idempotency unless authorized otherwise.
+3. For every newly created SQL artifact, use the golden-first sql/<GROUP_OR_DOMAIN>/table|procedure plus messages.sql layout, keep one object per file, and run validate-sql-artifacts.mjs before handoff.
 
 ## Load now
 

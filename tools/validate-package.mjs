@@ -80,10 +80,12 @@ for (const required of [
   "skills/agrimap-agent-skills/references/runtime-core.md",
   "skills/agrimap-agent-skills/references/backend-engineer.md",
   "skills/agrimap-agent-skills/references/service-ownership.md",
+  "skills/agrimap-agent-skills/references/evals/sql-scenarios.md",
   "skills/agrimap-agent-skills/scripts/log-events.mjs",
   "skills/agrimap-agent-skills/scripts/identity.mjs",
   "skills/agrimap-agent-skills/scripts/task-artifact-schema.mjs",
   "skills/agrimap-agent-skills/scripts/token-coverage.mjs",
+  "skills/agrimap-agent-skills/scripts/validate-sql-artifacts.mjs",
   "skills/agrimap-agent-skills/assets/task-artifact-schema.json",
   "skills/agrimap-agent-skills/assets/token-coverage-scenarios.json",
   "skills/agrimap-agent-skills/assets/templates/service-ownership.yaml",
@@ -92,6 +94,8 @@ for (const required of [
   "tests/unit/cli-args.test.mjs",
   "tests/unit/extract-code-blocks.test.mjs",
   "tests/unit/fe-scenarios.test.mjs",
+  "tests/unit/sql-artifacts.test.mjs",
+  "tests/unit/sql-scenarios.test.mjs",
   "tests/unit/task-artifact-schema.test.mjs",
   "tests/unit/verify-golden.test.mjs",
   "tests/integration/package/usage.test.mjs",
@@ -163,6 +167,8 @@ if (!packageManifest?.scripts?.test?.includes("npm run validate")) errors.push("
 if (!packageManifest?.scripts?.["test:unit"]?.includes("fe-scenarios.test.mjs")) errors.push("Frontend scenario eval is not wired into the automated unit suite.");
 if (!packageManifest?.scripts?.["test:unit"]?.includes("task-artifact-schema.test.mjs")) errors.push("Task artifact schema contract test is not wired into the automated unit suite.");
 if (!packageManifest?.scripts?.["test:unit"]?.includes("token-coverage.test.mjs")) errors.push("Token coverage audit test is not wired into the automated unit suite.");
+if (!packageManifest?.scripts?.["test:unit"]?.includes("sql-artifacts.test.mjs")) errors.push("SQL artifact contract test is not wired into the automated unit suite.");
+if (!packageManifest?.scripts?.["test:unit"]?.includes("sql-scenarios.test.mjs")) errors.push("SQL cross-provider scenario eval is not wired into the automated unit suite.");
 if (!packageManifest?.scripts?.["audit:tokens"]?.includes("token-coverage.mjs")) errors.push("Token coverage audit command is missing.");
 for (const scriptName of ["test:unit", "test:integration", "test:workspace", "test:usage"]) {
   if (!packageManifest?.scripts?.[scriptName]) errors.push(`package.json script is missing: ${scriptName}`);
@@ -190,6 +196,8 @@ if (runtimeCoreReference.split(/\r?\n/).length > 8) errors.push("Legacy runtime-
 
 const frontendEngineerReference = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "frontend-engineer.md"), "utf8");
 if (!frontendEngineerReference.includes("[fe-scenarios.md](evals/fe-scenarios.md)")) errors.push("Frontend eval catalog is unreachable from the dedicated frontend discipline.");
+const sqlPatternReference = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "patterns", "sql.md"), "utf8");
+if (!sqlPatternReference.includes("[sql-scenarios.md](../evals/sql-scenarios.md)")) errors.push("SQL eval catalog is unreachable from the SQL discipline.");
 
 const glossaryReference = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "glossary.md"), "utf8");
 for (const marker of [
@@ -308,8 +316,10 @@ const rolesReference = await readFile(path.join(root, "skills", "agrimap-agent-s
 if (rolesReference.split(/\r?\n/).length > 40) errors.push("Role map has regrown into a duplicated execution contract.");
 
 const sqlPattern = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "patterns", "sql.md"), "utf8");
-for (const marker of ["## Message collection gate", "`messages.txt`-style artifact", "same code + same meaning", "same code + different or ambiguous meaning", "rerunnable/idempotent insert", "`no message changes`", "`readability-organization`", "`strict-preserve-logic`"])
+for (const marker of ["## Message collection gate", "`messages.sql`", "[agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR])", "same code + same meaning", "same code + different or ambiguous meaning", "`IF NOT EXISTS`", "`no message changes`", "`readability-organization`", "`strict-preserve-logic`"])
   if (!sqlPattern.includes(marker)) errors.push(`SQL message-collection contract missing marker: ${marker}`);
+for (const marker of ["### Stored procedure section comments", "-- Validate required parameters", "-- Validate WIDGET_TYPE_ID", "-- Begin Transaction", "-- Step 1: Insert dashboard widget", "-- Return PO_DATA", "-- Commit Transaction", "-- Rollback Transaction"])
+  if (!sqlPattern.includes(marker)) errors.push(`SQL procedure-comment contract missing marker: ${marker}`);
 
 const promptReference = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "create-prompt.md"), "utf8");
 if (promptReference.includes("`project_kind`")) errors.push("create-prompt still uses the superseded project_kind dimension.");
@@ -359,7 +369,7 @@ for (const operation of ["analyze", "diagnose", "refactor-be", "qa"]) {
   const routedReferences = [...(item?.references || []), ...(item?.conditionalReferences || [])];
   if (!routedReferences.some((reference) => reference.path === requestValueReference)) errors.push(`${operation} does not route to the backend request-value normalization contract.`);
 }
-for (const marker of ["## Error/message reconciliation", "same code + same meaning", "same code + different or ambiguous meaning", "idempotent insert", "`no message changes`"])
+for (const marker of ["## Error/message reconciliation", "same code + same meaning", "same code + different or ambiguous meaning", "`IF NOT EXISTS`", "`no message changes`"])
   if (!backendDiscipline.includes(marker)) errors.push(`Backend message-reconciliation contract missing marker: ${marker}`);
 
 const modelMatrix = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "model-capability-matrix.yaml"), "utf8");

@@ -190,6 +190,33 @@
       ]
     },
     {
+      "id": "create-feature-sql-golden-light",
+      "description": "SQL feature creation uses golden-first structure, canonical artifact paths, and one selected current SQL example",
+      "operation": "create-feature",
+      "depth": "light",
+      "activate": [
+        "patterns/sql.md"
+      ],
+      "select": [
+        "patterns/golden/sql/manifest.json",
+        "patterns/conflict-resolution.md",
+        "patterns/golden/sql/AUTH_FLOW.sql"
+      ],
+      "mustLoad": [
+        "elicitation.md",
+        "patterns/sql.md",
+        "patterns/golden/sql/manifest.json",
+        "patterns/conflict-resolution.md",
+        "patterns/golden/sql/AUTH_FLOW.sql"
+      ],
+      "budgets": {
+        "scenario": {
+          "maxWords": 7700,
+          "maxEstimatedTokensHigh": 22000
+        }
+      }
+    },
+    {
       "id": "qa-fe-main-golden-regulated",
       "description": "Independent frontend QA with one selected current golden architecture entry",
       "operation": "qa",
@@ -215,7 +242,8 @@
       ],
       "budgets": {
         "scenario": {
-          "maxWords": 6700
+          "maxWords": 6900,
+          "maxEstimatedTokensHigh": 18500
         }
       }
     },

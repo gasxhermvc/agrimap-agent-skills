@@ -3,6 +3,7 @@
 ## สารบัญ
 
 - [Source priority](#source-priority)
+- [Output artifact contract](#output-artifact-contract)
 - [Do not invent](#do-not-invent)
 - [Table work](#table-work)
 - [DDL Standard](#ddl-standard--canonical-format-for-new-table-scripts-owner-approved-2026-07-16)
@@ -15,10 +16,41 @@ Classify the task as `sql-table`, `sql-procedure`, or `sql-table-and-procedure`.
 
 ## Source priority
 
-1. Existing target database project and neighboring objects.
-2. Owner-approved behavior and relationships.
-3. Verified project-specific AgriMap pattern.
-4. Golden SQL entries under `golden/sql/`, using each entry's manifest status and evidence mode.
+Use golden AgriMap structure above a neighboring project's structure. Existing projects may contain mixed or accidental conventions and must not silently redefine the shared standard.
+
+1. Owner-approved requirements and decisions for the current task.
+2. Active database schema, callers, result sets, relationships, and deployed behavior as compatibility facts. Preserve these unless the owner approves a behavior or data change.
+3. This normalized SQL contract plus matching `current` entries under `golden/sql/` for structure, naming, types, comments, and file organization.
+4. Neighboring project structure only where the normalized contract and selected golden evidence are silent.
+5. `legacy-compatible` golden evidence and general engineering practice.
+
+When project structure conflicts with golden structure, use golden structure for every new artifact and report the mismatch; do not copy the project inconsistency. Never use structural precedence to change an existing deployed data or behavior contract without authority.
+
+## Output artifact contract
+
+Write every new SQL artifact under one domain directory. Treat `sql-table-and-procedure` as task scope, never as permission to bundle objects.
+
+```text
+sql/
+└── <GROUP_OR_DOMAIN>/
+    ├── table/
+    │   └── <TABLE>.sql
+    ├── procedure/
+    │   └── <PROCEDURE>.sql
+    └── messages.sql
+```
+
+- Use one domain segment such as `UM`, `CONTENT`, or `AUTH_FLOW`. Select the business domain from the feature/golden evidence; do not derive `AUTH_FLOW` as merely `AUTH` by splitting at the first underscore.
+- Store exactly one `CREATE TABLE` object in `sql/<GROUP_OR_DOMAIN>/table/<TABLE>.sql`. Match the uppercase filename stem to the table name, for example `sql/UM/table/UM_USER.sql` or `sql/AUTH_FLOW/table/AUTH_FLOW_TRANSACTION.sql`.
+- Store exactly one `CREATE|ALTER|CREATE OR ALTER PROCEDURE` object in `sql/<GROUP_OR_DOMAIN>/procedure/<PROCEDURE>.sql`. Match the uppercase filename stem to the procedure name, for example `sql/UM/procedure/UM_USER_I.sql`.
+- Store the domain's idempotent message inserts only in lowercase `sql/<GROUP_OR_DOMAIN>/messages.sql`.
+- Never combine multiple tables, multiple procedures, or a table and procedure in one file. Never put table/procedure definitions in `messages.sql`.
+- List every exact output path before writing. For a modified legacy artifact, preserve its existing path unless the task explicitly authorizes migration; apply this layout to all newly created artifacts.
+- Validate created artifacts before handoff:
+
+```text
+node <skill-root>/scripts/validate-sql-artifacts.mjs --cwd . --files "sql/UM/table/UM_USER.sql,sql/UM/procedure/UM_USER_I.sql,sql/UM/messages.sql"
+```
 
 ## Do not invent
 
@@ -37,7 +69,7 @@ Determine:
 - deployment order and rollback;
 - whether seed data is truly defined.
 
-Follow the local script header, column grouping, constraint sections, extended-property style, and `GO` rhythm. Do not normalize an existing table script merely to make it look newer.
+Use the matching golden header, column grouping, constraint sections, extended-property style, and `GO` rhythm. Do not copy a conflicting neighboring-project style into a new artifact. Do not normalize an unrelated existing table merely to make it look newer.
 
 ## DDL Standard — canonical format for NEW table scripts (owner-approved 2026-07-16)
 
@@ -86,6 +118,27 @@ GO
 
 ### คอลัมน์มาตรฐาน AgriMap (จัดกลุ่มพร้อม comment คั่น)
 
+Apply these table-class rules before adding feature columns:
+
+| Table class | Required key | Required display column |
+|---|---|---|
+| Lookup (`LUT_*`) | `[ID] INT` primary key | `[NAME] NVARCHAR(255)` |
+| General | `[ID] NUMERIC(38, 0)` primary key | feature-defined |
+
+`LUT_APP_MESSAGES` is a fixed message registry with `[ID]` and `[DESCR]`; it is not the generic `LUT_*` table template and must not be recreated by a feature script.
+
+Every new business table, including a new lookup table, includes this lifecycle/audit baseline unless the owner approves a recorded exception:
+
+```sql
+[DATE_CREATED]   DATETIME2(7) NOT NULL,
+[DATE_MODIFIED]  DATETIME2(7) NULL,
+[USER_CREATED]   NUMERIC(38, 0) NOT NULL,
+[USER_MODIFIED]  NUMERIC(38, 0) NULL,
+[DEL_FLAG]       BIT NOT NULL
+```
+
+`USER_CREATED` and `USER_MODIFIED` are user identifiers, not timestamps. Their type follows the AgriMap general user key `NUMERIC(38, 0)`.
+
 ```sql
 CREATE TABLE [agrimap_app].[MY_TABLE]
 (
@@ -101,7 +154,8 @@ CREATE TABLE [agrimap_app].[MY_TABLE]
     -- Audit Columns
     [DATE_CREATED]    DATETIME2(7) NOT NULL,           -- DF → SYSUTCDATETIME() (UTC เสมอ)
     [DATE_MODIFIED]   DATETIME2(7) NULL,
-    [USER_MODIFIED]   NVARCHAR(50) NULL,               -- เมื่อระบบต้องรู้ผู้แก้
+    [USER_CREATED]    NUMERIC(38, 0) NOT NULL,
+    [USER_MODIFIED]   NUMERIC(38, 0) NULL,
 
     -- Soft Delete (และ Concurrency เมื่อจำเป็น)
     [DEL_FLAG]        BIT NOT NULL,                    -- DF → (0)
@@ -113,7 +167,7 @@ CREATE TABLE [agrimap_app].[MY_TABLE]
 ) ON [PRIMARY];
 ```
 
-- ชื่อตาราง/คอลัมน์: `UPPER_SNAKE_CASE` · lifecycle ใช้ชุด `DATE_CREATED / DATE_MODIFIED / DATE_EXPIRED`
+- ชื่อตาราง/คอลัมน์: `UPPER_SNAKE_CASE` · lifecycle ใช้ชุด `DATE_CREATED / DATE_MODIFIED / USER_CREATED / USER_MODIFIED / DEL_FLAG` และเพิ่ม `DATE_EXPIRED` เมื่อ contract ต้องใช้
 - soft delete ใช้ `DEL_FLAG BIT NOT NULL DEFAULT (0)` เสมอ — ไม่ประดิษฐ์ชื่ออื่น
 
 ### ชนิดของ ID (กติกาปิด — owner กำหนด 2026-07-16)
@@ -166,10 +220,88 @@ surrogate key `[ID]` ใช้ได้ **2 ชนิดเท่านั้น
 - ตาราง `LUT_*` ที่ `[ID]` ไม่ใช่ `INT` / ตารางหลักที่ `[ID]` ไม่ใช่ `NUMERIC(38, 0)` → violation
 - ไฟล์ใหม่ไม่มี rerun guard / TRY-CATCH transaction / extended properties → violation
 
-ตัวอย่างเต็มที่ถูกต้องตามมาตรฐานนี้: งานจริง `APP_STATE.sql` (task
-`20260715204535-sql-server-ddl-app-state`) — สร้าง 4 ตารางด้วยโครงนี้ครบทุกข้อ
-
 ## Stored procedure work
+
+Name every procedure by its behavior and keep the filename identical to the object name:
+
+| Suffix | Behavior |
+|---|---|
+| `_I` | insert/add |
+| `_U` | update/edit |
+| `_D` | delete or approved soft delete |
+| `_Q` | query/read |
+| `_CHECK_Q` | validation/existence check without mutation |
+
+Reject an invented suffix for these behaviors. A procedure file contains one procedure only. Use the selected current golden procedure shell for the comment block: object header, `Author`, `Create date`, `Description`, runnable `Data test`, `Modified by`, `Modified date`, and modification `Description`. Preserve complete `PI_*` inputs and `PO_*` outputs required by the active contract.
+
+### Stored procedure section comments
+
+Every new procedure uses compact three-line section comments for control-flow gates and major business steps. Copy the separator exactly, keep the three lines adjacent, and align the block with the statement it describes:
+
+```sql
+-- =============================================
+-- Begin Transaction
+-- =============================================
+BEGIN TRANSACTION;
+
+BEGIN TRY
+    -- =============================================
+    -- Validate required parameters
+    -- =============================================
+    IF (@PI_SESSION_USER_ID IS NULL)
+    BEGIN
+        THROW 50001, 'session_user_required', 1;
+    END
+
+    -- =============================================
+    -- Validate WIDGET_TYPE_ID
+    -- =============================================
+    IF NOT EXISTS
+    (
+        SELECT 1
+        FROM [agrimap_app].[LUT_DD_WIDGET_TYPE]
+        WHERE [ID] = @PI_WIDGET_TYPE_ID
+          AND [ACTIVE] = 1
+    )
+    BEGIN
+        THROW 50001, 'invalid_widget_type', 1;
+    END
+
+    -- =============================================
+    -- Step 1: Insert dashboard widget
+    -- =============================================
+    INSERT INTO [agrimap_app].[DD_DASHBOARD_WIDGET] (...)
+    VALUES (...);
+
+    -- =============================================
+    -- Return PO_DATA
+    -- =============================================
+    SET @PO_DATA = SCOPE_IDENTITY();
+
+    -- =============================================
+    -- Commit Transaction
+    -- =============================================
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    -- =============================================
+    -- Rollback Transaction
+    -- =============================================
+    IF @@TRANCOUNT > 0
+        ROLLBACK TRANSACTION;
+
+    THROW;
+END CATCH;
+```
+
+Apply these comment gates:
+
+- Group null/blank checks under one `Validate required parameters` section. Do not repeat the section for every parameter in the same contiguous group.
+- Open a separate `Validate <PARAMETER_OR_RULE>` section for each lookup, existence, duplicate, permission, state, or business-rule gate. Every numbered `THROW`, such as `THROW 50001`, must belong to the nearest `Validate ...` section. Use `Validate`, not a vague `Check data` or `Validate data` title.
+- Mark each major query or mutation phase as `Step <N>: <specific business intent>`. Start at `1`, increase without gaps, and let one step cover adjacent statements that implement the same intent. Do not use a title that merely repeats `INSERT`, `UPDATE`, or `SELECT` without the business purpose.
+- Place `Begin Transaction`, `Commit Transaction`, and `Rollback Transaction` immediately before their matching transaction boundary when that boundary exists.
+- Place `Return PO_DATA` immediately before assigning or selecting the `@PO_DATA` output. Use the actual `PO_*` name instead when the contract defines a different single output; list multiple output names in one specific `Return ...` title when they are produced together.
+- Use ordinary inline comments only for a non-obvious condition or transformation inside a section. Section comments describe intent and flow; they do not narrate every SQL line.
 
 Determine:
 
@@ -184,14 +316,30 @@ Preserve the local `TRY/CATCH`, output, audit, and transaction pattern. Do not c
 
 ## Message collection gate
 
-Run this gate after creating or changing `sql-table`, `sql-procedure`, or `sql-table-and-procedure`, and after a no-logic-change SQL refactor. A `messages.txt`-style artifact means one reviewable feature/deployment artifact that lists each error code, its user-facing meaning, and the idempotent insert required by the active project. It does not mean every project uses the golden table or column names.
+Run this gate after creating or changing `sql-table`, `sql-procedure`, or `sql-table-and-procedure`, and after a no-logic-change SQL refactor. Use exactly `sql/<GROUP_OR_DOMAIN>/messages.sql` as the reviewable feature/deployment artifact. Store every generated message in `[agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR])`.
 
-1. Locate the active project's message artifact and dictionary contract from repository/deployment evidence. Reuse `messages.txt` when that is the local convention; otherwise use the proven equivalent. Never infer `[LUT_APP_MESSAGES]`, `[MESSAGE]`, `[SYS_ERROR_CODE]`, column names, schema, module fields, or language from golden evidence alone.
+1. Locate or create the domain `messages.sql`. Do not create alternate `MESSAGE.sql`, `messages.txt`, per-procedure message files, or a project-specific dictionary shape.
 2. Inventory every user-facing code emitted, returned, mapped, or forwarded by the touched SQL and its in-scope BE caller. Include project-specific equivalents of `THROW 50001, '<error_code>', 1`; do not limit the scan to that syntax.
 3. Reconcile by exact code and business meaning before writing:
    - same code + same meaning: reuse the existing entry and do not add another insert;
    - same code + different or ambiguous meaning: stop that entry as an owner conflict; never overwrite it silently;
-   - new code: add one clear user-facing definition in the active project language and one rerunnable/idempotent insert that matches the proven dictionary schema and deployment style.
+   - new code: add one clear user-facing definition and one rerunnable insert guarded by `IF NOT EXISTS` against the same ID, for example:
+
+```sql
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM [agrimap_app].[LUT_APP_MESSAGES]
+    WHERE [ID] = 'user_not_found'
+)
+BEGIN
+    INSERT INTO [agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR])
+    VALUES ('user_not_found', N'ไม่พบข้อมูลผู้ใช้งานที่ต้องการ');
+END;
+GO
+```
+
+   The guard and insert must use the same literal `[ID]`, so rerunning `messages.sql` never fails on an existing message.
 4. Keep database exception text, stack traces, SQL text, and other technical diagnostics in logs/telemetry. Do not expose or store them as the user-facing dictionary description.
 5. For table-only work, report the inventory even when it is empty. Record `no message changes` rather than inventing validation or business errors that the table does not emit.
 6. Before handoff, report the message artifact path, codes found, entries reused, entries added, conflicts, and duplicate/idempotency check. If a user-facing code exists but the dictionary contract cannot be proven, the feature is incomplete: obtain the missing project evidence instead of generating a guessed insert.
@@ -200,10 +348,12 @@ For `readability-organization` and `strict-preserve-logic`, collection is contra
 
 ## Golden examples and conflicts
 
-The SQL collection manifest covers every file under `golden/sql/`. It intentionally mixes current AgriMap schema/deployment references, one curated idempotent message example, and immutable legacy-compatible evidence. Read `golden/sql/manifest.json` before selecting an entry.
+The SQL collection manifest covers every file under `golden/sql/`. It intentionally mixes current AgriMap schema/deployment references, one curated idempotent message example, and immutable legacy-compatible evidence. Read `golden/sql/manifest.json` before selecting an entry. Use the normalized contract in this file plus a matching `current` entry above neighboring project structure.
 
-Read [conflict-resolution.md](conflict-resolution.md) before using them. Legacy entries contain competing styles and business semantics, including default constraints, splitter/cursor choices, cascade actions, fixed seed IDs, duplicate index candidates, and replace-all role/permission updates. Current entries prove only their recorded AgriMap object shape; they do not override the active database reference. Do not promote a project-specific variant without current-project evidence and, where logical/data behavior changes, owner approval.
+Read [conflict-resolution.md](conflict-resolution.md) before using them. Legacy entries contain competing styles and business semantics, including default constraints, splitter/cursor choices, cascade actions, fixed seed IDs, duplicate index candidates, and replace-all role/permission updates. Current entries and this normalized contract override project structure for new artifacts; active schema, callers, and deployed behavior remain compatibility facts. Never copy business semantics from an example without project evidence and, where logical/data behavior changes, owner approval.
+
+For release evaluation after changing this SQL discipline or its golden guidance, run [sql-scenarios.md](../evals/sql-scenarios.md). Do not load the eval catalog during ordinary SQL work.
 
 ## SQL verification
 
-Use parse/build validation when available, inspect dependencies, validate object/result contracts, test representative and failure inputs, check transaction rollback, and measure execution plans/data volume for performance work.
+Run `validate-sql-artifacts.mjs` on every created SQL artifact. Then use parse/build validation when available, inspect dependencies, validate object/result contracts, test representative and failure inputs, check transaction rollback, and measure execution plans/data volume for performance work.

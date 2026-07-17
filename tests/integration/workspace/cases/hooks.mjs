@@ -129,6 +129,17 @@ export async function hooks(harness) {
   assert.match(hookUnknown.hookSpecificOutput.additionalContext, /Resolve it only after selecting standard\/regulated depth/);
   assert.doesNotMatch(hookUnknown.hookSpecificOutput.additionalContext, /Confirmed session requester: Bob/);
 
+  const hookWithModel = run(hookScript, ["--provider", "codex", "--mode", "session"], {
+    cwd: temp,
+    session_id: "model-aware-session",
+    hook_event_name: "SessionStart",
+    model: "gpt-5.6",
+  });
+  assert.match(hookWithModel.hookSpecificOutput.additionalContext, /Host-reported active model: gpt-5\.6/);
+  assert.match(hookWithModel.hookSpecificOutput.additionalContext, /Previously recorded execution identity .*model=gpt-5\.6/);
+  assert.match(hookWithModel.hookSpecificOutput.additionalContext, /--model "gpt-5\.6" --provider codex/);
+  assert.doesNotMatch(hookWithModel.hookSpecificOutput.additionalContext, /model=unknown/);
+
   run(workspaceScript, ["identify", "--cwd", temp, "--session", "transcript-fallback.jsonl", "--owner", "Carol", "--provider", "gemini"]);
   const transcriptFallbackHook = run(hookScript, ["--provider", "gemini", "--mode", "session"], {
     cwd: temp,

@@ -20,13 +20,13 @@ Use this file before using any golden material. First read `golden/manifest.json
 ## Decision precedence
 
 1. Owner-approved behavior for the current task.
-2. Current project code, tests, contracts, generated-code boundary, and neighboring conventions.
-3. A verified AgriMap pattern or golden entry marked `current`.
-4. A `canonical-v1` decision in this file.
+2. Current project code, tests, schemas, callers, and deployed contracts as facts about behavior and compatibility.
+3. A verified AgriMap pattern, normalized pattern contract, or golden entry marked `current` for structure, naming, types, comments, and artifact layout.
+4. Neighboring project structure only where current AgriMap guidance is silent.
 5. Annotated `legacy-compatible` or `unverified` golden evidence.
 6. General engineering practice.
 
-When two current-project sources disagree, show the evidence and trade-off to the owner. Do not use a golden example to break an active contract.
+When project structure conflicts with current golden structure, use golden structure for new work because existing projects may contain mixed conventions. Preserve active behavior/data compatibility and show material conflicts to the owner; structural precedence is not permission to break a deployed contract.
 
 ## Statuses
 
@@ -83,16 +83,19 @@ Applies to the `@agrimap/*` workspace (`golden/frontend-libraries`). The overrid
 
 | Evidence | Conflict | Resolution | Status |
 | --- | --- | --- | --- |
-| `patterns/sql.md` DDL Standard vs golden SSMS-export scripts (`USE [AgriMapDB]`, `[nvarchar] (50)`, per-statement `GO`, `WITH (PAD_INDEX...)`) | Two DDL styles coexist in evidence. | Owner decision 2026-07-16: the modern format in `sql.md` §DDL Standard (no `USE`, rerun guard, single TRY/CATCH transaction, named `DF_/CK_/FK_/IX_/UX_` constraints, uppercase types, Thai `MS_Description`) is canonical for every NEW script. Golden SSMS-style files are immutable legacy evidence — never author new scripts in that style and never mass-rewrite old ones. | `canonical-v1` |
-| `NOTIFICATION_*.sql` | Unnamed defaults and section naming may differ from the active database project. | Follow the neighboring table/deployment convention; do not normalize unrelated scripts. New scripts always name defaults (`DF_`) per the DDL Standard. | `project-dependent` |
+| `patterns/sql.md` normalized DDL contract vs raw SSMS-export surface details (`USE [AgriMapDB]`, bracketed lowercase types, repeated generated options) | Raw entries retain tool-export noise while new work needs one stable structure. | Use the normalized golden contract in `sql.md` for every new script. Reuse matching `current` golden object/comment/section shapes only where they do not conflict with the normalized contract. Never let a neighboring project's mixed structure override it and never mass-rewrite unrelated legacy scripts. | `canonical-v1` |
+| `NOTIFICATION_*.sql` | Unnamed defaults and section naming may differ from the normalized golden contract. | Do not copy those legacy differences into new work. New scripts follow the normalized golden section order and always name defaults (`DF_`); do not normalize unrelated existing scripts. | `resolved-defect` |
 | `CONTENT.sql` (`[ID] INT` on a non-lookup table) vs `UM_USER`/`APP_USER_TOKEN` (`NUMERIC(38, 0)`) | Surrogate ID types are mixed in golden evidence. | Owner decision 2026-07-16: `[ID]` is `NUMERIC(38, 0)` for main/transaction tables and `INT` only for `LUT_*` lookup tables; no other ID type is allowed, and FK columns must match the referenced ID type exactly. `CONTENT.sql` is legacy — do not imitate, and never retype an existing table's ID without an owner decision. | `canonical-v1` |
+| New `LUT_*` and general tables | Project copies use mixed lookup display columns and audit field types. | New lookup tables use `[ID] INT` and `[NAME] NVARCHAR(255)`. New general tables use `[ID] NUMERIC(38, 0)`. New business tables include `DATE_CREATED/DATE_MODIFIED` as `DATETIME2(7)`, `USER_CREATED/USER_MODIFIED` as `NUMERIC(38, 0)`, and `DEL_FLAG BIT`; `LUT_APP_MESSAGES` is the fixed registry exception. | `canonical-v1` |
+| SQL task produces multiple tables/procedures/messages | Some projects group deployment SQL into one large file. | New output uses one table or procedure per file under `sql/<GROUP_OR_DOMAIN>/table|procedure/`; domain message inserts live only in `sql/<GROUP_OR_DOMAIN>/messages.sql`. `sql-table-and-procedure` describes scope, not bundling. | `canonical-v1` |
+| Stored procedure naming | Projects contain ad hoc procedure verbs and suffixes. | Use `_I` insert, `_U` update, `_D` delete, `_Q` query, and `_CHECK_Q` validation query. The object name and uppercase filename stem must match. | `canonical-v1` |
 | `NOTIFICATION_CONTENT.sql` | A unique key on `(MESSAGE_ID, CHANNEL_ID)` is paired with a same-key non-unique index. | Do not reproduce a duplicate index unless included columns/order/filter or measured workload proves a separate purpose. | `resolved-defect` |
 | `NOTIFICATION_*.sql` | Foreign keys mix `CASCADE` and `NO ACTION`. | Cascade behavior is relationship semantics, not style. Require schema/caller evidence and owner decision before changing it. | `owner-decision-required` |
 | `LUT_NOTI_CHANNEL.sql` | Fixed identity seed values are deployment and ownership assumptions. | Confirm stable IDs, rerun/idempotency behavior, and environment ownership before seeding. | `owner-decision-required` |
 | `FILE_STORAGE_I.sql`, `UM_USER_I.sql`, `UM_USER_U.sql`, `NOTIFICATION_USERS_Q.sql` | Custom splitter, `STRING_SPLIT`, and cursors coexist. | Choose from database version, input contract, order requirements, volume, and measured plan. Do not promote one technique globally yet. | `project-dependent` |
 | `UM_USER_U.sql` | Update deletes and recreates all roles/permissions. | Treat as explicit replace semantics. Never infer it for a generic update or refactor; owner approval and regression cases are required. | `owner-decision-required` |
-| `UM_USER_I.sql`, `UM_USER_U.sql`, `UM_USER_D.sql`, `messages.txt` | Role restrictions and message codes encode business policy. | Preserve as project behavior only; do not publish it as a universal coding convention. | `owner-decision-required` |
-| Message artifacts across active projects | Dictionary tables, columns, module fields, languages, and deployment shapes differ. | Discover and reuse the active project's `messages.txt` or equivalent contract; never select a golden dictionary profile globally. | `project-dependent` |
+| `UM_USER_I.sql`, `UM_USER_U.sql`, `UM_USER_D.sql`, legacy `messages.txt` evidence | Role restrictions and message codes encode business policy. | Preserve the role/message meaning as project behavior, but do not copy the legacy message filename or layout into new artifacts. | `owner-decision-required` |
+| Message artifacts across active projects | Dictionary tables, filenames, columns, and deployment shapes differ. | Use the AgriMap registry `[agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR])` and the exact domain filename `messages.sql`. Guard every insert with `IF NOT EXISTS` on the same ID so the script is rerunnable. | `canonical-v1` |
 | Same error code with different or ambiguous meanings | Reusing the key can show users the wrong message or overwrite another module's contract. | Stop that entry and obtain an owner decision; never silently replace the existing meaning. | `owner-decision-required` |
 
 ## Copy-readiness gate

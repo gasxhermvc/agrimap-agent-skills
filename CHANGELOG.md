@@ -2,6 +2,10 @@
 
 ## 0.1.2 - 2026-07-16
 
+- Made the normalized SQL golden contract authoritative over inconsistent project structure for new artifacts, with one object per canonical domain path and exact `messages.sql` handling.
+- Added AgriMap lookup/general key types, audit fields, stored-procedure suffixes, guarded `LUT_APP_MESSAGES (ID, DESCR)` inserts, a deterministic SQL artifact validator, and cross-provider SQL scenarios.
+- Captured the host-reported model in session hook context and propagated it to requester identification instead of reporting `unknown` when the host supplies a model.
+- Standardized stored-procedure section comments for validation gates, transaction boundaries, numbered business steps, and `PO_DATA` returns, with deterministic validation.
 - Split alias loading into `lifecycle-core.md` plus exactly one operation contract, with glossary/discipline references conditional.
 - Added enforced `light|standard|regulated` workflow depth: light is stateless, standard omits separate QA, and regulated retains the full gate.
 - Replaced atomic-task checkpoint guidance with four milestone types and command-level rejection of created/terminal checkpoint events.

@@ -204,7 +204,7 @@
       "requiredInputs": ["target", "refactor_mode"],
       "conditionalInputs": ["decision-owner approval for data, result-shape, transaction, or error-contract change"],
       "example": "$agm-refactor-sql depth=light target_kind=sql-procedure refactor_mode=strict-preserve-logic target_files=sql/usp_Order_Search.sql",
-      "instructions": ["Load matching schema references as facts before editing and select exactly one refactor mode.", "Preserve result sets, transactions, side effects, error mapping, and deployment idempotency unless authorized otherwise."],
+      "instructions": ["Load matching schema references as facts before editing and select exactly one refactor mode.", "Preserve result sets, transactions, side effects, error mapping, and deployment idempotency unless authorized otherwise.", "For every newly created SQL artifact, use the golden-first sql/<GROUP_OR_DOMAIN>/table|procedure plus messages.sql layout, keep one object per file, and run validate-sql-artifacts.mjs before handoff."],
       "references": [
         { "path": "refactor-modes.md", "why": "allowed behavior-change boundary" },
         { "path": "patterns/sql.md", "why": "current SQL contract and message gate" }
@@ -261,7 +261,7 @@
       "requiredInputs": ["objective"],
       "conditionalInputs": ["target_kind when placement evidence is absent", "backend_profile for be-main", "full command approval for a new project scaffold"],
       "example": "$agm-create-feature depth=light target_kind=be-main backend_profile=agmws objective=\"Add cancel-order endpoint\"",
-      "instructions": ["Inspect existing structure and propose the smallest complete slice with every output path before writing.", "Use the matching target discipline; new project scaffolds require the exact command and working-directory approval."],
+      "instructions": ["Inspect existing structure and propose the smallest complete slice with every output path before writing.", "Use the matching target discipline; new project scaffolds require the exact command and working-directory approval.", "For SQL creation, apply golden structure above mixed project structure, write one object per canonical sql/<GROUP_OR_DOMAIN>/table|procedure file, use domain messages.sql for guarded LUT_APP_MESSAGES inserts, and run validate-sql-artifacts.mjs."],
       "references": [
         { "path": "elicitation.md", "why": "placement, naming, and scaffold gates" }
       ],

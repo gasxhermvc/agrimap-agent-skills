@@ -192,6 +192,18 @@ For both `be-main` and `be-library`, request/header/cookie/query/form/body work 
 
 Foundation reuses `agrimap.platform` before creating Core infrastructure. Active development analyzes the existing Domain first and completes the smallest vertical slice. Stabilization emphasizes regression safety, production configuration, deployment, existing vulnerability checks, and bounded refactor.
 
+## SQL discipline
+
+For new SQL artifacts, the normalized AgriMap golden contract outranks a project's inconsistent folder, naming, type, and comment conventions. Existing deployed schema and caller behavior remain compatibility facts and must not be broken silently.
+
+- Write one SQL object per file under `sql/<GROUP_OR_DOMAIN>/table/<TABLE>.sql` or `sql/<GROUP_OR_DOMAIN>/procedure/<PROCEDURE>.sql`.
+- Write guarded message inserts only to `sql/<GROUP_OR_DOMAIN>/messages.sql`, targeting `LUT_APP_MESSAGES (ID, DESCR)` with `IF NOT EXISTS`.
+- Lookup tables use an `INT` key and `NAME NVARCHAR(255)`; general tables use a `NUMERIC(38,0)` key.
+- Stored procedures use `_I`, `_U`, `_D`, `_Q`, or `_CHECK_Q` according to their operation.
+- Stored procedures mark validation gates, transaction boundaries, numbered business steps, and `PO_*` returns with canonical three-line section comments.
+
+Validate newly created artifacts with `validate-sql-artifacts.mjs --cwd <workspace> --files <comma-separated-paths>`.
+
 ## Model labels and prompt generation
 
 The default capability matrix preserves configurable model labels. Claude reasoning/review uses labels `fable` (displayed as Fable 5) or `opus4.8`; `fable` is also the hard-executor label, while standard/light execution uses `sonnet5`, `sonnet4.6`, or `haiku4.5`. Codex reasoning/review uses label `GPT-5.6-sol`; execution uses labels `gpt-5.6-sol`, `gpt-5.4`, or `gpt-5.4-mini`. Gemini uses `gemini-cli-default`. None of these labels proves that the current host exposes a model with that name.
@@ -277,7 +289,7 @@ The current FE-library architecture, naming, generated API, environment, Playgro
 - BE main repository/domain/response choices where neighboring code conflicts, plus representative tests;
 - `agmbo` scheduler/retry/concurrency examples and run commands;
 - BE library compatibility cases and representative tests beyond Playground/smoke paths;
-- project-specific SQL relationship/deployment/test conventions.
+- project-specific SQL relationship, deployed-behavior, and test conventions that the normalized golden contract does not define.
 
 See `skills/agrimap-agent-skills/references/patterns/owner-example-intake.md` for the exact files, symbols, naming, comments, and commands to provide. Raw examples stay immutable; annotation and status live separately.
 

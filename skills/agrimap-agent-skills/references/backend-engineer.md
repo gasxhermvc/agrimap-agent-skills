@@ -105,8 +105,8 @@ Active-development gate:
 Run this gate whenever touched BE code defines, emits, maps, translates, or forwards a user-facing error code, including codes received from a stored procedure.
 
 1. Trace exact codes across Domain, Application/UseCase, Presentation or batch boundary, Infrastructure, and in-scope SQL. Distinguish a user-facing contract code from a technical exception or diagnostic.
-2. Locate the active service/repository message artifact (`messages.txt` or its proven equivalent) and reuse its dictionary schema, language, module ownership, and deployment convention. SQL and BE in the same feature reconcile against that one logical registry unless the project proves separate owners.
-3. Apply the same-code rule before adding anything: same code + same meaning is reused without another insert; same code + different or ambiguous meaning is an owner conflict; a new code receives one clear user-facing definition plus one idempotent insert matching the proven project contract.
+2. For an AgriMap-deployed message, use `sql/<GROUP_OR_DOMAIN>/messages.sql` and `[agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR])`; the normalized golden registry outranks a project's legacy `messages.txt` or custom SQL layout. If the service proves that a code belongs to an external non-SQL registry with a separate owner, preserve that compatibility boundary and report it instead of inventing a SQL insert.
+3. Apply the same-code rule before adding anything: same code + same meaning is reused without another insert; same code + different or ambiguous meaning is an owner conflict; a new code receives one clear user-facing definition plus one `IF NOT EXISTS`-guarded insert that checks and inserts the same ID.
 4. Keep raw exception messages, stack traces, database text, and internal identifiers in logs/telemetry rather than the user-facing description.
 5. Handoff must name the artifact path and list codes found, reused, added, conflicted, and verified for duplicates/idempotency. If no user-facing code changed, record `no message changes`. A code with no proven dictionary contract is incomplete, not permission to guess a table or insert.
 

@@ -118,6 +118,7 @@ const stateRoot = path.join(cwd, ".agrimap-agent");
 const sessionId = safeSessionId(input.session_id || input.sessionId || input.conversation_id || input.conversationId);
 const hookSessionKey = sessionId || safeSessionId(path.basename(input.transcript_path || input.transcriptPath || ""));
 const effectiveSessionId = hookSessionKey;
+const hostReportedModel = String(input.model || "").trim() || null;
 const rawIdentity = effectiveSessionId
   ? await readJson(path.join(stateRoot, "runtime", "sessions", `${effectiveSessionId}.json`))
   : null;
@@ -127,7 +128,10 @@ const activeTask = effectiveSessionId
   ? await readJson(path.join(stateRoot, "runtime", "active", `${effectiveSessionId}.json`))
   : null;
 const taskRequester = activeTask?.requestedBy || null;
-const execution = activeTask || confirmedIdentity || identity || {};
+const execution = {
+  ...(activeTask || confirmedIdentity || identity || {}),
+  ...(hostReportedModel ? { model: hostReportedModel } : {}),
+};
 const suggestedRequester = confirmedIdentity ? null : gitRequesterSuggestion(cwd);
 const projectMemory = await readText(path.join(stateRoot, "memory", "project.md"));
 const currentTaskMemory = activeTask?.taskId
@@ -169,7 +173,9 @@ context.push(
     ? `- Ignored mismatched hook configuration provider=${configuredProvider}; host evidence requires provider=${provider}. Refresh the installed plugin to remove the stale hook.`
     : `- Hook configuration and runtime provider agree: ${provider}.`,
   `- Hook mode: ${mode}`,
-  "- Record executing model and provider from your own runtime identity: you always know your model family and host CLI. The resolved hook provider is runtime evidence, but your own host/model identity still wins if any external configuration is stale; `model: unknown` is a recording defect unless you genuinely cannot name your own model.",
+  hostReportedModel
+    ? `- Host-reported active model: ${hostReportedModel}. Record this exact value as actual model; keep configured modelLabel separate.`
+    : "- The hook did not report an active model. Record `model: unknown` only after checking the host runtime; never substitute a configured modelLabel as actual model.",
   effectiveSessionId
     ? `- Session: ${effectiveSessionId}${sessionId ? "" : " (derived from transcript path)"}`
     : "- Session ID is unavailable. Create one only for standard/regulated work.",
@@ -183,8 +189,8 @@ context.push(
     : "- No active task requester is recorded for this session.",
   `- Previously recorded execution identity (may be stale — your own runtime identity wins): model=${execution.model || "unrecorded"}, role=${execution.role || "leader"}, agent=${execution.agent || "primary"}, provider=${execution.provider || "unrecorded"}.`,
   effectiveSessionId
-    ? `- For standard/regulated work only, persist/reconfirm with agm-workspace.mjs identify --session ${effectiveSessionId} --owner <confirmed-human-name>.`
-    : "- For standard/regulated work only, create a stable session ID and persist the confirmed human.",
+    ? `- For standard/regulated work only, persist/reconfirm with agm-workspace.mjs identify --session ${effectiveSessionId} --owner <confirmed-human-name> --model "${hostReportedModel || "unknown"}" --provider ${provider}.`
+    : `- For standard/regulated work only, create a stable session ID and persist the confirmed human with --model "${hostReportedModel || "unknown"}" --provider ${provider}.`,
   suggestedRequester
     ? `- Unconfirmed Git-name suggestion: ${suggestedRequester}. Ask the human to confirm it; never attribute work automatically from this value.`
     : "- Do not substitute machine, OS, or Git identity for explicit human confirmation.",
