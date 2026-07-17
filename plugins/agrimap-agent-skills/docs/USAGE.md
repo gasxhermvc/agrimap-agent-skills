@@ -259,6 +259,8 @@ Agent: สร้าง draft prompt แล้ว; ยังไม่รันค
 | `strict-allow-logic-change` | `$agm-refactor-be requested_by=Billy target_kind=be-main backend_profile=agmws phase=stabilization refactor_mode=strict-allow-logic-change objective="Change retry rule after decision-owner trade-off"` |
 | `targeted-bug-fix` | `$agm-refactor-fe requested_by=Billy target_kind=fe-main phase=active-development refactor_mode=targeted-bug-fix symptom="double submit after timeout"` |
 
+ถ้า `$agm-refactor-sql` ยังระบุ mode ไม่ได้ ต้องแสดงทั้ง 5 enum พร้อมขอบเขตหนึ่งบรรทัดและ mark ค่าแนะนำในคำตอบแรก ห้ามตอบเพียง recommendation. หลังสร้างหรือแก้ SQL writer เช็ค `sqlfluff --version` (ติดตั้งด้วย `pip install sqlfluff` เฉพาะเมื่อไม่มี) แล้วรัน `sqlfluff format --exclude-rules "CP02, LT01, RF06" --dialect tsql <FILE>.sql` สำหรับไฟล์เดียว หรือเปลี่ยนท้ายเป็น `.` จาก folder เป้าหมายสำหรับหลายไฟล์. ถ้าแบบ folder จบด้วย error ถือว่ายังไม่ครบและอาจ format ไปเพียงบางส่วน: แยกรันไฟล์ที่แก้เพื่อหา parse error, แก้เฉพาะใน scope, รัน folder ซ้ำให้ผ่าน แล้วจึง validate. QA ห้ามติดตั้งหรือรัน SQLFluff.
+
 ## 4. Larger text / ข้อความยาว
 
 วิธีแนะนำคือเก็บข้อความในไฟล์ Markdown ภายในโปรเจกต์แล้วชี้ path เพื่อรักษาหัวข้อ, line references และตรวจ coverage ได้. ตัวอย่าง fixture อยู่ที่ [LONG-REQUEST.md](../examples/inputs/LONG-REQUEST.md):

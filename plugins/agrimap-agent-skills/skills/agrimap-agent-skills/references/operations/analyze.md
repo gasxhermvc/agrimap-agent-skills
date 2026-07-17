@@ -16,8 +16,8 @@
 
 ## Execute this contract
 
-1. Inspect the full target and affected callers before conclusions.
-2. Return facts, inferences, unknowns, impacts, viable options, and a recommendation; never edit product artifacts.
+1. Inspect the full target and affected callers before conclusions. Database-linked conclusions require actual project code, the applicable db-schema, and representative local examples/data shapes; otherwise label the result preliminary and list the missing evidence without guessing or connecting to a database.
+2. Return CLI-readable plain Markdown in this order: Scope, Evidence, Findings, Impacts, Options, Recommendation, Unknowns. Use short bullets, no wide tables or raw JSON/YAML dumps, and never edit product artifacts.
 
 ## Load now
 

@@ -96,7 +96,7 @@ gemini extensions link .
 
 ## Provider hook isolation
 
-Provider identity is host-specific: Codex selects `plugins/agrimap-agent-skills/hooks/codex-hooks.json`, Claude selects `claude-hooks.json`, and Gemini alone uses the repository-root `hooks/hooks.json`. The shared Codex/Claude plugin root must not contain a default `hooks/hooks.json`, because both hosts can auto-discover it. Release `0.1.3` adds fail-closed reference activation and SQL preflight; reinstall/sync it before retesting so hosts do not retain a cached `0.1.2` alias.
+Provider identity is host-specific: Codex selects `plugins/agrimap-agent-skills/hooks/codex-hooks.json`, Claude selects `claude-hooks.json`, and Gemini alone uses the repository-root `hooks/hooks.json`. The shared Codex/Claude plugin root must not contain a default `hooks/hooks.json`, because both hosts can auto-discover it. Release `0.1.4` includes fail-closed SQL activation, complete refactor-mode help, and direct SQLFluff formatting; reinstall/sync it before retesting so hosts do not retain an older cached alias.
 
 Gemini may show its native consent prompt when activating a skill or fingerprinting a hook. The package does not add a second approval gate.
 
@@ -202,7 +202,7 @@ For new SQL artifacts, the normalized AgriMap golden contract outranks a project
 - Stored procedures use `_I`, `_U`, `_D`, `_Q`, or `_CHECK_Q` according to their operation.
 - Stored procedures mark validation gates, transaction boundaries, numbered business steps, and `PO_*` returns with canonical three-line section comments.
 
-Validate newly created artifacts with `validate-sql-artifacts.mjs --cwd <workspace> --files <comma-separated-paths>`.
+After every SQL create/edit, the writer checks `sqlfluff --version` (and runs `pip install sqlfluff` only when missing), then runs `sqlfluff format --exclude-rules "CP02, LT01, RF06" --dialect tsql <FILE>.sql` for one file or the same command ending in `.` from the intended folder for many files. A nonzero folder run is incomplete: isolate changed files with the single-file form, fix only in-scope parse defects, rerun the folder form to exit zero, then run `validate-sql-artifacts.mjs`. QA remains read-only and never installs or runs SQLFluff.
 
 ## Model labels and prompt generation
 

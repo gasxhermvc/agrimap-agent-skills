@@ -96,6 +96,7 @@ for (const required of [
   "tests/unit/extract-code-blocks.test.mjs",
   "tests/unit/fe-scenarios.test.mjs",
   "tests/unit/feature-lifecycle-policy.test.mjs",
+  "tests/unit/operation-contracts.test.mjs",
   "tests/unit/qa-policy.test.mjs",
   "tests/unit/sql-artifacts.test.mjs",
   "tests/unit/sql-contract-preflight.test.mjs",
@@ -324,7 +325,7 @@ const rolesReference = await readFile(path.join(root, "skills", "agrimap-agent-s
 if (rolesReference.split(/\r?\n/).length > 40) errors.push("Role map has regrown into a duplicated execution contract.");
 
 const sqlPattern = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "patterns", "sql.md"), "utf8");
-for (const marker of ["sql-contract-preflight.mjs", "Every new table and procedure belongs to `[agrimap_app]`", "## Message collection gate", "`messages.sql`", "[agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR])", "same code + same meaning", "same code + different or ambiguous meaning", "`IF NOT EXISTS`", "`no message changes`", "`readability-organization`", "`strict-preserve-logic`", "Do not use ScriptDom"])
+for (const marker of ["sql-contract-preflight.mjs", "sqlfluff --version", "pip install sqlfluff", "sqlfluff format --exclude-rules \"CP02, LT01, RF06\" --dialect tsql <FILE>.sql", "sqlfluff format --exclude-rules \"CP02, LT01, RF06\" --dialect tsql .", "nonzero folder-format exit is incomplete", "validate-sql-artifacts.mjs", "Every new table and procedure belongs to `[agrimap_app]`", "## Message collection gate", "`messages.sql`", "[agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR])", "same code + same meaning", "same code + different or ambiguous meaning", "`IF NOT EXISTS`", "`no message changes`", "`readability-organization`", "`strict-preserve-logic`", "Neither lane uses ScriptDom"])
   if (!sqlPattern.includes(marker)) errors.push(`SQL message-collection contract missing marker: ${marker}`);
 for (const marker of ["### Stored procedure section comments", "-- Validate required parameters", "-- Validate WIDGET_TYPE_ID", "-- Begin Transaction", "-- Step 1: Insert dashboard widget", "-- Return PO_DATA", "-- Commit Transaction", "-- Rollback Transaction"])
   if (!sqlPattern.includes(marker)) errors.push(`SQL procedure-comment contract missing marker: ${marker}`);
@@ -341,14 +342,14 @@ const createFeatureOperation = operations?.operations?.find((item) => item.opera
 if (JSON.stringify(createFeatureOperation?.depth) !== JSON.stringify({ default: "light", allowed: ["light"] })) errors.push("create-feature must be light-only.");
 for (const marker of ["never start tracked task state", "route the work to agm-create-prompt", "Return the result only after product writes and verification finish"])
   if (!createFeatureOperation?.instructions?.join("\n").includes(marker)) errors.push(`create-feature direct boundary missing marker: ${marker}`);
-for (const marker of ["invoke QA", "delegate/spawn/wait", "persisted-data contract", "sql-contract-preflight.mjs", "never use a database, ScriptDom"])
+for (const marker of ["invoke QA", "delegate/spawn/wait", "persisted-data contract", "sql-contract-preflight.mjs", "Never use a database, ScriptDom"])
   if (!createFeatureOperation?.instructions?.join("\n").includes(marker)) errors.push(`create-feature fail-closed boundary missing marker: ${marker}`);
 
 for (const marker of ["CREATE_FEATURE_TRACKING_FORBIDDEN", "PREMATURE_RESULT_ARTIFACT", "PREMATURE_QA_ARTIFACT", "CHECKPOINT_FIELD_BUDGETS"])
   if (!workspaceScriptReference.includes(marker)) errors.push(`Workspace phase/budget guard missing marker: ${marker}`);
 
 const qaReference = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "qa-and-done.md"), "utf8");
-for (const marker of ["single policy source", "Start every QA request at `depth=light` and `qa_mode=light`", "Product artifacts are read-only", "Result Package as testimony", "Verification tool allowlist", "Do not use LocalDB, dbserver, SQL Server", "dotnet build <existing-project-or-solution>", "npm run start:agrimap:development", "There is no conditional pass", "non-terminal `qa-finding`", "fresh verifier runs full QA", `terminal audit event is \`${QA_FAILED_EVENT}\``, "Regulated completion gate"])
+for (const marker of ["single policy source", "Start every QA request at `depth=light` and `qa_mode=light`", "Product artifacts are read-only", "Result Package as testimony", "Verification tool allowlist", "SQLFluff installation and formatting are writer actions and are excluded", "Do not use LocalDB, dbserver, SQL Server", "dotnet build <existing-project-or-solution>", "npm run start:agrimap:development", "There is no conditional pass", "non-terminal `qa-finding`", "fresh verifier runs full QA", `terminal audit event is \`${QA_FAILED_EVENT}\``, "Regulated completion gate"])
   if (!qaReference.includes(marker)) errors.push(`QA contract missing marker: ${marker}`);
 if ((qaReference.match(new RegExp(QA_FAILED_EVENT, "g")) || []).length !== 1) errors.push("qa-and-done.md must own exactly one literal terminal QA event name.");
 if (qaReference.split(/\r?\n/).length > 80) errors.push("Canonical QA contract exceeds its 80-line budget.");

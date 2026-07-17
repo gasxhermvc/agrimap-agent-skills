@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.4 - 2026-07-18
+
+- Made `agm-analyze` light output CLI-readable and required real project code, local db-schema, and representative examples/data shapes before conclusive database analysis.
+- Exposed all five SQL refactor modes in the operation input and first missing-mode response instead of returning a recommendation alone.
+- Standardized writer formatting on direct `sqlfluff format` commands for one file or a folder, with prerequisite installation only when missing and validation after formatting.
+- Made a nonzero folder-format run explicitly incomplete: isolate changed files, correct only in-scope parse defects, and rerun the folder command before handoff; QA remains product-read-only and never runs or installs SQLFluff.
+
 ## 0.1.3 - 2026-07-18
 
 - Made conditional-reference loading a fail-closed activation gate before inspection, tools, writes, or delegation across generated provider entrypoints.

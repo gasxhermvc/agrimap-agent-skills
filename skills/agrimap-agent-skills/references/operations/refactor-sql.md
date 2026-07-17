@@ -10,15 +10,15 @@
 
 ## Inputs and help
 
-- Required: target; refactor_mode.
+- Required: target; refactor_mode=performance-preserve-behavior|readability-organization|strict-preserve-logic|strict-allow-logic-change|targeted-bug-fix.
 - Conditional: decision-owner approval for data, result-shape, transaction, or error-contract change.
 - Minimal example: `$agm-refactor-sql depth=light target_kind=sql-procedure refactor_mode=strict-preserve-logic target_files=sql/usp_Order_Search.sql`
 
 ## Execute this contract
 
-1. Load matching schema references as facts before editing and select exactly one refactor mode.
+1. Load matching schema facts and select one mode. If intent is ambiguous, show all five enums with one-line boundaries and one marked recommendation in the first reply; never return a recommendation alone.
 2. Preserve result sets, transactions, side effects, error mapping, and deployment idempotency unless authorized otherwise.
-3. For every newly created SQL artifact, use the golden-first sql/<GROUP_OR_DOMAIN>/table|procedure plus messages.sql layout, keep one object per file, and run validate-sql-artifacts.mjs before handoff.
+3. After each SQL create/edit, ensure SQLFluff exists, run the exact single-file or folder format command, then validate. A nonzero folder run is incomplete: isolate changed files one by one, correct only in-scope parse defects, and rerun the folder command before handoff.
 
 ## Load now
 

@@ -21,7 +21,7 @@
 3. If scope includes separate QA, a persisted-data contract, standard/regulated depth, more than three product artifacts, material owner decisions, or a new scaffold, stop before product writes and route the work to agm-create-prompt; never promote or partially execute here.
 4. Return the result only after product writes and verification finish using proportional writer checks; never pre-write a result artifact.
 5. Use the matching target discipline.
-6. For direct SQL, first run sql-contract-preflight.mjs once per named object and load every returned path; then use [agrimap_app], golden-first canonical files, executable guarded messages.sql inserts, and validate-sql-artifacts.mjs only. Report the selected golden and scripts; never use a database, ScriptDom, or another parser/runtime.
+6. For direct SQL, first run sql-contract-preflight.mjs once per named object and load every returned path; use [agrimap_app], golden-first canonical files, executable guarded messages.sql inserts, and the SQLFluff format-then-validate gate. Never use a database, ScriptDom, or another parser/runtime.
 
 ## Load now
 

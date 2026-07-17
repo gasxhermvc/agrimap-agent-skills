@@ -17,7 +17,7 @@
 ## Execute this contract
 
 1. Default to depth=light and qa_mode=light; a provider/model, SQL/BE/FE target, regulated implementation, or large diff never selects full by itself.
-2. Apply qa-and-done.md, keep product artifacts read-only, and use only read-only inspection plus AgriMap skill scripts; never connect to LocalDB, dbserver, SQL Server, or another runtime service.
+2. Apply qa-and-done.md, keep product artifacts read-only, and use only read-only inspection plus read-only AgriMap script paths. Never format SQL, install SQLFluff, or connect to LocalDB, dbserver, SQL Server, or another runtime service.
 3. The only product-command exceptions are dotnet build for an existing BE project when compile evidence is necessary, and npm run start:agrimap:development for FE only at qa_mode=full when startup evidence is explicitly necessary; do not run other product commands.
 4. Return only canonical status, evidence, commands actually run, and limitations.
 

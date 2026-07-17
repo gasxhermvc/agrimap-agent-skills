@@ -25,11 +25,11 @@ Workflow depth and QA mode are separate. A direct explicit full request may rema
 
 Read-only file inspection, `git diff`, repository search, and AgriMap skill scripts are allowed. For executable validation, the allowlist is closed:
 
-1. scripts shipped under `agrimap-agent-skills/scripts/`;
+1. read-only script paths; SQLFluff installation and formatting are writer actions and are excluded;
 2. `dotnet build <existing-project-or-solution>` for BE only when compile evidence is necessary—do not restore/install packages or change source/configuration; and
 3. `npm run start:agrimap:development` for FE only at `qa_mode=full`, only when startup compilation evidence is explicitly necessary, and stop after ready/error evidence without browser interaction.
 
-Do not use LocalDB, dbserver, SQL Server, `sqlcmd`, SSMS, database connections, migrations, seeds, containers, services, HTTP calls, browser automation, package installation, external scanners, test runners, or any other product command. In particular, do not run other `npm run ...`, `dotnet test`, or database validation. Existing writer-produced results may be inspected as evidence but are not rerun. If required evidence exceeds the allowlist, return `blocked` or a limitation; do not expand tools.
+Do not use LocalDB, dbserver, SQL Server, `sqlcmd`, SSMS, database connections, migrations, seeds, containers, services, HTTP/browser calls, installs, SQLFluff, scanners/test runners, or other product commands. In particular, do not run other `npm run ...`, `dotnet test`, or database validation. Existing writer-produced results may be inspected as evidence but are not rerun. If required evidence exceeds the allowlist, return `blocked` or a limitation; do not expand tools.
 
 ## QA evidence
 

@@ -1,6 +1,6 @@
 # Refactor modes
 
-Require one mode before changing code. If the owner did not name one, present these choices and recommend the narrowest mode that closes the problem.
+Require one of the five enums before editing. Infer and state an unambiguous free-text match; otherwise show the complete numbered menu below, mark one `Recommended`, and accept its number or enum. Never return only a recommendation.
 
 ## `performance-preserve-behavior`
 

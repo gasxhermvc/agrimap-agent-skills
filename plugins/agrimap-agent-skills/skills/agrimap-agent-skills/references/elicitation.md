@@ -97,15 +97,15 @@ A generated analysis, plan, proposal list, or prompt is never permission to exec
 
 ## Refactor mode menu
 
-When the request does not select a mode, present the choices in plain language and require one answer:
+When the request does not select exactly one mode, present every enum in one reply and require one answer. Mark one as `Recommended`; never collapse or omit a mode:
 
 ```text
-ระดับการเปลี่ยนแปลงที่ยอมรับได้? ตอบเลขเดียว:
-1 = ห้ามเปลี่ยน logic เด็ดขาด (strict-preserve-logic)
-2 = ปรับดีขึ้นได้ แต่พฤติกรรมภายนอกเหมือนเดิม 100%
-    (readability-organization หรือ performance-preserve-behavior ตามเป้าหมาย)
-3 = เปลี่ยน logic ได้ เฉพาะจุดที่ตกลงกันก่อน (strict-allow-logic-change)
-4 = แก้เฉพาะบั๊กที่พิสูจน์แล้ว (targeted-bug-fix)
+เลือก refactor mode หนึ่งค่า ตอบเลขหรือ enum:
+1 = performance-preserve-behavior — ปรับ performance จาก baseline/metric โดยคงผลและพฤติกรรมภายนอก
+2 = readability-organization — ปรับความอ่านง่าย โครงสร้าง หรือ duplication โดยไม่เปลี่ยนพฤติกรรม
+3 = strict-preserve-logic — ปรับเชิงกลเท่านั้น; คง logic, ลำดับ, transaction, query และผลลัพธ์
+4 = strict-allow-logic-change — เปลี่ยน logic ได้เฉพาะ trade-off ที่ decision owner อนุมัติก่อน
+5 = targeted-bug-fix — แก้เฉพาะ defect ที่พิสูจน์แล้วพร้อม regression evidence
 ```
 
 A full rewrite is not a refactor. Route "เปลี่ยนทั้งหมด" requests to `agm-plan`/`agm-architect`, then use direct `agm-create-feature` only for a light slice or `agm-create-prompt` for tracked execution, so the word refactor never becomes a back door for rebuilding a system.

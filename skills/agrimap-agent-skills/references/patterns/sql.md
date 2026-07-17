@@ -49,11 +49,15 @@ sql/
 - Store the domain's idempotent message inserts only in lowercase `sql/<GROUP_OR_DOMAIN>/messages.sql`.
 - Never combine multiple tables, multiple procedures, or a table and procedure in one file. Never put table/procedure definitions in `messages.sql`.
 - List every exact output path before writing. For a modified legacy artifact, preserve its existing path unless the task explicitly authorizes migration; apply this layout to all newly created artifacts.
-- Validate created artifacts before handoff:
+- After SQL create/edit, run `sqlfluff --version`; if missing, run `pip install sqlfluff`. Then choose:
 
-```text
-node <skill-root>/scripts/validate-sql-artifacts.mjs --cwd . --files "sql/UM/table/UM_USER.sql,sql/UM/procedure/UM_USER_I.sql,sql/UM/messages.sql"
+```powershell
+sqlfluff format --exclude-rules "CP02, LT01, RF06" --dialect tsql <FILE>.sql
+
+sqlfluff format --exclude-rules "CP02, LT01, RF06" --dialect tsql .
 ```
+
+A broken file can stop parsing. Its nonzero folder-format exit is incomplete and may be partial. Do not validate/finish. Isolate from its error path with the single-file command per changed file; fix only in scope; rerun the folder command to zero. Never bypass errors. Then run `validate-sql-artifacts.mjs` on changed/new canonical paths. QA never runs it.
 
 ## Do not invent
 
@@ -367,12 +371,12 @@ For `readability-organization` and `strict-preserve-logic`, collection is contra
 
 ## Golden examples and conflicts
 
-The SQL collection manifest covers every file under `golden/sql/`. It intentionally mixes current AgriMap schema/deployment references, one curated idempotent message example, and immutable legacy-compatible evidence. Read `golden/sql/manifest.json` before selecting an entry. Use the normalized contract and every applicable golden structural rule, after conflict resolution, above neighboring project structure.
+The SQL manifest covers every `golden/sql/` file: current references, one curated message example, and immutable legacy evidence. Read it before selection; after conflict resolution, normalized/applicable golden structure outranks neighboring project structure.
 
-Read [conflict-resolution.md](conflict-resolution.md) before using them. Legacy entries contain competing styles and business semantics, including default constraints, splitter/cursor choices, cascade actions, fixed seed IDs, duplicate index candidates, and replace-all role/permission updates. This normalized contract and applicable golden structural evidence override project structure for new artifacts; the conflict matrix removes known defects before that precedence is applied. Active schema, callers, and deployed behavior remain compatibility facts. Never copy business semantics from an example without project evidence and, where logical/data behavior changes, owner approval.
+Read [conflict-resolution.md](conflict-resolution.md). Legacy entries contain competing styles, defects, and project-specific semantics. Apply only resolved structure to new artifacts; preserve active schema/callers/deployed behavior and require project evidence plus owner approval for logical/data change.
 
 For release evaluation after changing this SQL discipline or its golden guidance, run [sql-scenarios.md](../evals/sql-scenarios.md). Do not load the eval catalog during ordinary SQL work.
 
 ## SQL verification
 
-Inspect dependencies and object/result contracts statically, then run only shipped `sql-contract-preflight.mjs` and `validate-sql-artifacts.mjs`. Do not use ScriptDom, `sqlcmd`, LocalDB/dbserver, SQL Server, an external parser, a database connection, or another runtime. Runtime/database evidence is an explicit QA limitation, never permission to self-test or promote QA mode.
+Writer formats successfully before validation and handoff. QA uses only static inspection, `sql-contract-preflight.mjs`, and `validate-sql-artifacts.mjs`. Neither lane uses ScriptDom, `sqlcmd`, LocalDB/dbserver, SQL Server, another external parser/database/runtime, or missing evidence to promote QA mode.

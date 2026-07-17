@@ -21,6 +21,7 @@ test("QA defaults, escalation, and executable tools are provider-neutral and clo
     "depth=light and qa_mode=light",
     "never selects full by itself",
     "LocalDB, dbserver, SQL Server",
+    "Never format SQL, install SQLFluff",
     "dotnet build",
     "npm run start:agrimap:development",
     "do not run other product commands",
@@ -30,6 +31,7 @@ test("QA defaults, escalation, and executable tools are provider-neutral and clo
     "Start every QA request at `depth=light` and `qa_mode=light`",
     "Verification tool allowlist",
     "Do not use LocalDB, dbserver, SQL Server",
+    "SQLFluff installation and formatting are writer actions and are excluded",
     "do not run other `npm run ...`, `dotnet test`, or database validation",
     "provider, and model capability never select `full`",
   ]) assert.ok(qaPolicy.includes(marker), `QA policy missing: ${marker}`);
