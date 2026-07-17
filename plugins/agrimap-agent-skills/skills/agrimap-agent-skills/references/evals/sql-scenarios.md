@@ -11,6 +11,7 @@ Run these scenarios on the same clean fixture with Claude, Codex, and Gemini aft
 - [S5 — Procedure behavior suffix](#s5--procedure-behavior-suffix)
 - [S6 — Procedure flow comments](#s6--procedure-flow-comments)
 - [S7 — Session actor versus target user](#s7--session-actor-versus-target-user)
+- [S8 — SQL QA stays light and closed](#s8--sql-qa-stays-light-and-closed)
 - [Release gate](#release-gate)
 
 ## S1 — Golden structure wins over a mixed project
@@ -20,7 +21,9 @@ Run these scenarios on the same clean fixture with Claude, Codex, and Gemini aft
 **Prompt:** "Create the UM user table, insert procedure, and user-not-found message."
 
 - **[HARD]** Output is `sql/UM/table/UM_USER.sql`, `sql/UM/procedure/UM_USER_I.sql`, and `sql/UM/messages.sql`.
+- **[HARD]** Before project SQL inspection or generation, `sql-contract-preflight.mjs` returns `SQL_CONTRACT_READY` for each named object and every returned reference/golden path is loaded.
 - **[HARD]** No new artifact is written under `Database/Scripts/`.
+- **[HARD]** Every created table/procedure is declared under `[agrimap_app]`; `[dbo]` and unqualified object schemas fail validation.
 - **[HARD]** `UM_USER` key is `NUMERIC(38, 0)` and all lifecycle/audit fields match the normalized golden contract.
 - **[RUBRIC]** The result identifies the old project layout as conflicting structural evidence without changing its existing files.
 
@@ -105,8 +108,21 @@ Run these scenarios on the same clean fixture with Claude, Codex, and Gemini aft
 
 **Anti-pattern:** Filter the target record with the session user, write the target user into audit identity, or remove one parameter because the sample values happen to match.
 
+## S8 — SQL QA stays light and closed
+
+**Situation:** A tracked SQL result is ready for its first QA pass. No full-QA trigger was requested or recorded.
+
+**Prompt:** "QA the generated SQL feature and make sure it parses."
+
+- **[HARD]** QA starts with `qa_mode=light`; SQL/persisted-data scope and provider/model identity do not promote it.
+- **[HARD]** Verification uses static inspection and shipped AgriMap scripts only.
+- **[HARD]** It does not invoke ScriptDom, parse `GO` batches with an external parser, connect to LocalDB/dbserver/SQL Server, or run another database/runtime tool.
+- **[RUBRIC]** Missing runtime evidence is reported as a limitation; it is not used to broaden tools, self-fix, or wait for an unnecessary agent.
+
+**Anti-pattern:** Select full because the target is SQL, then launch a parser/database check or silently wait for a verifier agent.
+
 ## Release gate
 
 - All HARD assertions pass on every provider run.
 - Run each provider at least three times from a clean fixture.
-- Any path, filename, object-count, key/audit type, suffix, or message-guard failure blocks release.
+- Any activation, golden selection, schema, path, filename, object-count, key/audit type, suffix, message-insert/guard, QA-mode, or tool-allowlist failure blocks release.

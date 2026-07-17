@@ -274,3 +274,54 @@ CREATE TABLE [agrimap_app].[UM_USER]
   assert.ok(codes.has("USER_CREATED_INVALID"));
   assert.ok(codes.has("DEL_FLAG_INVALID"));
 });
+
+test("rejects dbo and unqualified schemas for created SQL objects", async (t) => {
+  const root = await fixture(t);
+  await put(root, "sql/UM/procedure/UM_USER_Q.sql", `
+CREATE PROCEDURE [dbo].[UM_USER_Q]
+AS
+BEGIN
+  -- =============================================
+  -- Step 1: Query target user
+  -- =============================================
+  SELECT 1;
+END;
+`);
+  await put(root, "sql/UM/procedure/UM_USER_CHECK_Q.sql", `
+CREATE PROCEDURE [UM_USER_CHECK_Q]
+AS
+BEGIN
+  -- =============================================
+  -- Step 1: Check target user
+  -- =============================================
+  SELECT 1;
+END;
+`);
+
+  const result = await validateSqlArtifacts({
+    cwd: root,
+    files: ["sql/UM/procedure/UM_USER_Q.sql", "sql/UM/procedure/UM_USER_CHECK_Q.sql"],
+  });
+  assert.equal(result.ok, false);
+  assert.equal(result.issues.filter((issue) => issue.code === "OBJECT_SCHEMA_INVALID").length, 2);
+});
+
+test("rejects a messages inventory that has no executable insert statement", async (t) => {
+  const root = await fixture(t);
+  await put(root, "sql/UM/messages.sql", `
+-- username_required is intended for this domain, but no deployment statement exists.
+IF NOT EXISTS
+(
+  SELECT 1 FROM [agrimap_app].[LUT_APP_MESSAGES]
+  WHERE [ID] = 'username_required'
+)
+BEGIN
+  SELECT 1;
+END;
+GO
+`);
+
+  const result = await validateSqlArtifacts({ cwd: root, files: ["sql/UM/messages.sql"] });
+  assert.equal(result.ok, false);
+  assert.ok(result.issues.some((issue) => issue.code === "MESSAGE_INSERT_REQUIRED"));
+});

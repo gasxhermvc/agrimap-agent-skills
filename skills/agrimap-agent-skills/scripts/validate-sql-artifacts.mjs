@@ -20,16 +20,23 @@ function stripComments(sql) {
     .replace(/--[^\r\n]*/g, " ");
 }
 
-function extractObjectNames(sql, kind) {
+function extractObjectDefinitions(sql, kind) {
   const source = stripComments(sql);
   const prefix = kind === "table"
     ? String.raw`\bCREATE\s+TABLE`
     : String.raw`\b(?:CREATE\s+OR\s+ALTER|CREATE|ALTER)\s+PROCEDURE`;
   const pattern = new RegExp(
-    `${prefix}\\s+(?:(?:\\[[^\\]]+\\]|[A-Z_][A-Z0-9_]*)\\s*\\.\\s*)?(?:\\[([^\\]]+)\\]|([A-Z_][A-Z0-9_]*))`,
+    `${prefix}\\s+(?:(?:\\[([^\\]]+)\\]|([A-Z_][A-Z0-9_]*))\\s*\\.\\s*)?(?:\\[([^\\]]+)\\]|([A-Z_][A-Z0-9_]*))`,
     "gi",
   );
-  return [...source.matchAll(pattern)].map((match) => String(match[1] || match[2] || "").toUpperCase());
+  return [...source.matchAll(pattern)].map((match) => ({
+    schema: match[1] || match[2] ? String(match[1] || match[2]).toUpperCase() : null,
+    name: String(match[3] || match[4] || "").toUpperCase(),
+  }));
+}
+
+function extractObjectNames(sql, kind) {
+  return extractObjectDefinitions(sql, kind).map((definition) => definition.name);
 }
 
 function columnDeclaration(sql, columnName) {
@@ -274,8 +281,19 @@ export async function validateSqlArtifacts({ cwd = process.cwd(), files = [] } =
     }
 
     const [, domain, kind, fileStem] = objectMatch;
-    const tables = extractObjectNames(sql, "table");
-    const procedures = extractObjectNames(sql, "procedure");
+    const tableDefinitions = extractObjectDefinitions(sql, "table");
+    const procedureDefinitions = extractObjectDefinitions(sql, "procedure");
+    const tables = tableDefinitions.map((definition) => definition.name);
+    const procedures = procedureDefinitions.map((definition) => definition.name);
+    for (const definition of [...tableDefinitions, ...procedureDefinitions]) {
+      if (definition.schema !== "AGRIMAP_APP") {
+        issues.push({
+          file: relative,
+          code: "OBJECT_SCHEMA_INVALID",
+          message: `${definition.name} must be declared in [agrimap_app], not ${definition.schema ? `[${definition.schema}]` : "an unqualified schema"}`,
+        });
+      }
+    }
     if (kind === "table") {
       if (tables.length !== 1) issues.push({ file: relative, code: "TABLE_OBJECT_COUNT_INVALID", message: `expected exactly one CREATE TABLE; found ${tables.length}` });
       if (procedures.length) issues.push({ file: relative, code: "TABLE_FILE_PROCEDURE_FORBIDDEN", message: "table file must not define a procedure" });

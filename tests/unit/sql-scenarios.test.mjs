@@ -22,7 +22,7 @@ test("SQL eval catalog is reachable and encodes deterministic cross-provider gat
   assert.match(sqlDiscipline, /do not load the eval catalog during ordinary SQL work/i);
 
   const matches = [...evals.matchAll(/^## S(\d+) —[^\n]+\n([\s\S]*?)(?=^## S\d+ —|^## Release gate)/gm)];
-  assert.deepEqual(matches.map((match) => Number(match[1])), [1, 2, 3, 4, 5, 6, 7]);
+  assert.deepEqual(matches.map((match) => Number(match[1])), [1, 2, 3, 4, 5, 6, 7, 8]);
   for (const [scenarioId, body] of matches.map((match) => [`S${match[1]}`, match[2]])) {
     assert.match(body, /^\*\*Situation:\*\*/m, `${scenarioId}: Situation missing`);
     assert.match(body, /^\*\*Prompt:\*\*/m, `${scenarioId}: Prompt missing`);

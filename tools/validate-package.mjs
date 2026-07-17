@@ -85,6 +85,7 @@ for (const required of [
   "skills/agrimap-agent-skills/scripts/identity.mjs",
   "skills/agrimap-agent-skills/scripts/task-artifact-schema.mjs",
   "skills/agrimap-agent-skills/scripts/token-coverage.mjs",
+  "skills/agrimap-agent-skills/scripts/sql-contract-preflight.mjs",
   "skills/agrimap-agent-skills/scripts/validate-sql-artifacts.mjs",
   "skills/agrimap-agent-skills/assets/task-artifact-schema.json",
   "skills/agrimap-agent-skills/assets/token-coverage-scenarios.json",
@@ -97,6 +98,7 @@ for (const required of [
   "tests/unit/feature-lifecycle-policy.test.mjs",
   "tests/unit/qa-policy.test.mjs",
   "tests/unit/sql-artifacts.test.mjs",
+  "tests/unit/sql-contract-preflight.test.mjs",
   "tests/unit/sql-scenarios.test.mjs",
   "tests/unit/task-artifact-schema.test.mjs",
   "tests/unit/verify-golden.test.mjs",
@@ -322,7 +324,7 @@ const rolesReference = await readFile(path.join(root, "skills", "agrimap-agent-s
 if (rolesReference.split(/\r?\n/).length > 40) errors.push("Role map has regrown into a duplicated execution contract.");
 
 const sqlPattern = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "patterns", "sql.md"), "utf8");
-for (const marker of ["## Message collection gate", "`messages.sql`", "[agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR])", "same code + same meaning", "same code + different or ambiguous meaning", "`IF NOT EXISTS`", "`no message changes`", "`readability-organization`", "`strict-preserve-logic`"])
+for (const marker of ["sql-contract-preflight.mjs", "Every new table and procedure belongs to `[agrimap_app]`", "## Message collection gate", "`messages.sql`", "[agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR])", "same code + same meaning", "same code + different or ambiguous meaning", "`IF NOT EXISTS`", "`no message changes`", "`readability-organization`", "`strict-preserve-logic`", "Do not use ScriptDom"])
   if (!sqlPattern.includes(marker)) errors.push(`SQL message-collection contract missing marker: ${marker}`);
 for (const marker of ["### Stored procedure section comments", "-- Validate required parameters", "-- Validate WIDGET_TYPE_ID", "-- Begin Transaction", "-- Step 1: Insert dashboard widget", "-- Return PO_DATA", "-- Commit Transaction", "-- Rollback Transaction"])
   if (!sqlPattern.includes(marker)) errors.push(`SQL procedure-comment contract missing marker: ${marker}`);
@@ -339,6 +341,8 @@ const createFeatureOperation = operations?.operations?.find((item) => item.opera
 if (JSON.stringify(createFeatureOperation?.depth) !== JSON.stringify({ default: "light", allowed: ["light"] })) errors.push("create-feature must be light-only.");
 for (const marker of ["never start tracked task state", "route the work to agm-create-prompt", "Return the result only after product writes and verification finish"])
   if (!createFeatureOperation?.instructions?.join("\n").includes(marker)) errors.push(`create-feature direct boundary missing marker: ${marker}`);
+for (const marker of ["invoke QA", "delegate/spawn/wait", "persisted-data contract", "sql-contract-preflight.mjs", "never use a database, ScriptDom"])
+  if (!createFeatureOperation?.instructions?.join("\n").includes(marker)) errors.push(`create-feature fail-closed boundary missing marker: ${marker}`);
 
 for (const marker of ["CREATE_FEATURE_TRACKING_FORBIDDEN", "PREMATURE_RESULT_ARTIFACT", "PREMATURE_QA_ARTIFACT", "CHECKPOINT_FIELD_BUDGETS"])
   if (!workspaceScriptReference.includes(marker)) errors.push(`Workspace phase/budget guard missing marker: ${marker}`);

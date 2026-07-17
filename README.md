@@ -96,7 +96,7 @@ gemini extensions link .
 
 ## Provider hook isolation
 
-Provider identity is host-specific: Codex selects `plugins/agrimap-agent-skills/hooks/codex-hooks.json`, Claude selects `claude-hooks.json`, and Gemini alone uses the repository-root `hooks/hooks.json`. The shared Codex/Claude plugin root must not contain a default `hooks/hooks.json`, because both hosts can auto-discover it. Release `0.1.2` also corrects a stale cross-loaded Codex/Claude hook from the host-provided plugin environment and must replace cached `0.1.1` installations before the next session.
+Provider identity is host-specific: Codex selects `plugins/agrimap-agent-skills/hooks/codex-hooks.json`, Claude selects `claude-hooks.json`, and Gemini alone uses the repository-root `hooks/hooks.json`. The shared Codex/Claude plugin root must not contain a default `hooks/hooks.json`, because both hosts can auto-discover it. Release `0.1.3` adds fail-closed reference activation and SQL preflight; reinstall/sync it before retesting so hosts do not retain a cached `0.1.2` alias.
 
 Gemini may show its native consent prompt when activating a skill or fingerprinting a hook. The package does not add a second approval gate.
 

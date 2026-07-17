@@ -12,7 +12,7 @@
 - [Golden examples and conflicts](#golden-examples-and-conflicts)
 - [SQL verification](#sql-verification)
 
-Classify the task as `sql-table`, `sql-procedure`, or `sql-table-and-procedure`. Inspect current schema, callers, existing objects, data behavior, and deployment conventions before writing SQL.
+Classify the task as `sql-table`, `sql-procedure`, or `sql-table-and-procedure`. Before inspecting project SQL, establish each intended object name and run `sql-contract-preflight.mjs --target-kind sql-table|sql-procedure --object <OBJECT>` once per object. Load every returned reference and selected golden path; a failed gate blocks inspection and generation. Then inspect current schema, callers, existing objects, data behavior, and deployment conventions before writing SQL.
 
 ## Source priority
 
@@ -26,6 +26,8 @@ Use golden AgriMap structure above a neighboring project's structure. Existing p
 6. General engineering practice.
 
 When project structure conflicts with applicable golden structure after conflict resolution, use the golden structure for every new artifact and report the mismatch; do not copy the project inconsistency. This precedence includes matching `legacy-compatible` structural evidence, but never promotes its business semantics. Never use structural precedence to change an existing deployed data or behavior contract without authority.
+
+Every new table and procedure belongs to `[agrimap_app]`. `[dbo]` is permitted only as the owner in `CREATE SCHEMA [agrimap_app] AUTHORIZATION [dbo]`; never declare a feature object under `[dbo]` or without a schema.
 
 ## Output artifact contract
 
@@ -373,4 +375,4 @@ For release evaluation after changing this SQL discipline or its golden guidance
 
 ## SQL verification
 
-Run `validate-sql-artifacts.mjs` on every created SQL artifact. Then use parse/build validation when available, inspect dependencies, validate object/result contracts, test representative and failure inputs, check transaction rollback, and measure execution plans/data volume for performance work.
+Inspect dependencies and object/result contracts statically, then run only shipped `sql-contract-preflight.mjs` and `validate-sql-artifacts.mjs`. Do not use ScriptDom, `sqlcmd`, LocalDB/dbserver, SQL Server, an external parser, a database connection, or another runtime. Runtime/database evidence is an explicit QA limitation, never permission to self-test or promote QA mode.

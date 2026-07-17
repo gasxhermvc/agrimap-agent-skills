@@ -20,6 +20,10 @@ test("create-feature stays direct while tracked feature artifacts follow phase o
   assert.match(createFeature.instructions.join("\n"), /never start tracked task state/i);
   assert.match(createFeature.instructions.join("\n"), /route the work to agm-create-prompt/i);
   assert.match(createFeature.instructions.join("\n"), /Return the result only after product writes and verification finish/i);
+  assert.match(createFeature.instructions.join("\n"), /never start tracked task state, invoke QA, select qa_mode, delegate\/spawn\/wait/i);
+  assert.match(createFeature.instructions.join("\n"), /persisted-data contract/i);
+  assert.match(createFeature.instructions.join("\n"), /sql-contract-preflight\.mjs/i);
+  assert.match(createFeature.instructions.join("\n"), /never use a database, ScriptDom/i);
 
   assert.match(createPrompt.deliverable, /brief\.md and acceptance checklist\.md/i);
   assert.match(createPrompt.instructions.join("\n"), /never execute the generated prompt, create qa\.md, create result\.md/i);

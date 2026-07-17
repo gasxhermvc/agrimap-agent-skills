@@ -16,12 +16,12 @@
 
 ## Execute this contract
 
-1. This operation is light/direct only: never start tracked task state and never write .agrimap-agent brief.md, checklist.md, qa.md, result.md, memory, prompts, or logs.
+1. This operation is light/direct only: never start tracked task state, invoke QA, select qa_mode, delegate/spawn/wait, or write .agrimap-agent artifacts, memory, prompts, or logs.
 2. Inspect existing structure and propose the smallest complete slice with every output path before writing; after confirmation, implement that slice and verify it proportionally.
-3. If the requested scope would require standard/regulated depth, delegation, durable audit, separate QA, more than three product artifacts, material owner decisions, or a new project scaffold, stop before product writes and route the work to agm-create-prompt; do not partially execute it here.
-4. Return the result only after product writes and verification finish; never pre-write a result artifact.
+3. If scope includes separate QA, a persisted-data contract, standard/regulated depth, more than three product artifacts, material owner decisions, or a new scaffold, stop before product writes and route the work to agm-create-prompt; never promote or partially execute here.
+4. Return the result only after product writes and verification finish using proportional writer checks; never pre-write a result artifact.
 5. Use the matching target discipline.
-6. For SQL creation, apply golden structure above mixed project structure, write one object per canonical sql/<GROUP_OR_DOMAIN>/table|procedure file, use domain messages.sql for guarded LUT_APP_MESSAGES inserts, and run validate-sql-artifacts.mjs.
+6. For direct SQL, first run sql-contract-preflight.mjs once per named object and load every returned path; then use [agrimap_app], golden-first canonical files, executable guarded messages.sql inserts, and validate-sql-artifacts.mjs only. Report the selected golden and scripts; never use a database, ScriptDom, or another parser/runtime.
 
 ## Load now
 

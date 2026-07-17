@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.3 - 2026-07-18
+
+- Made conditional-reference loading a fail-closed activation gate before inspection, tools, writes, or delegation across generated provider entrypoints.
+- Added deterministic SQL contract preflight with verified golden selection, explicit `[agrimap_app]` enforcement, and an executable guarded `LUT_APP_MESSAGES` insert template.
+- Closed SQL verification to shipped skill scripts and static inspection; ScriptDom, database/runtime checks, and QA-mode self-promotion are forbidden.
+- Prevented direct `agm-create-feature` from invoking QA or agents and routed persisted-data contracts to `agm-create-prompt` before product writes.
+- Reconciled the SQL golden manifest, removed two proven byte-identical copies, and bumped the package version so Codex does not retain stale aliases.
+
 ## 0.1.2 - 2026-07-16
 
 - Made the normalized SQL golden contract authoritative over inconsistent project structure for new artifacts, with one object per canonical domain path and exact `messages.sql` handling.

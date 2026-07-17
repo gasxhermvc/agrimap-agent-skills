@@ -191,30 +191,16 @@
     },
     {
       "id": "create-feature-sql-golden-light",
-      "description": "SQL feature creation uses golden-first structure, canonical artifact paths, and one selected current SQL example",
+      "description": "Direct SQL feature activation loads the SQL contract, then routes persisted scope before product inspection or golden selection",
       "operation": "create-feature",
       "depth": "light",
       "activate": [
         "patterns/sql.md"
       ],
-      "select": [
-        "patterns/golden/sql/manifest.json",
-        "patterns/conflict-resolution.md",
-        "patterns/golden/sql/AUTH_FLOW.sql"
-      ],
       "mustLoad": [
         "elicitation.md",
-        "patterns/sql.md",
-        "patterns/golden/sql/manifest.json",
-        "patterns/conflict-resolution.md",
-        "patterns/golden/sql/AUTH_FLOW.sql"
-      ],
-      "budgets": {
-        "scenario": {
-          "maxWords": 7900,
-          "maxEstimatedTokensHigh": 22500
-        }
-      }
+        "patterns/sql.md"
+      ]
     },
     {
       "id": "qa-fe-main-golden-regulated",
