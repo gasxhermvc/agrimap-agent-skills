@@ -6,7 +6,7 @@
 - Workflow depth: default `regulated`; allowed `regulated`
 - Mode: `workflow-write-only`
 - Purpose: Create provider-specific Leader, executor, and QA prompts.
-- Deliverable: .agrimap-agent/prompts/<task-id>/<role>.prompt.md
+- Deliverable: tracked brief.md and acceptance checklist.md plus .agrimap-agent/prompts/<task-id>/<role>.prompt.md; no implementation, qa.md, or result.md
 
 ## Inputs and help
 
@@ -16,8 +16,8 @@
 
 ## Execute this contract
 
-1. Run staged elicitation, build one execution SoT per task, and create separate Leader/executor/QA prompts when implementation is delegated.
-2. Generation ends in draft; never execute the generated prompt in this operation.
+1. Own the tracked feature contract: run staged elicitation, write the approved brief.md and acceptance checklist.md, build one execution SoT per task, and create separate Leader/executor/QA prompts when implementation is delegated.
+2. Generation ends in draft and a non-terminal scope-decision checkpoint; never execute the generated prompt, create qa.md, create result.md, or complete the implementation task in this operation.
 
 ## Load now
 

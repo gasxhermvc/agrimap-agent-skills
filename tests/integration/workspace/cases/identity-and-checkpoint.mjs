@@ -31,7 +31,15 @@ export async function identityAndCheckpoint(harness) {
   assert.equal(typeof identityA.osUser, "string");
 
   const taskA = run(workspaceScript, ["start", "--cwd", temp, "--session", "session-a", "--task", "task-a", "--operation", "analyze", "--title", "Analyze task A audit behavior"]);
-  const taskB = run(workspaceScript, ["start", "--cwd", temp, "--session", "session-b", "--task", "task-b", "--operation", "create-feature", "--title", "Build task B feature"]);
+  const directFeatureStart = spawn(workspaceScript, ["start", "--cwd", temp, "--session", "session-b", "--task", "direct-feature", "--operation", "create-feature", "--title", "Build directly without workflow state"]);
+  assert.equal(directFeatureStart.status, 1);
+  assert.deepEqual(
+    { code: JSON.parse(directFeatureStart.stdout).code, routeTo: JSON.parse(directFeatureStart.stdout).routeTo },
+    { code: "CREATE_FEATURE_TRACKING_FORBIDDEN", routeTo: "agm-create-prompt" },
+  );
+  await assert.rejects(readFile(path.join(temp, ".agrimap-agent", "tasks", "direct-feature", "brief.md"), "utf8"), { code: "ENOENT" });
+
+  const taskB = run(workspaceScript, ["start", "--cwd", temp, "--session", "session-b", "--task", "task-b", "--operation", "create-prompt", "--title", "Prepare task B feature contract"]);
   run(workspaceScript, ["identify", "--cwd", temp, "--session", "collision-session", "--owner", "Mallory"]);
   const taskIdCollision = spawn(workspaceScript, [
     "start", "--cwd", temp, "--session", "collision-session", "--task", "task-a", "--title", "Must not mix attribution",
@@ -53,6 +61,12 @@ export async function identityAndCheckpoint(harness) {
   const activeB = JSON.parse(await readFile(path.join(temp, ".agrimap-agent", "runtime", "active", "session-b.json"), "utf8"));
   assert.equal(activeA.taskId, "task-a");
   assert.equal(activeB.taskId, "task-b");
+  for (const scaffold of ["brief.md", "checklist.md"]) {
+    assert.equal(typeof await readFile(path.join(temp, ".agrimap-agent", "tasks", "task-b", scaffold), "utf8"), "string");
+  }
+  for (const deferred of ["qa.md", "result.md"]) {
+    await assert.rejects(readFile(path.join(temp, ".agrimap-agent", "tasks", "task-b", deferred), "utf8"), { code: "ENOENT" });
+  }
 
   const checkpointA = run(workspaceScript, ["checkpoint", "--cwd", temp, "--session", "session-a", "--task", "task-a", "--summary", "Analyzed task A", "--files", "src/a.ts", "--verification", "inspection passed", "--model", "gpt-5.4", "--role", "executor", "--agent", "be", "--provider", "codex"]);
   const checkpointB = run(workspaceScript, ["checkpoint", "--cwd", temp, "--session", "session-b", "--task", "task-b", "--summary", "Analyzed task B", "--files", "src/b.ts"]);
@@ -77,6 +91,24 @@ export async function identityAndCheckpoint(harness) {
   assert.equal(taskALogEntries[1].milestone, "acceptance-slice");
   assert.equal(taskALogEntries.every((entry) => logEventSet.has(entry.event)), true);
   assert.equal(taskALogEntries.every((entry) => entry.gitHead === null && entry.gitDirty === null), true);
+
+  const verboseCheckpoint = run(workspaceScript, [
+    "checkpoint", "--cwd", temp, "--session", "session-a", "--task", "task-a", "--event", "decision",
+    "--summary", "S".repeat(320), "--reason", "R".repeat(520), "--concerns", "C".repeat(520),
+    "--verification", Array.from({ length: 10 }, (_, index) => `${index}-${"V".repeat(320)}`).join(","),
+  ]);
+  assert.deepEqual(verboseCheckpoint.compaction, {
+    summaryTruncated: true,
+    reasonTruncated: true,
+    concernsTruncated: true,
+    verificationItemsOmitted: 2,
+    verificationItemsTruncated: 8,
+  });
+  const compactedEvent = (await readTaskLog("task-a")).at(-1);
+  assert.equal(compactedEvent.summary.length, 240);
+  assert.equal(compactedEvent.reason.length, 400);
+  assert.equal(compactedEvent.verification.length, 8);
+  assert.equal(compactedEvent.verification.every((item) => item.length === 300), true);
 
   const taskBMemoryPath = path.join(temp, ".agrimap-agent", "memory", "current", "task-b.md");
   const taskBLogBeforeInvalidEvent = JSON.stringify(await readTaskLog("task-b"));

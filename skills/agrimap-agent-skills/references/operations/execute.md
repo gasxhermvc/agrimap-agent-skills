@@ -18,6 +18,7 @@
 
 1. Require prompt_status=owner-approved and execute its ordered steps as the task source of truth.
 2. Stop and report structured deviation evidence when a material change exceeds scope; return the Result Package and integration artifact.
+3. Own implementation only: update the acceptance checklist and record integration evidence, but do not create qa.md or result.md; QA and final Leader closure are later phases.
 
 ## Load now
 

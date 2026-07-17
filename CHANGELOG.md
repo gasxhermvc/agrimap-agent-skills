@@ -9,6 +9,9 @@
 - Distinguished SQL session actor (`SESSION_USER_ID`) from target subject (`USER_ID`) and documented their audit-versus-filter usage.
 - Made QA direct/light by default, renamed tracked fast QA to light QA, restricted full selection to explicit triggers, and added a closed QA execution allowlist that forbids database/runtime validation.
 - Made QA depth, mode, tools, and acceptance provider-neutral so reasoning-heavy model labels cannot silently broaden verification.
+- Made `agm-create-feature` light/direct-only with no brief, checklist, QA, result, memory, or log artifacts; tracked feature work now starts with `agm-create-prompt`.
+- Defined tracked feature artifact ownership and order as prompt contract (`brief.md`/`checklist.md`) → execution → QA (`qa.md`) → final Leader closure (`result.md`), with command-level premature-artifact guards.
+- Added provider-neutral checkpoint compaction budgets so Fable/Claude detail does not produce larger memory/log state than Codex/GPT or Gemini.
 - Split alias loading into `lifecycle-core.md` plus exactly one operation contract, with glossary/discipline references conditional.
 - Added enforced `light|standard|regulated` workflow depth: light is stateless, standard omits separate QA, and regulated retains the full gate.
 - Replaced atomic-task checkpoint guidance with four milestone types and command-level rejection of created/terminal checkpoint events.
@@ -22,7 +25,7 @@
 - Added a generated operation routing index and fail-closed `PACKAGE_ENTRYPOINT_MISSING` behavior for absent/corrupt compact contracts.
 - Isolated Codex, Claude, and Gemini hook discovery so each host records only its own provider.
 - Added runtime provider correction for stale cross-loaded Codex/Claude hook artifacts.
-- Added a normative workflow glossary separating requester from decision-owner authority and defining substantive work, durable milestones, material/complex/small work, proportional verification, verification-only QA, the exact two-fast-then-full QA counter, and configured versus actual model identity.
+- Added a normative workflow glossary separating requester from decision-owner authority and defining substantive work, durable milestones, material/complex/small work, proportional verification, verification-only QA, the exact two-light-then-full QA counter, and configured versus actual model identity.
 - Centralized task artifact fields, required sections, QA/full-release rules, templates, generated documentation, and completion validation in `assets/task-artifact-schema.json`.
 - Added historical QA-counter enforcement, separate verifier identity checks, workflow-write/product-read-only evidence, and schema/template/docs contract tests.
 - Replaced stale Codex subagent fallback guidance with the current native app/CLI/IDE workflow, including `/agent`, inspectable threads, descriptive labels, and a mandatory non-silent 60-second status cadence.

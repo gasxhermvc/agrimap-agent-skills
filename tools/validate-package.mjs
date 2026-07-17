@@ -94,6 +94,7 @@ for (const required of [
   "tests/unit/cli-args.test.mjs",
   "tests/unit/extract-code-blocks.test.mjs",
   "tests/unit/fe-scenarios.test.mjs",
+  "tests/unit/feature-lifecycle-policy.test.mjs",
   "tests/unit/qa-policy.test.mjs",
   "tests/unit/sql-artifacts.test.mjs",
   "tests/unit/sql-scenarios.test.mjs",
@@ -166,6 +167,7 @@ if (operations) {
 if (!packageManifest?.scripts?.test?.includes("npm run verify:golden")) errors.push("npm test must include golden verification.");
 if (!packageManifest?.scripts?.test?.includes("npm run validate")) errors.push("npm test must include package validation before behavioral suites.");
 if (!packageManifest?.scripts?.["test:unit"]?.includes("fe-scenarios.test.mjs")) errors.push("Frontend scenario eval is not wired into the automated unit suite.");
+if (!packageManifest?.scripts?.["test:unit"]?.includes("feature-lifecycle-policy.test.mjs")) errors.push("Feature lifecycle policy test is not wired into the automated unit suite.");
 if (!packageManifest?.scripts?.["test:unit"]?.includes("qa-policy.test.mjs")) errors.push("QA provider-neutral policy test is not wired into the automated unit suite.");
 if (!packageManifest?.scripts?.["test:unit"]?.includes("task-artifact-schema.test.mjs")) errors.push("Task artifact schema contract test is not wired into the automated unit suite.");
 if (!packageManifest?.scripts?.["test:unit"]?.includes("token-coverage.test.mjs")) errors.push("Token coverage audit test is not wired into the automated unit suite.");
@@ -191,6 +193,8 @@ const lifecycleCorePath = path.join(root, "skills", "agrimap-agent-skills", "ref
 const lifecycleCoreReference = await readFile(lifecycleCorePath, "utf8");
 for (const marker of ["Select one depth", "`light`", "`standard`", "`regulated`", "Help and history are always `light`", "read-only query remains `light`", "start with `--depth standard`", "start with `--depth regulated`", "Milestone checkpoints", "behaviorally complete acceptance slice", "not a file/tool/atomic subtask", "Common boundaries"])
   if (!lifecycleCoreReference.includes(marker)) errors.push(`Lifecycle core missing marker: ${marker}`);
+for (const marker of ["`agm-create-feature` is a special direct-write operation and is always `light`", "full artifact set is a completion set, not a start scaffold", "Never pre-create empty QA or result files"])
+  if (!lifecycleCoreReference.includes(marker)) errors.push(`Feature lifecycle boundary missing marker: ${marker}`);
 if (lifecycleCoreReference.split(/\r?\n/).length > 70) errors.push("Lifecycle core exceeds its 70-line budget.");
 const runtimeCoreReference = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "runtime-core.md"), "utf8");
 if (!runtimeCoreReference.includes("compatibility pointer") || !runtimeCoreReference.includes("lifecycle-core.md")) errors.push("Legacy runtime-core.md must be only a compatibility pointer to lifecycle-core.md.");
@@ -328,6 +332,16 @@ if (promptReference.includes("`project_kind`")) errors.push("create-prompt still
 if (!promptReference.includes("exactly `agmws` or `agmbo`")) errors.push("create-prompt backend_profile enum is missing.");
 for (const marker of ["execution source of truth", "deviation_from_prompt", "service-ownership.yaml", "workspace_need", "base_commit", "fallback_mode", "A QA prompt imports [qa-and-done.md]", "do not duplicate that policy", "do not restate status, correction, or terminal rules"])
   if (!promptReference.includes(marker)) errors.push(`create-prompt contract missing marker: ${marker}`);
+for (const marker of ["Artifact ownership and phase order", "agm-exec` owns implementation", "Leader writes `result.md` only as the final closure record", "non-terminal `scope-decision` checkpoint"])
+  if (!promptReference.includes(marker)) errors.push(`create-prompt phase ownership missing marker: ${marker}`);
+
+const createFeatureOperation = operations?.operations?.find((item) => item.operation === "create-feature");
+if (JSON.stringify(createFeatureOperation?.depth) !== JSON.stringify({ default: "light", allowed: ["light"] })) errors.push("create-feature must be light-only.");
+for (const marker of ["never start tracked task state", "route the work to agm-create-prompt", "Return the result only after product writes and verification finish"])
+  if (!createFeatureOperation?.instructions?.join("\n").includes(marker)) errors.push(`create-feature direct boundary missing marker: ${marker}`);
+
+for (const marker of ["CREATE_FEATURE_TRACKING_FORBIDDEN", "PREMATURE_RESULT_ARTIFACT", "PREMATURE_QA_ARTIFACT", "CHECKPOINT_FIELD_BUDGETS"])
+  if (!workspaceScriptReference.includes(marker)) errors.push(`Workspace phase/budget guard missing marker: ${marker}`);
 
 const qaReference = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "qa-and-done.md"), "utf8");
 for (const marker of ["single policy source", "Start every QA request at `depth=light` and `qa_mode=light`", "Product artifacts are read-only", "Result Package as testimony", "Verification tool allowlist", "Do not use LocalDB, dbserver, SQL Server", "dotnet build <existing-project-or-solution>", "npm run start:agrimap:development", "There is no conditional pass", "non-terminal `qa-finding`", "fresh verifier runs full QA", `terminal audit event is \`${QA_FAILED_EVENT}\``, "Regulated completion gate"])

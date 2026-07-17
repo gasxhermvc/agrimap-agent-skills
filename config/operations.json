@@ -254,14 +254,14 @@
     {
       "name": "agm-create-feature",
       "operation": "create-feature",
-      "depth": { "default": "light", "allowed": ["light", "standard", "regulated"] },
-      "description": "Create a target-specific FE, BE, batch, library, or SQL feature",
+      "depth": { "default": "light", "allowed": ["light"] },
+      "description": "Create a bounded FE, BE, batch, library, or SQL feature directly without tracked workflow artifacts",
       "mode": "product-write",
-      "deliverable": "confirmed vertical slice plus direct verified result at light or schema result at standard/regulated",
+      "deliverable": "confirmed bounded vertical slice plus one concise direct verified result; no brief, checklist, QA, result, memory, or log artifacts",
       "requiredInputs": ["objective"],
-      "conditionalInputs": ["target_kind when placement evidence is absent", "backend_profile for be-main", "full command approval for a new project scaffold"],
+      "conditionalInputs": ["target_kind when placement evidence is absent", "backend_profile for be-main", "agm-create-prompt handoff when scope exceeds light or requests a new project scaffold"],
       "example": "$agm-create-feature depth=light target_kind=be-main backend_profile=agmws objective=\"Add cancel-order endpoint\"",
-      "instructions": ["Inspect existing structure and propose the smallest complete slice with every output path before writing.", "Use the matching target discipline; new project scaffolds require the exact command and working-directory approval.", "For SQL creation, apply golden structure above mixed project structure, write one object per canonical sql/<GROUP_OR_DOMAIN>/table|procedure file, use domain messages.sql for guarded LUT_APP_MESSAGES inserts, and run validate-sql-artifacts.mjs."],
+      "instructions": ["This operation is light/direct only: never start tracked task state and never write .agrimap-agent brief.md, checklist.md, qa.md, result.md, memory, prompts, or logs.", "Inspect existing structure and propose the smallest complete slice with every output path before writing; after confirmation, implement that slice and verify it proportionally.", "If the requested scope would require standard/regulated depth, delegation, durable audit, separate QA, more than three product artifacts, material owner decisions, or a new project scaffold, stop before product writes and route the work to agm-create-prompt; do not partially execute it here.", "Return the result only after product writes and verification finish; never pre-write a result artifact.", "Use the matching target discipline.", "For SQL creation, apply golden structure above mixed project structure, write one object per canonical sql/<GROUP_OR_DOMAIN>/table|procedure file, use domain messages.sql for guarded LUT_APP_MESSAGES inserts, and run validate-sql-artifacts.mjs."],
       "references": [
         { "path": "elicitation.md", "why": "placement, naming, and scaffold gates" }
       ],
@@ -277,11 +277,11 @@
       "depth": { "default": "regulated", "allowed": ["regulated"] },
       "description": "Create provider-specific Leader, executor, and QA prompts",
       "mode": "workflow-write-only",
-      "deliverable": ".agrimap-agent/prompts/<task-id>/<role>.prompt.md",
+      "deliverable": "tracked brief.md and acceptance checklist.md plus .agrimap-agent/prompts/<task-id>/<role>.prompt.md; no implementation, qa.md, or result.md",
       "requiredInputs": ["objective", "provider"],
       "conditionalInputs": ["target_kind/backend_profile for target-specific work", "decision-owner approval before execution"],
       "example": "$agm-create-prompt requested_by=Billy provider=codex objective=\"Delegate cancel-order implementation\"",
-      "instructions": ["Run staged elicitation, build one execution SoT per task, and create separate Leader/executor/QA prompts when implementation is delegated.", "Generation ends in draft; never execute the generated prompt in this operation."],
+      "instructions": ["Own the tracked feature contract: run staged elicitation, write the approved brief.md and acceptance checklist.md, build one execution SoT per task, and create separate Leader/executor/QA prompts when implementation is delegated.", "Generation ends in draft and a non-terminal scope-decision checkpoint; never execute the generated prompt, create qa.md, create result.md, or complete the implementation task in this operation."],
       "references": [
         { "path": "create-prompt.md", "why": "prompt lifecycle and provider rendering" },
         { "path": "subagents-and-branches.md", "why": "delegation, visibility, and integration" },
@@ -303,7 +303,7 @@
       "requiredInputs": ["approved prompt path or resumable task_id"],
       "conditionalInputs": ["decision-owner choice when a material deviation exceeds the approved prompt"],
       "example": "$agm-exec requested_by=Billy prompt=.agrimap-agent/prompts/<task-id>/executor.prompt.md",
-      "instructions": ["Require prompt_status=owner-approved and execute its ordered steps as the task source of truth.", "Stop and report structured deviation evidence when a material change exceeds scope; return the Result Package and integration artifact."],
+      "instructions": ["Require prompt_status=owner-approved and execute its ordered steps as the task source of truth.", "Stop and report structured deviation evidence when a material change exceeds scope; return the Result Package and integration artifact.", "Own implementation only: update the acceptance checklist and record integration evidence, but do not create qa.md or result.md; QA and final Leader closure are later phases."],
       "references": [
         { "path": "create-prompt.md", "why": "prompt SoT and deviation contract" },
         { "path": "subagents-and-branches.md", "why": "native activity, workspace, and integration contract" },

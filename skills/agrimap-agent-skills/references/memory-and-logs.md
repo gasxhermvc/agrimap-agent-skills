@@ -16,6 +16,8 @@
 
 Use `.agrimap-agent/` under the target project root as the cross-provider workspace state. Keep prose concise and factual. A globally installed Skill/plugin is stateless: never write memory, logs, identity, prompts, or task artifacts into its installation directory.
 
+Provider verbosity is not evidence quality. Claude/Fable, Codex/GPT, and Gemini use the same milestone count and compact field budgets; preserve decisions, results, and source pointers, not hidden reasoning or a transcript. Direct/light operations, including `agm-create-feature`, write none of this state.
+
 ## State location
 
 - Installed use: resolve the project currently being worked on and write both durable memory and concise logs to `<target-project>/.agrimap-agent/`.
@@ -40,11 +42,11 @@ Use `.agrimap-agent/` under the target project root as the cross-provider worksp
 │   └── service-ownership.yaml          # single project ownership SoT
 ├── decisions/
 ├── tasks/<task-id>/
-│   ├── brief.md
-│   ├── checklist.md
+│   ├── brief.md                         # contract phase
+│   ├── checklist.md                     # acceptance ledger, initialized with contract
 │   ├── handoffs/
-│   ├── qa.md
-│   ├── result.md
+│   ├── qa.md                            # verification phase, after implementation
+│   ├── result.md                        # closure phase, written last
 │   └── <operation deliverable>            # analysis.md | diagnosis.md | simulation.md |
 │                                           # plan.md | design.md | review.md | refactor-brief.md
 ├── prompts/<task-id>/
@@ -128,6 +130,8 @@ Write durable knowledge as JSONL with `id`, `type`, `status`, `summary`, `keywor
 - commands/tests and results;
 - remaining concerns;
 - knowledge worth retaining.
+
+The workspace script compacts checkpoint fields provider-neutrally: summary 240 characters, reason and concerns 400 each, at most 8 verification items of 300 characters each. Put longer evidence in a task artifact or product-owned file and record its path instead of copying it into memory/logs.
 
 ## Log schema
 

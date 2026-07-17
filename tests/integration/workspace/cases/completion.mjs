@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { LOG_EVENTS, QA_FAILED_EVENT } from "../../../../skills/agrimap-agent-skills/scripts/log-events.mjs";
 
@@ -201,6 +201,19 @@ export async function completion(harness) {
   assert.equal(nonIndependent.ok, false);
   assert.equal(nonIndependent.contentFailures.some((failure) => failure.field === "QA identity" && failure.reason === "not-independent"), true);
 
+  const prematureResultCheckpoint = spawn(workspaceScript, [
+    "checkpoint", "--cwd", temp, "--session", "session-a", "--task", "task-a", "--event", "verified",
+    "--summary", "Result must not exist before the verification checkpoint",
+  ]);
+  assert.equal(prematureResultCheckpoint.status, 1);
+  assert.equal(JSON.parse(prematureResultCheckpoint.stdout).code, "PREMATURE_RESULT_ARTIFACT");
+  await rm(path.join(taskADirectory, "result.md"), { force: true });
+  const prematureQaCheckpoint = spawn(workspaceScript, [
+    "checkpoint", "--cwd", temp, "--session", "session-a", "--task", "task-a", "--event", "changed",
+    "--summary", "QA must not exist during implementation", "--files", "src/a.ts",
+  ]);
+  assert.equal(prematureQaCheckpoint.status, 1);
+  assert.equal(JSON.parse(prematureQaCheckpoint.stdout).code, "PREMATURE_QA_ARTIFACT");
   const qaFinding = run(workspaceScript, ["checkpoint", "--cwd", temp, "--session", "session-a", "--task", "task-a", "--event", "qa-finding", "--summary", "Initial QA attempt found an in-scope defect"]);
   assert.equal(qaFinding.ok, true);
   assert.equal(JSON.parse(await readFile(taskAActivePath, "utf8")).taskId, "task-a");
@@ -261,7 +274,7 @@ export async function completion(harness) {
   assert.equal(completedTaskALog.at(-1).event, "completed");
   assert.deepEqual(completedTaskALog.at(-1).files, ["src/a.ts"]);
 
-  const taskC = run(workspaceScript, ["start", "--cwd", temp, "--session", "session-a", "--task", "task-c", "--operation", "create-feature", "--title", "Implement task C and send it to QA"]);
+  const taskC = run(workspaceScript, ["start", "--cwd", temp, "--session", "session-a", "--task", "task-c", "--operation", "create-prompt", "--title", "Prepare task C contract for implementation and QA"]);
   assert.equal(taskC.activeTask.requestedBy, "Alice");
   run(workspaceScript, ["checkpoint", "--cwd", temp, "--session", "session-a", "--task", "task-c", "--summary", "Implementation returned for QA", "--files", "src/c.ts"]);
   const taskCDirectory = path.join(temp, ".agrimap-agent", "tasks", "task-c");

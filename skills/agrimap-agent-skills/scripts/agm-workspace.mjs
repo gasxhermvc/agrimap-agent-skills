@@ -29,6 +29,14 @@ import { loadTaskArtifactSchema } from "./task-artifact-schema.mjs";
 const AUDIT_SCHEMA_VERSION = 3;
 const SUPPORTED_AUDIT_SCHEMA_VERSIONS = new Set([1, 2, AUDIT_SCHEMA_VERSION]);
 const TERMINAL_AUDIT_EVENTS = new Set([QA_FAILED_EVENT, "blocked", "cancelled", "completed"]);
+const TRACKED_START_FORBIDDEN_OPERATIONS = new Set(["create-feature"]);
+const CHECKPOINT_FIELD_BUDGETS = Object.freeze({
+  summary: 240,
+  reason: 400,
+  concerns: 400,
+  verificationItems: 8,
+  verificationItem: 300,
+});
 const skillRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const taskArtifactSchema = await loadTaskArtifactSchema(skillRoot);
 const TRACKED_WORKFLOW_DEPTHS = new Set(taskArtifactSchema.workflowDepths || ["standard", "regulated"]);
@@ -451,6 +459,15 @@ async function init(root, args) {
 }
 
 async function start(root, args) {
+  const operation = String(args.operation || "task").trim().toLowerCase();
+  if (TRACKED_START_FORBIDDEN_OPERATIONS.has(operation)) {
+    return {
+      ok: false,
+      code: "CREATE_FEATURE_TRACKING_FORBIDDEN",
+      routeTo: "agm-create-prompt",
+      message: "agm-create-feature is light/direct only and must not create tracked state. Use agm-create-prompt for a tracked feature contract.",
+    };
+  }
   const state = await ensureLayout(root);
   const workflowDepth = String(args.depth || args["workflow-depth"] || "regulated").trim().toLowerCase();
   if (workflowDepth === "light") {
@@ -493,7 +510,6 @@ async function start(root, args) {
     return { ok: false, activeTask: await readJson(activePath), message: "This session already has an active task." };
   }
 
-  const operation = args.operation || "task";
   const taskId = safeTaskId(args.task || defaultTaskId(operation, args.subject || objective));
   if (!taskId) return { ok: false, message: "Task ID is empty after normalization." };
   const taskPath = path.join(state, "tasks", taskId);
@@ -585,10 +601,22 @@ function listValue(value) {
   return String(value || "").split(",").map((item) => item.trim()).filter(Boolean);
 }
 
+function compactCheckpointText(value, maximum) {
+  const normalized = String(value || "").trim().replace(/\s+/g, " ");
+  return normalized.length <= maximum ? normalized : `${normalized.slice(0, maximum - 1)}…`;
+}
+
+function compactVerification(values) {
+  return values
+    .slice(0, CHECKPOINT_FIELD_BUDGETS.verificationItems)
+    .map((value) => compactCheckpointText(value, CHECKPOINT_FIELD_BUDGETS.verificationItem));
+}
+
 async function checkpoint(root, args) {
   const taskId = safeTaskId(args.task);
-  const summary = String(args.summary || "").trim();
-  if (!taskId || !summary) return { ok: false, message: "--task and --summary are required." };
+  const rawSummary = String(args.summary || "").trim();
+  const summary = compactCheckpointText(rawSummary, CHECKPOINT_FIELD_BUDGETS.summary);
+  if (!taskId || !rawSummary) return { ok: false, message: "--task and --summary are required." };
   const event = String(args.event || "changed").trim();
   if (!isLogEvent(event)) return logEventError(event);
   if (event === "created" || TERMINAL_AUDIT_EVENTS.has(event)) {
@@ -618,6 +646,25 @@ async function checkpoint(root, args) {
     };
   }
   const state = await ensureLayout(root);
+  const taskPath = path.join(state, "tasks", taskId);
+  if (await exists(path.join(taskPath, "result.md"))) {
+    return {
+      ok: false,
+      code: "PREMATURE_RESULT_ARTIFACT",
+      message: "result.md is closure-only and must be written after implementation, verification, and applicable QA checkpoints.",
+    };
+  }
+  if (
+    ["changed", "decision"].includes(event)
+    && await exists(path.join(taskPath, "qa.md"))
+    && await countTaskEvents(state, taskId, "qa-finding") === 0
+  ) {
+    return {
+      ok: false,
+      code: "PREMATURE_QA_ARTIFACT",
+      message: "qa.md is verification-phase evidence and must not exist during scope or implementation checkpoints.",
+    };
+  }
   if (event === "qa-finding") {
     if (files.length > 0) {
       return {
@@ -637,7 +684,6 @@ async function checkpoint(root, args) {
 
   const activeMatch = await findActiveForTask(state, taskId, safeSessionId(args.session));
   if (activeMatch?.ambiguous) return activeTaskAmbiguityError(taskId, activeMatch.matches);
-  const taskPath = path.join(state, "tasks", taskId);
   const taskIdentity = await taskAuditIdentity(taskPath);
   const requestedBy = activeMatch?.active?.requestedBy || taskIdentity.requestedBy || await resolveRequester(state, args);
   if (!requestedBy) return { ok: false, needsRequester: true, message: "Requester is missing from the session and task brief." };
@@ -646,11 +692,15 @@ async function checkpoint(root, args) {
   const requesterId = activeMatch?.active?.requesterId || taskIdentity.requesterId || null;
   const identitySource = activeMatch?.active?.identitySource || taskIdentity.identitySource || "legacy-migrated";
   const request = activeMatch?.active?.objective || taskIdentity.request || null;
-  const verification = listValue(args.verification);
-  const concerns = String(args.concerns || "None recorded.");
+  const rawVerification = listValue(args.verification);
+  const verification = compactVerification(rawVerification);
+  const rawReason = String(args.reason || "Durable milestone checkpoint.");
+  const reason = compactCheckpointText(rawReason, CHECKPOINT_FIELD_BUDGETS.reason);
+  const rawConcerns = String(args.concerns || "None recorded.");
+  const concerns = compactCheckpointText(rawConcerns, CHECKPOINT_FIELD_BUDGETS.concerns);
   await writeFile(
     path.join(state, "memory", "current", `${taskId}.md`),
-    `# Current task memory\n\n- Task: \`${taskId}\`\n- Workflow depth: \`${activeMatch?.active?.workflowDepth || taskIdentity.workflowDepth || "regulated"}\`\n- Requested by: ${requestedBy}\n- Request: ${request || "Not recorded (legacy task)"}\n- Model label: \`${execution.modelLabel}\`\n- Actual model: \`${execution.model}\`\n- Role: \`${execution.role}\`\n- Agent: \`${execution.agent}\`\n- Provider: \`${execution.provider}\`\n- Status: ${args.status || "in-progress"}\n- Last milestone: \`${milestone}\` at ${now()}\n- Summary: ${summary}\n- Reason: ${args.reason || "Durable milestone checkpoint."}\n- Files: ${files.length ? files.map((file) => `\`${file}\``).join(", ") : "None"}\n- Verification: ${verification.length ? verification.join("; ") : "Not yet run"}\n- Concerns: ${concerns}\n`,
+    `# Current task memory\n\n- Task: \`${taskId}\`\n- Workflow depth: \`${activeMatch?.active?.workflowDepth || taskIdentity.workflowDepth || "regulated"}\`\n- Requested by: ${requestedBy}\n- Request: ${request || "Not recorded (legacy task)"}\n- Model label: \`${execution.modelLabel}\`\n- Actual model: \`${execution.model}\`\n- Role: \`${execution.role}\`\n- Agent: \`${execution.agent}\`\n- Provider: \`${execution.provider}\`\n- Status: ${args.status || "in-progress"}\n- Last milestone: \`${milestone}\` at ${now()}\n- Summary: ${summary}\n- Reason: ${reason}\n- Files: ${files.length ? files.map((file) => `\`${file}\``).join(", ") : "None"}\n- Verification: ${verification.length ? verification.join("; ") : "Not yet run"}\n- Concerns: ${concerns}\n`,
     "utf8",
   );
   await appendLog(state, {
@@ -663,11 +713,19 @@ async function checkpoint(root, args) {
     event,
     milestone,
     summary,
-    reason: String(args.reason || "Durable milestone checkpoint."),
+    reason,
     files,
     verification,
   });
-  return { ok: true, taskId, milestone, requestedBy, requesterId, identitySource, ...execution, memory: `memory/current/${taskId}.md` };
+  const compaction = {
+    summaryTruncated: rawSummary.replace(/\s+/g, " ") !== summary,
+    reasonTruncated: rawReason.trim().replace(/\s+/g, " ") !== reason,
+    concernsTruncated: rawConcerns.trim().replace(/\s+/g, " ") !== concerns,
+    verificationItemsOmitted: Math.max(0, rawVerification.length - verification.length),
+    verificationItemsTruncated: rawVerification.slice(0, verification.length)
+      .filter((item, index) => item.trim().replace(/\s+/g, " ") !== verification[index]).length,
+  };
+  return { ok: true, taskId, milestone, requestedBy, requesterId, identitySource, ...execution, memory: `memory/current/${taskId}.md`, compaction };
 }
 
 async function filesUnder(directory) {

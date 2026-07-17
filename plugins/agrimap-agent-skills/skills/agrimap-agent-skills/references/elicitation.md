@@ -45,7 +45,7 @@ When Tier 1 inputs remain unknown, ask once for all of them together:
 Example:
 
 ```text
-Requester: /agm-create-feature สร้าง project template ใหม่ให้หน่อย ขอชื่อ publisher
+Requester: /agm-create-prompt provider=codex สร้าง project template ใหม่ให้หน่อย ขอชื่อ publisher
 
 Agent: ขอ 3 คำตอบ ตอบบรรทัดเดียวเรียงลำดับ เช่น "1 2 approve":
   1) target: 1=main  2=library
@@ -63,7 +63,7 @@ Agent: สร้างด้วย company template — ยืนยันคำ
 Decision owner: approve
 ```
 
-New project scaffolds run the company `dotnet new agmwa|agmws|agmbo` templates per the generated [create-feature operation](operations/create-feature.md): derive recommended parameters from the confirmed name, present the complete command and its working directory verbatim, and run only after decision-owner approval. For work inside an existing repository, the destination needs no question — every created or modified path is already visible in the confirmed slice plan.
+New project scaffolds always exceed direct/light scope. Route them through `agm-create-prompt`, place the exact company `dotnet new agmwa|agmws|agmbo` command and working directory in the approved executor prompt, and run it only through `agm-exec` after decision-owner approval. For direct work inside an existing repository, the destination needs no question—every created or modified path is already visible in the confirmed slice plan.
 
 ## Do not rush
 
@@ -84,8 +84,8 @@ A generated analysis, plan, proposal list, or prompt is never permission to exec
 | `agm-refactor-fe/be/sql` | free text may select the mode | mode from intent ("เร็วขึ้น" → performance, "อ่านง่าย" → readability, "แก้บั๊ก X" → targeted-bug-fix); `target_kind` from alias + path; `backend_profile` from the host project | intent does not select exactly one mode, or the profile cannot be found |
 | `agm-qa` | bare works with an active task | `task_id` from the active task; product artifacts read-only and QA workflow writes are fixed | no active task and no `task_id` |
 | `agm-create-unit-test` | `@file` alone works | `target_kind`/`backend_profile` from path evidence; framework and naming from existing tests | placement evidence is missing; otherwise use the propose-first list below |
-| `agm-create-feature` | needs the objective | placement from evidence when files/paths exist; slice plan shows every output path before building | objective missing → one question; then one batched confirm of placement + names; new project scaffold → confirm the full `dotnet new` command and working directory |
-| `agm-create-prompt` | needs the objective | task context swept from the conversation and `.agrimap-agent` state | `provider` and any unresolved Tier 1 input |
+| `agm-create-feature` | needs the objective; light/direct only | placement from evidence when files/paths exist; slice plan shows every output path before building | objective missing → one question; then one batched confirm of placement + names; scope exceeds light or requests a new project scaffold → stop and route to `agm-create-prompt` |
+| `agm-create-prompt` | needs the objective; owns tracked brief/checklist | task context swept from the conversation and `.agrimap-agent` state | `provider` and any unresolved Tier 1 input |
 | `agm-exec` | needs the prompt file or a resumable task id | resume point from task memory | the prompt path/task id is missing |
 
 ## Propose-first creation
@@ -93,7 +93,7 @@ A generated analysis, plan, proposal list, or prompt is never permission to exec
 `agm-create-unit-test` and `agm-create-feature` embed a bounded analysis pass; do not require a separate analyze task first.
 
 - Unit tests: classify the target from path evidence, inspect the existing framework and naming, then present a numbered list of behaviors and regression risks worth testing with recommended entries marked. The requester may pick routine coverage in one reply: `approve` (recommended only), `all`, or numbers such as `1 2 5`; a material behavior/contract choice requires decision-owner authority. Create only the selected tests. Skip the proposal when the requester already named the behaviors to cover.
-- Features: the objective is Tier 1 and never guessed. Infer placement from evidence, propose the smallest slice plan (files to create or modify), confirm once, then build.
+- Features: the objective is Tier 1 and never guessed. Infer placement from evidence, propose the smallest slice plan (files to create or modify), and confirm once. Build directly only when the entire slice remains light; when it needs more than three product artifacts, tracking, delegation, separate QA, or material owner decisions, route the unexecuted slice to `agm-create-prompt`.
 
 ## Refactor mode menu
 
@@ -108,4 +108,4 @@ When the request does not select a mode, present the choices in plain language a
 4 = แก้เฉพาะบั๊กที่พิสูจน์แล้ว (targeted-bug-fix)
 ```
 
-A full rewrite is not a refactor. Route "เปลี่ยนทั้งหมด" requests to `agm-plan`/`agm-architect` plus `agm-create-feature` so the word refactor never becomes a back door for rebuilding a system.
+A full rewrite is not a refactor. Route "เปลี่ยนทั้งหมด" requests to `agm-plan`/`agm-architect`, then use direct `agm-create-feature` only for a light slice or `agm-create-prompt` for tracked execution, so the word refactor never becomes a back door for rebuilding a system.

@@ -3,6 +3,7 @@
 ## สารบัญ
 
 - [Staged elicitation contract](#staged-elicitation-contract)
+- [Artifact ownership and phase order](#artifact-ownership-and-phase-order)
 - [Prompt file naming and lifecycle](#prompt-file-naming-and-lifecycle)
 - [Required input variables](#required-input-variables)
 - [Build the prompt](#build-the-prompt)
@@ -17,6 +18,12 @@
 
 Generate prompts that an executor can run without reconstructing the Leader's reasoning. The approved prompt is the execution source of truth for one tracked task. Use plain language and reference canonical contracts instead of copying them.
 
+## Artifact ownership and phase order
+
+For a tracked feature, write `brief.md`, derive acceptance `checklist.md`, and generate draft prompts. The brief fixes scope, authority, and ownership across handoffs; direct `agm-create-feature` needs none.
+
+End with a non-terminal `scope-decision` checkpoint. `agm-exec` owns implementation, `agm-qa` owns QA evidence, and the Leader writes `result.md` only as the final closure record. Prompt generation does none of those phases.
+
 ## Staged elicitation contract
 
 Run the stages in order. Skip B–D only when the requester explicitly requests `express` within recorded authority; the default is the full sequence.
@@ -25,7 +32,7 @@ Run the stages in order. Skip B–D only when the requester explicitly requests 
 - **Stage B — approach with mandatory counter-arguments.** Present the viable approaches with trade-offs, and argue against the leading option at least once with evidence. Agreement without challenge is a stage failure.
 - **Stage C — thesis refinement.** Reduce the discussion to a thesis: problem → reasoning → chosen approach → measurable success criteria. Iterate with the requester; route every material choice to the recorded decision owner. The thesis is carried into the generated prompt so it stays repeatable and auditable.
 - **Stage D — understanding checklist gate.** Return the full understanding as a checklist. The requester confirms factual intent; the decision owner approves material choices. Do not proceed to Stage E until the required authority approves; if an authorized participant corrects an item, update and re-present only the changed items.
-- **Stage E — generation.** Produce the Leader/executor/QA prompt files below with `prompt_status: draft`. Only the decision owner, or a requester with recorded `owner|delegated` authority, may flip a material prompt to `owner-approved`. Generation is the end of this operation: **never begin executing a generated prompt.** Running it is a separate authorized action through `agm-exec`.
+- **Stage E — generation.** Finalize brief/checklist and draft role prompts. Only the decision owner or recorded `owner|delegated` requester may set `owner-approved`. Record one non-terminal `scope-decision` checkpoint; never execute, create QA/result artifacts, or close the task. Execution requires `agm-exec`.
 
 Authority gates in this contract are real stops. A completed stage output is never permission to advance past a gate without the required requester's confirmation or decision owner's approval.
 
