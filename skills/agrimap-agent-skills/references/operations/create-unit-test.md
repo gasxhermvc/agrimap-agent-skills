@@ -27,6 +27,8 @@
 
 - When target is FE: [frontend-engineer.md](../frontend-engineer.md) — frontend test discipline
 - When target is BE: [backend-engineer.md](../backend-engineer.md) — backend test discipline
+- When the backend test target contains C#: [patterns/csharp.md](../patterns/csharp.md) — project-wide C# test style and required cases
+- When the backend test target touches cookie, header, query, form, JSON body, or device-ID resolution: [patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md](../patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md) — request-value behavior matrix for tests
 - When target is SQL: [patterns/sql.md](../patterns/sql.md) — SQL verification boundary
 
 Do not read the router `SKILL.md` during operation execution. If this generated entrypoint is missing or corrupt, stop with `PACKAGE_ENTRYPOINT_MISSING` and ask for package sync/reinstallation; never broaden into the router.

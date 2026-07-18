@@ -27,6 +27,7 @@
 
 ## Load only when the condition matches
 
+- When the backend refactor contains C#: [patterns/csharp.md](../patterns/csharp.md) — project-wide C# refactor baseline
 - When the refactor touches direct request/header/cookie/query/form/body access or repeated blank/trim/fallback logic: [patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md](../patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md) — behavior-preserving normalization target for main/library code
 
 Do not read the router `SKILL.md` during operation execution. If this generated entrypoint is missing or corrupt, stop with `PACKAGE_ENTRYPOINT_MISSING` and ask for package sync/reinstallation; never broaden into the router.

@@ -28,6 +28,7 @@
 
 - When target_kind is fe-main or fe-library: [frontend-engineer.md](../frontend-engineer.md) — frontend analysis fundamentals
 - When target_kind is be-main or be-library: [backend-engineer.md](../backend-engineer.md) — backend analysis fundamentals including request-value normalization
+- When the backend target contains C#: [patterns/csharp.md](../patterns/csharp.md) — project-wide C# shape, naming, boundary, and code examples
 - When the backend target reads cookie, header, query, form, JSON body, or device ID: [patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md](../patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md) — exact normalize API and compatibility behavior
 
 Do not read the router `SKILL.md` during operation execution. If this generated entrypoint is missing or corrupt, stop with `PACKAGE_ENTRYPOINT_MISSING` and ask for package sync/reinstallation; never broaden into the router.

@@ -6,6 +6,7 @@
 - [Profile detection](#profile-detection--resolve-from-repo-evidence-before-asking)
 - [Host profiles](#host-profiles)
 - [Structure over logic](#structure-over-logic-owner-stance-2026-07-16)
+- [C# baseline](#c-baseline)
 - [Phase 1: foundation](#phase-1-foundation)
 - [Phase 2: active-development](#phase-2-active-development)
 - [Error/message reconciliation](#errormessage-reconciliation)
@@ -13,6 +14,8 @@
 - [Phase 3: stabilization](#phase-3-stabilization)
 
 Apply this passive discipline whenever `target_kind` is `be-main` or `be-library`, including analysis, architecture, feature work, refactor, review, tests, QA, and prompt generation. Do not expose a separate Back-end Engineer command.
+
+Every BE role carries this discipline. For C# scope it also carries [`patterns/csharp.md`](patterns/csharp.md); when request values are in scope it carries the exact request-value golden. A delegated handoff must include the applicable rules instead of expecting the receiver to rediscover them.
 
 ## Required classification
 
@@ -66,6 +69,10 @@ Keep `Infrastructure/TaskScheduler.cs` limited to scheduling/registration concer
 
 The strict contract is **structure**: layer placement, entry-point shape, model classification, naming, DI registration, and public/route/data contracts. Internal logic *within* a correctly placed layer is where the model applies its own intelligence — implement it with best engineering judgment, and do not demand a golden example, block, or escalate for every internal implementation decision. Escalate only when the choice changes a contract, data behavior, or ownership boundary. A structurally correct slice with model-authored internal logic is the expected outcome, not a compromise.
 
+## C# baseline
+
+For every C# target, apply [`patterns/csharp.md`](patterns/csharp.md). Owner-approved and curated golden rules outrank incidental project inconsistency; preserve a proven public/runtime compatibility constraint and report it rather than copying unrelated legacy style.
+
 ## Phase 1: `foundation`
 
 Build the smallest stable runway:
@@ -116,9 +123,10 @@ Apply this gate to both `be-main` and `be-library` whenever code reads, resolves
 
 1. Scan the affected path for direct `Request.Headers`, `Request.Cookies`, `Request.Query`, `Request.Form`, body reads, repeated trim/blank checks, fallback chains, and hardcoded request-key strings.
 2. For `be-main`, reuse the active `AgriMap.Platform.Extensions` API only when the referenced package/source proves that surface exists. For `be-library`, preserve the published API and update README/Playground/tests with any intentional change.
-3. Preserve observable semantics before consolidation: source precedence, first-versus-joined multi-values, blank-to-null normalization, trimming, JSON case behavior, form/body buffering, cancellation, and generated device-ID fallback.
+3. Resolve the first non-blank request value in this priority: Cookie (highest) -> Header -> QueryString (lowest). Read Form/body only after synchronous sources when the API supports them. Preserve first-versus-joined multi-values, blank-to-null normalization, trimming, JSON case behavior, buffering, cancellation, and generated device-ID fallback.
 4. Centralize cookie/header/parameter names in `ClientRequestResolverExtensions`. These helpers are static extensions and require no DI registration; do not add a wrapper service merely to satisfy structure.
-5. Refactor by one caller family or acceptance slice, then verify direct-access remnants and behavior. Do not mass-replace mechanically when existing semantics differ.
+5. Treat Cookie `AgmTraceId` -> Header `agm-device-id` -> QueryString `device_id` as the canonical device-ID mapping, and use `AgmLoginContextId` as the login-context cookie name. This order is normative for new/touched code and outranks narrower historical request-source examples.
+6. Refactor by one caller family or acceptance slice, then verify direct-access remnants and behavior. Do not mass-replace mechanically when an established public contract differs.
 
 Analysis names duplication clusters and migration boundaries. Diagnosis proves whether inconsistent extraction/normalization causes the symptom. QA reruns representative cookie/header/query/form/body and fallback cases against the golden contract.
 

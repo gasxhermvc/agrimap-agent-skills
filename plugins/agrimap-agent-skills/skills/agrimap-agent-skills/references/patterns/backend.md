@@ -2,6 +2,8 @@
 
 Apply [backend-engineer.md](../backend-engineer.md) Required classification, Profile detection, Host profiles, and Structure over logic unchanged. This file owns only pattern-specific flow and placement.
 
+For C# targets, apply the compact [C# coding baseline](csharp.md) before using raw legacy examples.
+
 ## Main flow
 
 Use the local Clean Architecture implementation. The baseline request flow is:
@@ -41,7 +43,7 @@ BE can originate a code in Domain/Application, translate it at the response boun
 
 ## HTTP request values
 
-When a BE slice reads cookies, headers, query/form fields, or JSON bodies, apply [HTTP request-value normalization](../backend-engineer.md#http-request-value-normalization). The `AgriMap.Platform.Extensions` pattern serves both `be-main` consumers and the `be-library` owner: normalize blank to `null`, trim values, preserve fallback order/body re-read behavior, centralize key names, and add no DI registration for static extensions. Before clean-code refactor, inventory direct access and prove semantic equivalence rather than replacing syntax globally.
+When a BE slice reads cookies, headers, query/form fields, or JSON bodies, apply [HTTP request-value normalization](../backend-engineer.md#http-request-value-normalization). The `AgriMap.Platform.Extensions` pattern serves both `be-main` consumers and the `be-library` owner: first non-blank Cookie -> Header -> QueryString, normalize blank to `null`, trim values, defer body reads, centralize key names, and add no DI registration for static extensions. Before refactor, inventory direct access and prove semantic equivalence rather than replacing syntax globally.
 
 ## `backend_profile=agmbo`
 

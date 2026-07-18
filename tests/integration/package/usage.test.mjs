@@ -113,20 +113,49 @@ test("usage documentation separates routing from operation activation and help",
   assert.equal(await read("plugins/agrimap-agent-skills/docs/USAGE.md"), usage);
 });
 
-test("backend request-value normalization routes to main and library operations", async () => {
+test("C# and request-value contracts route through every backend operation", async () => {
+  const csharpPath = "patterns/csharp.md";
   const goldenPath = "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md";
-  for (const operation of ["analyze", "diagnose", "refactor-be", "qa"]) {
+  const backendOperations = [
+    "analyze",
+    "diagnose",
+    "simulate",
+    "plan",
+    "design",
+    "architect",
+    "review",
+    "refactor-be",
+    "qa",
+    "create-unit-test",
+    "create-feature",
+    "create-prompt",
+    "execute",
+  ];
+  for (const operation of backendOperations) {
     const item = operations.find((candidate) => candidate.operation === operation);
     assert.ok(item, `missing operation ${operation}`);
+    const routed = [...(item.references || []), ...(item.conditionalReferences || [])];
     assert.equal(
-      [...(item.references || []), ...(item.conditionalReferences || [])].some((reference) => reference.path === goldenPath),
+      routed.some((reference) => reference.path === csharpPath),
+      true,
+      `${operation} must route to the C# baseline`,
+    );
+    assert.equal(
+      routed.some((reference) => reference.path === goldenPath),
       true,
       `${operation} must route to request-value normalization`,
     );
   }
   const backendEngineer = await read("skills/agrimap-agent-skills/references/backend-engineer.md");
+  const csharp = await read("skills/agrimap-agent-skills/references/patterns/csharp.md");
+  const requestGolden = await read(`skills/agrimap-agent-skills/references/${goldenPath}`);
   assert.match(backendEngineer, /both `be-main` and `be-library`/);
   assert.match(backendEngineer, /require no DI registration/);
+  assert.match(backendEngineer, /Cookie \(highest\) -> Header -> QueryString \(lowest\)/);
+  assert.match(csharp, /AgmTraceId.*agm-device-id.*device_id/s);
+  assert.match(csharp, /AgmLoginContextId/);
+  assert.match(requestGolden, /Cookie \(highest\) -> Header -> QueryString \(lowest\)/);
+  assert.match(requestGolden, /Header \(agm-device-id\)/);
 });
 
 test("provider hook discovery is isolated per host", async () => {

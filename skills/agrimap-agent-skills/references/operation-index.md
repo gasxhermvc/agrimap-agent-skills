@@ -19,7 +19,7 @@ Use this file only to select one dedicated `agm-*` skill. It is not an execution
 | `agm-refactor-sql` | `refactor-sql` | Refactor SQL using an explicit behavior mode | `product-write` | default `light`; allowed `light`, `standard`, `regulated` |
 | `agm-qa` | `qa` | Verify an artifact under a product-read-only, execution-restricted QA contract | `verification-only` | default `light`; allowed `light`, `regulated` |
 | `agm-create-unit-test` | `create-unit-test` | Create target-specific unit or regression tests | `product-write` | default `light`; allowed `light`, `standard`, `regulated` |
-| `agm-create-feature` | `create-feature` | Create a bounded FE, BE, batch, library, or SQL feature directly without tracked workflow artifacts | `product-write` | default `light`; allowed `light` |
+| `agm-create-feature` | `create-feature` | Create a bounded FE, BE, batch, library, or SQL feature | `product-write` | default `light`; allowed `light` |
 | `agm-create-prompt` | `create-prompt` | Create provider-specific Leader, executor, and QA prompts | `workflow-write-only` | default `regulated`; allowed `regulated` |
 | `agm-exec` | `execute` | Execute one decision-owner-approved generated prompt as the execution source of truth with checkpoints, deviation stops, and a Result Package | `product-write` | default `regulated`; allowed `regulated` |
 

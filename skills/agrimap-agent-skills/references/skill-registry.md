@@ -38,6 +38,7 @@
 |---|---|---|
 | `agm:patterns/frontend` | `patterns/frontend.md` | router งาน FE ทุกชนิด |
 | `agm:patterns/backend` | `patterns/backend.md` | router งาน BE ทุกชนิด |
+| `agm:patterns/csharp` | `patterns/csharp.md` | baseline และตัวอย่างทุกงาน C# ฝั่ง BE |
 | `agm:patterns/sql` | `patterns/sql.md` | router งาน SQL + DDL Standard + message gate |
 | `agm:patterns/gencode-api` | `patterns/gencode-api.md` | งาน generated API ทุก workspace |
 | `agm:patterns/conflict-resolution` | `patterns/conflict-resolution.md` | เมื่อใช้ golden evidence |

@@ -22,6 +22,14 @@ using AgriMap.Platform.Extensions;
 และคืน `null`; ค่าที่พบจะถูก `Trim()` ให้เสมอ ผู้เรียกจึงเช็คแค่ `is not null`
 โดยไม่ต้อง `string.IsNullOrWhiteSpace` ซ้ำ
 
+เมื่อค่าเดียวกันมาจากหลาย request source ให้ `FirstNotBlank` เลือกค่าแรกตามลำดับคงที่:
+
+```text
+Cookie (highest) -> Header -> QueryString (lowest)
+```
+
+Form/JSON body เป็น fallback หลังแหล่ง sync เท่านั้น หาก resolver นั้นรองรับ body
+
 ## API
 
 ```csharp
@@ -127,7 +135,7 @@ public async Task<IActionResult> Token(
 resolve `device_id` ตามลำดับ:
 
 ```text
-Request DTO → Cookie (AgmTraceId) → Header (agm-trace-id) → Query (device_id) → Form (device_id)
+Request DTO -> Cookie (AgmTraceId) -> Header (agm-device-id) -> Query (device_id) -> Form (device_id)
 ```
 
 เมื่อไม่พบจากทุกแหล่ง สร้าง GUID ใหม่ format `N` (ไม่มี dash):
@@ -155,7 +163,7 @@ Form ถูกอ่านเป็นลำดับสุดท้ายเท
 "refresh_token", "access_token", "grant_type"
 
 // Headers (รูปแบบ kebab-case ตัวพิมพ์เล็ก prefix agm-)
-"agm-client-id", "agm-trace-id", "agm-system-id", "agm-platform-code",
+"agm-client-id", "agm-device-id", "agm-trace-id", "agm-system-id", "agm-platform-code",
 "agm-app-version", "agm-app-id", "agm-token", "authorization"
 ```
 
@@ -188,5 +196,7 @@ ClientRequestResolverExtensions.Headers.AgmClientId
 - `ReadJsonBodyAsync<T>` ใช้ค่าเริ่มต้นของ `System.Text.Json` เมื่อไม่ส่ง `options`;
   การจับคู่ชื่อ property เป็น case-sensitive ต่างจาก `ReadJsonPropertyAsync`
 - `ResolveDeviceIdAsync` คืนค่าเสมอ (non-nullable) — อย่าเช็ค null ซ้ำ
+- ใช้ `AgmLoginContextId` เป็นชื่อ canonical ของ login-context cookie
+- คง mapping `AgmTraceId` cookie เป็นแหล่ง device ID ตามลำดับข้างต้น
 - อย่าเพิ่มชื่อ cookie/header/parameter ใหม่แบบ hardcode ใน service;
   เพิ่มเป็นค่าคงที่ใน `ClientRequestResolverExtensions` ก่อนแล้วอ้างอิงจากที่เดียว

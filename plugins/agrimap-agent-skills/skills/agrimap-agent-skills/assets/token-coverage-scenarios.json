@@ -255,12 +255,14 @@
       "depth": "light",
       "activate": [
         "backend-engineer.md",
+        "patterns/csharp.md",
         "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md"
       ],
       "mustLoad": [
         "analysis-discipline.md",
         "input-and-scope.md",
         "backend-engineer.md",
+        "patterns/csharp.md",
         "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md"
       ]
     },
@@ -271,12 +273,14 @@
       "depth": "light",
       "activate": [
         "backend-engineer.md",
+        "patterns/csharp.md",
         "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md"
       ],
       "mustLoad": [
         "analysis-discipline.md",
         "input-and-scope.md",
         "backend-engineer.md",
+        "patterns/csharp.md",
         "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md"
       ]
     },
@@ -286,12 +290,14 @@
       "operation": "refactor-be",
       "depth": "light",
       "activate": [
+        "patterns/csharp.md",
         "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md"
       ],
       "mustLoad": [
         "refactor-modes.md",
         "backend-engineer.md",
         "patterns/backend.md",
+        "patterns/csharp.md",
         "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md"
       ]
     },
@@ -303,12 +309,14 @@
       "activate": [
         "patterns/pattern-status.md",
         "backend-engineer.md",
+        "patterns/csharp.md",
         "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md"
       ],
       "mustLoad": [
         "qa-and-done.md",
         "patterns/pattern-status.md",
         "backend-engineer.md",
+        "patterns/csharp.md",
         "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md"
       ]
     }

@@ -1,6 +1,6 @@
 ---
 name: agm-create-feature
-description: Create a bounded FE, BE, batch, library, or SQL feature directly without tracked workflow artifacts. Use only for the dedicated AgriMap `create-feature` operation or when the requester explicitly invokes this alias; do not use it as a general AgriMap router.
+description: Create a bounded FE, BE, batch, library, or SQL feature. Use only for the dedicated AgriMap `create-feature` operation or when the requester explicitly invokes this alias; do not use it as a general AgriMap router.
 ---
 
 Run only operation `create-feature`. Before conditional discipline, read exactly:

@@ -28,5 +28,7 @@
 
 - When target_kind is fe-main or fe-library: [frontend-engineer.md](../frontend-engineer.md) — frontend architecture fundamentals
 - When target_kind is be-main or be-library: [backend-engineer.md](../backend-engineer.md) — backend architecture fundamentals
+- When the backend architecture contains C#: [patterns/csharp.md](../patterns/csharp.md) — project-wide C# structure baseline
+- When the backend architecture includes cookie, header, query, form, JSON body, or device-ID resolution: [patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md](../patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md) — request-value ownership and precedence contract
 
 Do not read the router `SKILL.md` during operation execution. If this generated entrypoint is missing or corrupt, stop with `PACKAGE_ENTRYPOINT_MISSING` and ask for package sync/reinstallation; never broaden into the router.

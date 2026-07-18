@@ -28,6 +28,8 @@
 
 ## Load only when the condition matches
 
-- No additional conditional reference by default; select one target pattern only when lifecycle-core routing requires it.
+- When the approved prompt targets C# backend work: [backend-engineer.md](../backend-engineer.md) — backend discipline carried into execution
+- When the approved prompt targets C# backend work: [patterns/csharp.md](../patterns/csharp.md) — project-wide C# execution baseline
+- When the approved backend prompt touches cookie, header, query, form, JSON body, or device-ID resolution: [patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md](../patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md) — request-value execution contract
 
 Do not read the router `SKILL.md` during operation execution. If this generated entrypoint is missing or corrupt, stop with `PACKAGE_ENTRYPOINT_MISSING` and ask for package sync/reinstallation; never broaden into the router.
