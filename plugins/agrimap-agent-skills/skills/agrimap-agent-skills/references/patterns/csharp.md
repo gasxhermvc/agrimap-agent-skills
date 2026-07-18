@@ -4,18 +4,44 @@ Apply to every C# file in `be-main` and `be-library`. Curated golden and owner r
 
 ## Contents
 
-- [Shape and naming](#shape-and-naming)
+- [Namespaces, files, and naming](#namespaces-files-and-naming)
 - [HTTP boundary and DTOs](#http-boundary-and-dtos)
 - [Request values](#request-values)
 - [Async, errors, data, and logs](#async-errors-data-and-logs)
 - [Comments and tests](#comments-and-tests)
 
-## Shape and naming
+## Namespaces, files, and naming
 
-- Use one public type per file and the project's file-scoped namespace.
+- Use these roots: `agmws` = `AgriMap.Web.Service`; `agmbo` = `AgriMap.Worker`.
+- Append only a fixed namespace below. Subfolders may organize files but never extend the namespace.
+
+| Tier | Fixed namespace below `{Root}` |
+| --- | --- |
+| Application | `Application`, `Application.Interfaces`, `Application.UseCases` |
+| Domain | `Domain.Constants`, `Domain.Entities`, `Domain.ValueObjects` |
+| Infrastructure | `Infrastructure`, `Infrastructure.ExternalService`, `Infrastructure.Persistence.Interfaces`, `Infrastructure.Persistence.Models`, `Infrastructure.Persistence.Repositories` |
+| Presentation | `Presentation.Config`, `Presentation.Controllers`, `Presentation.DTOs.Requests`, `Presentation.DTOs.Responses`, `Presentation.Filters`, `Presentation.Middlewares`, `Presentation.Mockup`, `Presentation.Models` |
+| Shared | `Shared.Extensions`, `Shared.Helpers` |
+| `agmbo` scheduling | `Infrastructure.Jobs` (`Infrastructure/Jobs/JobScheduler.cs`) |
+
+This table is a namespace allowlist, not permission to create every tier. `agmbo` keeps its scheduler entry and does not gain a Presentation tier unless the project already proves one is required.
+
+```csharp
+// Correct even when the file is under DTOs/Requests/OAuth/
+namespace AgriMap.Web.Service.Presentation.DTOs.Requests;
+
+// Forbidden: a subfolder must not extend a fixed namespace
+namespace AgriMap.Web.Service.Presentation.DTOs.Requests.OAuth;
+```
+
+- Use `Application` and `Infrastructure` root namespaces for their DI registration extensions.
+- Use `Presentation.Mockup` for JSON assets and `Presentation.Models` for models/model binders; do not invent deeper namespaces.
+- Use one public type per file and a file-scoped namespace. Reuse global usings; add only imports required to compile, before the namespace. Never use an alias to bypass the fixed namespace rule.
 - Use PascalCase for types/members, `I` for interfaces, `_camelCase` for private readonly dependencies, and `Async` for new async I/O methods. Preserve existing public names when renaming would break compatibility.
 - Name transport types `*RequestDto` / `*ResponseDto`, orchestration `*UseCase`, inward data ports `I*Repository`, and implementations `*Repository`.
 - Keep Presentation, Application, Domain, Port, and Infrastructure responsibilities separate as defined in [backend.md](backend.md).
+
+`Infrastructure.Persistence.Models` is reserved for MongoDB documents or ORM entities. AtlasX Core Query results normally map to `Domain.Entities`/`Domain.ValueObjects` for business data or `Presentation.DTOs.Responses` for the outward contract; do not create a persistence model only to mirror an AtlasX result.
 
 ```csharp
 namespace AgriMap.Web.Service.Application.UseCases;

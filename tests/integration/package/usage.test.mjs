@@ -154,6 +154,14 @@ test("C# and request-value contracts route through every backend operation", asy
   assert.match(backendEngineer, /Cookie \(highest\) -> Header -> QueryString \(lowest\)/);
   assert.match(csharp, /AgmTraceId.*agm-device-id.*device_id/s);
   assert.match(csharp, /AgmLoginContextId/);
+  assert.match(csharp, /`agmws` = `AgriMap\.Web\.Service`/);
+  assert.match(csharp, /`agmbo` = `AgriMap\.Worker`/);
+  assert.match(csharp, /Infrastructure\.Jobs.*Infrastructure\/Jobs\/JobScheduler\.cs/s);
+  assert.match(csharp, /Subfolders may organize files but never extend the namespace/);
+  assert.match(csharp, /Infrastructure\.Persistence\.Models.*MongoDB.*ORM/s);
+  assert.match(csharp, /AtlasX Core Query results.*Domain\.Entities.*Presentation\.DTOs\.Responses/s);
+  assert.doesNotMatch(csharp, /namespace ArgiMap|AgriMap\.Wokrer/);
+  assert.doesNotMatch(backendEngineer, /TaskScheduler\.cs/);
   assert.match(requestGolden, /Cookie \(highest\) -> Header -> QueryString \(lowest\)/);
   assert.match(requestGolden, /Header \(agm-device-id\)/);
 });

@@ -117,6 +117,6 @@ Confirm these before promoting more patterns:
 - FE library: full semver rules (minor/major triggers) and richer unit-test assertion conventions — remaining open items now that `golden/frontend-libraries` documents public API, facade usage, generated API, and consumer wiring;
 - BE main: repository-port location, Presentation-to-Application mapping, Domain versus persistence model examples, route/response conventions;
 - BE library: README and Playground conventions;
-- BE main with `backend_profile=agmbo`: `Infrastructure/TaskScheduler.cs` and registration/retry behavior;
+- BE main with `backend_profile=agmbo`: `Infrastructure/Jobs/JobScheduler.cs` and registration/retry behavior;
 - SQL: default constraint naming, cascade policy, index review, seed deployment, list-input convention, and update-versus-replace semantics;
 - BE main, BE library, and SQL: representative unit/integration-test conventions. FE-main mandatory store/facade tests and the FE-library smoke-test baseline are already documented.

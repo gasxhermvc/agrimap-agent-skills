@@ -23,7 +23,7 @@ Evidence mode is separate from authority:
 | FE library public API, naming, generated API, Playground, and smoke-test baseline | `current` | Use `golden/frontend-libraries`; richer assertions and full semver rules remain decision-owner evidence gaps. |
 | BE new boundary placement | `verified` | Map transport DTOs before inward repository ports; classify models by meaning. Do not silently migrate legacy code. |
 | BE main with `backend_profile=agmws` examples | `legacy-compatible` | Layer flow is useful; exact port location, route/response conventions, and Domain versus persistence examples still need owner evidence. |
-| BE main with `backend_profile=agmbo` scheduler | `missing-owner-example` | Requires `TaskScheduler.cs`, registration, retry, and concurrency examples. |
+| BE main with `backend_profile=agmbo` scheduler | `missing-owner-example` | Requires `Infrastructure/Jobs/JobScheduler.cs`, registration, retry, and concurrency examples. |
 | BE library behavior, configuration, README-style usage, and Playground | `current` | Use `golden/backend-libraries`; the active package's published API and source remain authoritative. |
 | BE main/library HTTP request-value normalization | `current` | Use `013-1-extensions-request-value-normalize.md`; verify the active `AgriMap.Platform.Extensions` package surface before migrating callers. |
 | SQL collection | `mixed` | Read every entry's status in `golden/sql/manifest.json`; never infer data semantics from collection status. |

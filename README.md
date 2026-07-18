@@ -186,7 +186,7 @@ The passive discipline is automatically composed with every BE task and has no s
 - `backend_profile=agmws|agmbo` only for `be-main`;
 - `phase=foundation|active-development|stabilization`.
 
-There is no Type A/B/C and no required `change_kind`. `agmws` is the web host flow `Presentation -> Application/UseCase -> Domain -> Port -> Infrastructure -> response`. `agmbo` has no Presentation tier and starts from `Quartz/TaskScheduler -> Application/UseCase -> Domain -> Port -> Infrastructure`; `Infrastructure/TaskScheduler.cs` contains scheduling concerns, never business logic.
+There is no Type A/B/C and no required `change_kind`. `agmws` is the web host flow `Presentation -> Application/UseCase -> Domain -> Port -> Infrastructure -> response`. `agmbo` has no Presentation tier and starts from `Quartz/JobScheduler -> Application/UseCase -> Domain -> Port -> Infrastructure`; `Infrastructure/Jobs/JobScheduler.cs` contains scheduling concerns, never business logic.
 
 For both `be-main` and `be-library`, request/header/cookie/query/form/body work conditionally loads the curated `013-1-extensions-request-value-normalize.md` contract. Analysis and diagnosis inventory inconsistent direct access; refactor preserves precedence, blank/null/trim, multi-value and body-buffering behavior; QA reruns representative sources. The extensions are static and add no DI registration.
 

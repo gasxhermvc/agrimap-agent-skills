@@ -36,14 +36,14 @@ Detect `target_kind`/`backend_profile` from the codebase and declare the result 
 | Signal (check in this order) | Conclusion |
 | --- | --- |
 | Class library: no web host entry, packaged public surface, `README.md` + Playground convention, no Controllers | `be-library` |
-| `Infrastructure/TaskScheduler.cs` present, Quartz.NET package reference, **no** Presentation/Controllers tier; service name pattern `agmbo-*` | `be-main` + `backend_profile=agmbo` |
+| `Infrastructure/Jobs/JobScheduler.cs` present, Quartz.NET package reference, **no** Presentation/Controllers tier; service name pattern `agmbo-*` | `be-main` + `backend_profile=agmbo` |
 | Presentation tier with Controllers/routes, ASP.NET Core web host, HTTP contract DTOs; service name pattern `agmws-*` | `be-main` + `backend_profile=agmws` |
 
 Conflicting signals (e.g., Controllers **and** Quartz in one host) are an owner question, not a guess.
 
 ## Host profiles
 
-**agmws and agmbo share the entire structure and knowledge base.** Application/UseCase, Domain, Port, Infrastructure, model placement, DI, error/message reconciliation, and all `golden/backend-main/` evidence apply to both profiles equally. The only difference is the entry point: `agmws` enters from a client HTTP request through the Presentation tier; `agmbo` enters from a Quartz.NET cron trigger that calls `Infrastructure/TaskScheduler.cs` as its endpoint. Never withhold or re-request backend knowledge for an `agmbo` task because the examples look "web-flavored" — swap the entry tier and reuse everything else unchanged.
+**agmws and agmbo share the entire structure and knowledge base.** Application/UseCase, Domain, Port, Infrastructure, model placement, DI, error/message reconciliation, and all `golden/backend-main/` evidence apply to both profiles equally. The only difference is the entry point: `agmws` enters from a client HTTP request through the Presentation tier; `agmbo` enters from a Quartz.NET cron trigger that calls `Infrastructure/Jobs/JobScheduler.cs` as its endpoint. Never withhold or re-request backend knowledge for an `agmbo` task because the examples look "web-flavored" — swap the entry tier and reuse everything else unchanged.
 
 ### `backend_profile=agmws`
 
@@ -60,10 +60,10 @@ Keep Controller/route code thin. Contract binding and response mapping belong at
 Use the batch flow without a Presentation tier:
 
 ```text
-Quartz/TaskScheduler trigger -> Application/UseCase -> Domain -> Port -> Infrastructure
+Quartz/JobScheduler trigger -> Application/UseCase -> Domain -> Port -> Infrastructure
 ```
 
-Keep `Infrastructure/TaskScheduler.cs` limited to scheduling/registration concerns. Do not put business logic in the scheduler. Record trigger, concurrency, retry, error, and registration effects when scheduling changes.
+Keep `Infrastructure/Jobs/JobScheduler.cs` in namespace `AgriMap.Worker.Infrastructure.Jobs` and limit it to scheduling/registration concerns. Do not put business logic in the scheduler. Record trigger, concurrency, retry, error, and registration effects when scheduling changes.
 
 ## Structure over logic (owner stance, 2026-07-16)
 

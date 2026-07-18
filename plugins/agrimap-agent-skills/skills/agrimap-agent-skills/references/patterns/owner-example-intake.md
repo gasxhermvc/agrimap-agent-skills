@@ -23,7 +23,7 @@ Read `golden/manifest.json`, the relevant collection manifest, and [pattern-stat
 
 ### BE main with `backend_profile=agmbo`
 
-- batch entry point/use case and `Infrastructure/TaskScheduler.cs`;
+- batch entry point/use case and `Infrastructure/Jobs/JobScheduler.cs`;
 - scheduling registration, retry, concurrency, and error logging;
 - representative tests and run command.
 

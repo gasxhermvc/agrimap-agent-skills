@@ -99,6 +99,9 @@ test("compact pattern references keep their canonical owners co-loaded", () => {
   }
 
   assert.match(backendPattern, /Apply \[backend-engineer\.md\].*unchanged/);
+  assert.match(backendPattern, /MongoDB document or ORM entity.*Infrastructure\.Persistence\.Models/s);
+  assert.match(backendPattern, /AtlasX Core Query result.*Domain entity\/value object/s);
+  assert.match(backendPattern, /Do not add another namespace or `Application\.Models`/);
   for (const marker of ["Do not add Type A/B/C", "Ask the owner only when the signals", "### `backend_profile=agmbo`", "Structure over logic"])
     assert.ok(backendDiscipline.includes(marker), `backend owner missing: ${marker}`);
 
