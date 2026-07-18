@@ -68,7 +68,7 @@ Use these names in the generated prompt manifest:
 - `role`: `leader`, `executor`, `qa`, `reviewer`, or `analyst`
 - `agent_name`: stable functional label such as `primary`, `fe`, `be`, `sql`, `designer`, or `qa`
 - `workspace_mode`: `shared-workspace`, `isolated-worktree`, `isolated-sandbox`, or `unknown`
-- `workspace_need`: required contract containing `isolation`, `requested_mode`, `base_ref`, `base_commit`, `provider_instruction`, `visibility_check`, `integration_return`, and `fallback_mode`
+- `workspace_need`: exact [Workspace-need contract](#workspace-need-contract) below
 - `integration_owner`
 - `display_label`: descriptive native agent label/nickname for delegated work
 - `progress_channel`: native app/CLI/IDE agent thread by default; fallback JSONL path only when native activity is unavailable
@@ -96,11 +96,11 @@ Allow the decision owner to override `model_label` in the generated prompt file.
 3. Label material evidence using [analysis-discipline.md](analysis-discipline.md) and resolve every material trade-off with the decision owner; requester confirmation alone is insufficient unless authority is `owner|delegated`.
 4. Reject `agmws` or `agmbo` as `target_kind`. Require one as `backend_profile` for every `be-main` target.
 5. Select a model profile from `model-capability-matrix.yaml`.
-6. Split work only when tasks are independent; use at most five active subagents.
-7. Define `workspace_need` before delegation. State whether isolation is required/preferred/not-needed, the requested mode, base ref and exact base commit containing the required state, provider-specific instruction, visibility check, integration return, and safe fallback. Assign a descriptive native display label and state how the requester inspects progress; never leave the main thread in an unexplained multi-minute wait.
+6. Split work only when tasks are independent, within the limits in [subagents-and-branches.md](subagents-and-branches.md).
+7. Before delegation, render the exact Workspace-need contract below plus the display/progress fields required by [subagents-and-branches.md](subagents-and-branches.md).
 8. Verify the real workspace mode. Do not assume sandbox commits, branches, worktrees, or uncommitted parent changes are visible to the Leader.
 9. Build a file/logical-contract ownership map. One writer model owns a file or contract per integration wave; combine or sequence overlapping tasks.
-10. Assign branch/worktree names only when the selected workspace mode supports them. If required state is uncommitted and absent from the base commit, use shared/sequential work or obtain an explicit decision-owner-approved commit boundary; never pretend an isolated worker can see it.
+10. Apply the workspace visibility and uncommitted-state fallbacks in [subagents-and-branches.md](subagents-and-branches.md); name branches/worktrees only when supported.
 11. Write the required role prompts under `.agrimap-agent/prompts/<task-id>/`. A QA prompt imports [qa-and-done.md](qa-and-done.md) as its complete boundary; do not duplicate that policy here or in generated Leader/executor prompts.
 12. Add the exact skill/reference files the executor must load.
 13. For cross-service or ownership-sensitive work, point to exact `service_id` entries in `.agrimap-agent/knowledge/service-ownership.yaml`; never paste a second ownership map into the prompt.
@@ -130,7 +130,7 @@ workspace_need:
   fallback_mode: sequential|shared-workspace|stop-and-report
 ```
 
-For Claude Code, use `isolation: worktree` in the custom subagent configuration when that installed version supports it; a prose mention alone is not proof. For Codex, select a managed task worktree only on a surface that exposes it. If the provider/version cannot perform the requested mode, the executor reports it and uses only `fallback_mode`; it must not invent a branch or claim isolation.
+Apply the provider-specific isolation and fallback rules in [subagents-and-branches.md](subagents-and-branches.md); the YAML contract above remains the rendering source.
 
 ## File and line contract
 

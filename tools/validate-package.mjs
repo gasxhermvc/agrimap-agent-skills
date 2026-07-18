@@ -83,7 +83,7 @@ for (const required of [
   "skills/agrimap-agent-skills/references/service-ownership.md",
   "skills/agrimap-agent-skills/references/evals/sql-scenarios.md",
   "skills/agrimap-agent-skills/scripts/log-events.mjs",
-  "skills/agrimap-agent-skills/scripts/ensure-sqlfluff.mjs",
+  "skills/agrimap-agent-skills/scripts/install-sqlfluff.mjs",
   "skills/agrimap-agent-skills/scripts/identity.mjs",
   "skills/agrimap-agent-skills/scripts/task-artifact-schema.mjs",
   "skills/agrimap-agent-skills/scripts/token-coverage.mjs",
@@ -103,7 +103,7 @@ for (const required of [
   "tests/unit/sql-artifacts.test.mjs",
   "tests/unit/sql-contract-preflight.test.mjs",
   "tests/unit/sql-scenarios.test.mjs",
-  "tests/unit/sqlfluff-prerequisite.test.mjs",
+  "tests/unit/sqlfluff-install.test.mjs",
   "tests/unit/task-artifact-schema.test.mjs",
   "tests/unit/verify-golden.test.mjs",
   "tests/integration/package/usage.test.mjs",
@@ -334,7 +334,7 @@ const rolesReference = await readFile(path.join(root, "skills", "agrimap-agent-s
 if (rolesReference.split(/\r?\n/).length > 40) errors.push("Role map has regrown into a duplicated execution contract.");
 
 const sqlPattern = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "patterns", "sql.md"), "utf8");
-for (const marker of ["sql-contract-preflight.mjs", "ensure-sqlfluff.mjs", "Failure blocks SQL writes", "sqlfluff --version", "pip install sqlfluff", "sqlfluff format --exclude-rules \"CP02, LT01, RF06\" --dialect tsql <FILE>.sql", "sqlfluff format --exclude-rules \"CP02, LT01, RF06\" --dialect tsql .", "nonzero folder-format exit is incomplete", "OS temp with guaranteed cleanup", "never create `.tmp-*` under project/workspace", "validate-sql-artifacts.mjs", "Every new table and procedure belongs to `[agrimap_app]`", "## Message collection gate", "`messages.sql`", "[agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR])", "same code + same meaning", "same code + different or ambiguous meaning", "`IF NOT EXISTS`", "`no message changes`", "`readability-organization`", "`strict-preserve-logic`", "Neither lane uses ScriptDom"])
+for (const marker of ["sql-contract-preflight.mjs", "install-sqlfluff.mjs", "CommandNotFound", "ENOENT", "Parse, templating, or format failures never trigger installation", "Failed install or retry blocks handoff", "sqlfluff format --exclude-rules \"CP02, LT01, RF06\" --dialect tsql <FILE>.sql", "sqlfluff format --exclude-rules \"CP02, LT01, RF06\" --dialect tsql .", "nonzero folder-format exit is incomplete", "Use OS temp for probes and always clean it", "never create `.tmp-*` under project/workspace", "validate-sql-artifacts.mjs", "Every new table and procedure belongs to `[agrimap_app]`", "## Message collection gate", "`messages.sql`", "[agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR])", "same code + same meaning", "same code + different or ambiguous meaning", "`IF NOT EXISTS`", "`no message changes`", "`readability-organization`", "`strict-preserve-logic`", "Neither lane uses ScriptDom"])
   if (!sqlPattern.includes(marker)) errors.push(`SQL message-collection contract missing marker: ${marker}`);
 for (const marker of ["### Stored procedure section comments", "-- Validate required parameters", "-- Validate WIDGET_TYPE_ID", "-- Begin Transaction", "-- Step 1: Insert dashboard widget", "-- Return PO_DATA", "-- Commit Transaction", "-- Rollback Transaction"])
   if (!sqlPattern.includes(marker)) errors.push(`SQL procedure-comment contract missing marker: ${marker}`);

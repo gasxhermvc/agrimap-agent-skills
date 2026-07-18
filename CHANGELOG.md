@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.6 - 2026-07-18
+
+- Changed SQLFluff setup to lazy installation: format directly, install only on command-not-found, then retry once; parser/format errors never reinstall.
+- Removed co-loaded prose duplication from BE/FE pattern and prompt-delegation references while retaining canonical owners and route-contract tests for every cross-reference.
+
 ## 0.1.5 - 2026-07-18
 
 - Added a deterministic first-use SQLFluff prerequisite that installs when missing, verifies the command, and blocks SQL writes on failure without wrapping the formatter.

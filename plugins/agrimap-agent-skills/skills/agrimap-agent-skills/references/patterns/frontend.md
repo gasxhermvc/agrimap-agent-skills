@@ -1,6 +1,6 @@
 # Frontend patterns
 
-Classify the target as `fe-main` or `fe-library` before choosing files or architecture — resolve it from repo evidence first (`projects/<lib>/` + `ng-package.json` + `public-api.ts` ⇒ `fe-library` + `golden/frontend-libraries/`; app `src/app/` with `core/domain/features/generated-apis/shared` ⇒ `fe-main` + `golden/frontend-main/`) per the detection table in [frontend-engineer.md](../frontend-engineer.md); ask only on conflicting or absent signals. Also classify the delivery phase and apply [frontend-engineer.md](../frontend-engineer.md). Reuse discovery and index maintenance are required for both main and library work.
+Apply [frontend-engineer.md](../frontend-engineer.md) Required classification, Target detection, Structure over logic, and Reuse rules unchanged. This file owns only pattern-specific architecture and placement.
 
 ## FE main
 
@@ -18,8 +18,6 @@ Feature UI -> Facade -> Signal Store and/or Generated API
 - Shared UI: remain reusable and unaware of feature business flow.
 
 Prefer Observable APIs with lifecycle-safe subscriptions in the facade and signal state for feature UI when that matches the local application. Do not introduce a store/facade for a trivial component that has no domain state or orchestration.
-
-**Owner stance:** for `fe-main` the Facade + Signal structure and the CODING-STANDARD rules are the strict, non-negotiable part; internal logic inside a correctly placed layer is the model's own intelligence — write it with best judgment to the standard, without hunting golden evidence for every internal decision (see Structure over logic in [frontend-engineer.md](../frontend-engineer.md)).
 
 ## FE library
 

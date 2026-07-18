@@ -28,30 +28,22 @@ function invoke(run, command, args) {
   }
 }
 
-function passed(result) {
-  return result.status === 0;
-}
-
-export function ensureSqlfluff({ run = defaultRun } = {}) {
-  let verification = invoke(run, "sqlfluff", ["--version"]);
-  if (passed(verification)) {
-    return { ok: true, installed: false, installer: null, version: verification.stdout };
-  }
-
+export function installSqlfluff({ run = defaultRun } = {}) {
   const attempts = [];
   for (const [command, args] of installers) {
     const installation = invoke(run, command, args);
     attempts.push(installation);
-    if (!passed(installation)) continue;
+    if (installation.status !== 0) continue;
 
-    verification = invoke(run, "sqlfluff", ["--version"]);
-    if (passed(verification)) {
-      return { ok: true, installed: true, installer: installation.command, version: verification.stdout };
+    const verification = invoke(run, "sqlfluff", ["--version"]);
+    if (verification.status === 0) {
+      return { ok: true, installer: installation.command, version: verification.stdout };
     }
+    attempts.push(verification);
   }
 
-  const error = new Error("SQLFluff is unavailable and automatic installation did not produce a runnable sqlfluff command.");
-  error.code = "SQLFLUFF_PREREQUISITE_FAILED";
+  const error = new Error("Automatic installation did not produce a runnable sqlfluff command.");
+  error.code = "SQLFLUFF_INSTALL_FAILED";
   error.attempts = attempts;
   throw error;
 }
@@ -59,11 +51,11 @@ export function ensureSqlfluff({ run = defaultRun } = {}) {
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) {
   try {
-    console.log(JSON.stringify(ensureSqlfluff(), null, 2));
+    console.log(JSON.stringify(installSqlfluff(), null, 2));
   } catch (error) {
     console.error(JSON.stringify({
       ok: false,
-      code: error.code || "SQLFLUFF_PREREQUISITE_FAILED",
+      code: error.code || "SQLFLUFF_INSTALL_FAILED",
       message: error.message,
       attempts: error.attempts || [],
     }, null, 2));

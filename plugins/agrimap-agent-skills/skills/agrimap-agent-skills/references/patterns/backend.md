@@ -1,14 +1,6 @@
 # Backend patterns
 
-Classify the target and delivery phase before designing files. Apply [backend-engineer.md](../backend-engineer.md):
-
-- `target_kind=be-main` with required `backend_profile=agmws`: web service/application.
-- `target_kind=be-main` with required `backend_profile=agmbo`: batch application using the same main structure plus `Infrastructure/TaskScheduler.cs` when scheduling applies.
-- `be-library`: reusable codebase with a stable public surface; update `README.md` and Playground in every feature task.
-
-`agmws` and `agmbo` are backend-main profiles, not target kinds. No fallback profile exists.
-Resolve the profile from repo evidence first (Presentation/Controllers ⇒ `agmws`; Quartz.NET + `Infrastructure/TaskScheduler.cs`, no Presentation ⇒ `agmbo`; packaged library + README/Playground ⇒ `be-library`) per the detection table in [backend-engineer.md](../backend-engineer.md); ask only on conflicting or absent signals.
-Do not add Type A/B/C or require `change_kind`; derive concrete work from the objective and current code.
+Apply [backend-engineer.md](../backend-engineer.md) Required classification, Profile detection, Host profiles, and Structure over logic unchanged. This file owns only pattern-specific flow and placement.
 
 ## Main flow
 
@@ -53,9 +45,7 @@ When a BE slice reads cookies, headers, query/form fields, or JSON bodies, apply
 
 ## `backend_profile=agmbo`
 
-There is no Presentation tier. Use `Quartz/TaskScheduler trigger -> Application/UseCase -> Domain -> Port -> Infrastructure`. Inspect `Infrastructure/TaskScheduler.cs` for scheduled tasks. Record trigger, concurrency behavior, retry/error handling, and registration impact. Do not put business logic in the scheduler or add a schedule when the feature is only an executable batch operation.
-
-**Knowledge sharing:** everything below the entry point is identical to `agmws` — all `golden/backend-main/` evidence (use case, repository, DTO/model placement, DI, error handling, SP conventions) applies to `agmbo` work directly. Only the entry tier differs: replace Controller + Presentation DTO with the Quartz trigger in `TaskScheduler.cs` calling the same Application/UseCase shape. An `agmbo` task must never stall waiting for "batch-flavored" copies of knowledge that already exists in `backend-main`.
+Use the `backend_profile=agmbo` flow and shared knowledge defined in [backend-engineer.md](../backend-engineer.md#backend_profileagmbo). Inspect `Infrastructure/TaskScheduler.cs`; add no schedule when the feature is only an executable batch operation.
 
 ## BE libraries
 

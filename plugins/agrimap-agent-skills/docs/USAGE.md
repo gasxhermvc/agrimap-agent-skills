@@ -259,7 +259,7 @@ Agent: สร้าง draft prompt แล้ว; ยังไม่รันค
 | `strict-allow-logic-change` | `$agm-refactor-be requested_by=Billy target_kind=be-main backend_profile=agmws phase=stabilization refactor_mode=strict-allow-logic-change objective="Change retry rule after decision-owner trade-off"` |
 | `targeted-bug-fix` | `$agm-refactor-fe requested_by=Billy target_kind=fe-main phase=active-development refactor_mode=targeted-bug-fix symptom="double submit after timeout"` |
 
-ถ้า `$agm-refactor-sql` ยังระบุ mode ไม่ได้ ต้องแสดงทั้ง 5 enum พร้อมขอบเขตหนึ่งบรรทัดและ mark ค่าแนะนำในคำตอบแรก ห้ามตอบเพียง recommendation. ก่อนเขียน SQL ให้รัน `ensure-sqlfluff.mjs`; script จะตรวจ `sqlfluff --version`, ลอง `pip install sqlfluff` เมื่อไม่มี และหยุดงานถ้าตรวจซ้ำไม่ผ่าน. จากนั้นใช้คำสั่ง `sqlfluff format` แบบไฟล์หรือ folder ตาม contract เดิม. Folder error ถือว่ายังไม่ครบและอาจ format เพียงบางส่วน; แยกรันไฟล์ที่แก้ แก้เฉพาะใน scope รัน folder ซ้ำ แล้วจึง validate. Fixture ชั่วคราวต้องอยู่ใน OS temp และ cleanup เสมอ ห้ามสร้าง `.tmp-*` ใน workspace. QA ห้ามติดตั้งหรือรัน SQLFluff.
+ถ้า `$agm-refactor-sql` ยังระบุ mode ไม่ได้ ต้องแสดงทั้ง 5 enum พร้อมขอบเขตหนึ่งบรรทัดและ mark ค่าแนะนำในคำตอบแรก ห้ามตอบเพียง recommendation. หลัง create/edit ให้รัน `sqlfluff format` แบบไฟล์หรือ folder ทันทีโดยไม่เช็ค version ก่อน. เฉพาะกรณี shell หา command ไม่เจอจึงรัน `install-sqlfluff.mjs` แล้ว retry หนึ่งครั้ง; parse/format error ห้าม trigger การติดตั้ง. Folder error ถือว่ายังไม่ครบและอาจ format เพียงบางส่วน; แยกรันไฟล์ที่แก้ แก้เฉพาะใน scope รัน folder ซ้ำ แล้วจึง validate. Fixture ชั่วคราวต้องอยู่ใน OS temp และ cleanup เสมอ ห้ามสร้าง `.tmp-*` ใน workspace. QA ห้ามติดตั้งหรือรัน SQLFluff.
 
 ## 4. Larger text / ข้อความยาว
 

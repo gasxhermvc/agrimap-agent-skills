@@ -202,7 +202,7 @@ For new SQL artifacts, the normalized AgriMap golden contract outranks a project
 - Stored procedures use `_I`, `_U`, `_D`, `_Q`, or `_CHECK_Q` according to their operation.
 - Stored procedures mark validation gates, transaction boundaries, numbered business steps, and `PO_*` returns with canonical three-line section comments.
 
-Plugin installation itself does not run Python package installers. Before the first SQL write, the writer runs `ensure-sqlfluff.mjs`, which checks `sqlfluff --version`, attempts `pip install sqlfluff` when missing, verifies the command, and blocks writes on failure. Formatting remains direct: `sqlfluff format --exclude-rules "CP02, LT01, RF06" --dialect tsql <FILE>.sql` or the same command ending in `.`. Temporary probes belong in the OS temp directory with guaranteed cleanup, never under the workspace. QA remains read-only and never installs or runs SQLFluff.
+Plugin installation does not install Python packages. The writer runs the direct `sqlfluff format --exclude-rules "CP02, LT01, RF06" --dialect tsql <FILE>.sql` command (or the folder form ending in `.`) without a version probe. Only command-not-found triggers `install-sqlfluff.mjs` and one retry; parser/format errors never reinstall. Temporary probes use OS temp with guaranteed cleanup, never the workspace. QA never installs or runs SQLFluff.
 
 ## Model labels and prompt generation
 

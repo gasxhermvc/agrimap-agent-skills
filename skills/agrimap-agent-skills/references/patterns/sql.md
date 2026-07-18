@@ -12,11 +12,11 @@
 - [Golden examples and conflicts](#golden-examples-and-conflicts)
 - [SQL verification](#sql-verification)
 
-Classify the task as `sql-table`, `sql-procedure`, or `sql-table-and-procedure`. Before inspecting project SQL, establish each intended object name and run `sql-contract-preflight.mjs --target-kind sql-table|sql-procedure --object <OBJECT>` once per object. Load every returned reference and selected golden path; a failed gate blocks inspection and generation. Then inspect current schema, callers, existing objects, data behavior, and deployment conventions before writing SQL.
+Classify as `sql-table`, `sql-procedure`, or `sql-table-and-procedure`. Before project SQL inspection, identify each object and run `sql-contract-preflight.mjs --target-kind sql-table|sql-procedure --object <OBJECT>` once per object. Load all returned references and selected golden paths; failure blocks inspection/generation. Then inspect schema, callers, objects, data behavior, and deployment conventions before writing.
 
 ## Source priority
 
-Use golden AgriMap structure above a neighboring project's structure. Existing projects may contain mixed or accidental conventions and must not silently redefine the shared standard.
+Golden AgriMap structure outranks neighboring project structure; mixed project conventions never redefine the shared standard.
 
 1. Owner-approved requirements and decisions for the current task.
 2. Active database schema, callers, result sets, relationships, and deployed behavior as compatibility facts. Preserve these unless the owner approves a behavior or data change.
@@ -49,7 +49,7 @@ sql/
 - Store the domain's idempotent message inserts only in lowercase `sql/<GROUP_OR_DOMAIN>/messages.sql`.
 - Never combine multiple tables, multiple procedures, or a table and procedure in one file. Never put table/procedure definitions in `messages.sql`.
 - List every exact output path before writing. For a modified legacy artifact, preserve its existing path unless the task explicitly authorizes migration; apply this layout to all newly created artifacts.
-- Before SQL writes, run `node <skill-root>/scripts/ensure-sqlfluff.mjs`; it uses `sqlfluff --version`, then `pip install sqlfluff` if missing, and verifies it. Failure blocks SQL writes. Then choose:
+- After each SQL create/edit, run the selected command:
 
 ```powershell
 sqlfluff format --exclude-rules "CP02, LT01, RF06" --dialect tsql <FILE>.sql
@@ -57,9 +57,11 @@ sqlfluff format --exclude-rules "CP02, LT01, RF06" --dialect tsql <FILE>.sql
 sqlfluff format --exclude-rules "CP02, LT01, RF06" --dialect tsql .
 ```
 
-A broken file can stop parsing. Its nonzero folder-format exit is incomplete and may be partial. Do not validate/finish. Isolate from its error path with the single-file command per changed file; fix only in scope; rerun the folder command to zero. Never bypass errors. Then run `validate-sql-artifacts.mjs` on changed/new canonical paths. QA never runs it.
+- Shell command-not-found for `sqlfluff` (`CommandNotFound`, `ENOENT`, `127`, or `9009`) triggers `node <skill-root>/scripts/install-sqlfluff.mjs` and one retry of the same command. Parse, templating, or format failures never trigger installation. Failed install or retry blocks handoff.
 
-For probes, use OS temp with guaranteed cleanup; never create `.tmp-*` under project/workspace.
+A broken file can stop parsing; a nonzero folder-format exit is incomplete and may be partial. Run the single-file command per changed file, fix only in-scope errors, and rerun the folder command to zero. Never bypass errors. Then run `validate-sql-artifacts.mjs` on changed/new canonical paths; QA never does.
+
+Use OS temp for probes and always clean it; never create `.tmp-*` under project/workspace.
 
 ## Do not invent
 

@@ -10,6 +10,12 @@ const analysis = await read("skills/agrimap-agent-skills/references/analysis-dis
 const elicitation = await read("skills/agrimap-agent-skills/references/elicitation.md");
 const refactorModes = await read("skills/agrimap-agent-skills/references/refactor-modes.md");
 const sqlPolicy = await read("skills/agrimap-agent-skills/references/patterns/sql.md");
+const backendPattern = await read("skills/agrimap-agent-skills/references/patterns/backend.md");
+const backendDiscipline = await read("skills/agrimap-agent-skills/references/backend-engineer.md");
+const frontendPattern = await read("skills/agrimap-agent-skills/references/patterns/frontend.md");
+const frontendDiscipline = await read("skills/agrimap-agent-skills/references/frontend-engineer.md");
+const promptPolicy = await read("skills/agrimap-agent-skills/references/create-prompt.md");
+const delegationPolicy = await read("skills/agrimap-agent-skills/references/subagents-and-branches.md");
 
 const modes = [
   "performance-preserve-behavior",
@@ -42,19 +48,49 @@ test("light analysis is CLI-readable and database conclusions fail soft on missi
   assert.doesNotMatch(analysis, /A chat answer alone is not a closed deliverable/);
 });
 
-test("SQL writers format directly and fail closed when folder parsing stops", () => {
+test("SQL writers install lazily only on command-not-found and fail closed when folder parsing stops", () => {
   const single = 'sqlfluff format --exclude-rules "CP02, LT01, RF06" --dialect tsql <FILE>.sql';
   const folder = 'sqlfluff format --exclude-rules "CP02, LT01, RF06" --dialect tsql .';
   assert.ok(sqlPolicy.includes(single));
   assert.ok(sqlPolicy.includes(folder));
-  assert.match(sqlPolicy, /ensure-sqlfluff\.mjs/);
-  assert.match(sqlPolicy, /Failure blocks SQL writes/);
+  assert.match(sqlPolicy, /install-sqlfluff\.mjs/);
+  assert.match(sqlPolicy, /CommandNotFound/);
+  assert.match(sqlPolicy, /ENOENT/);
+  assert.match(sqlPolicy, /Parse, templating, or format failures never trigger installation/);
+  assert.match(sqlPolicy, /Failed install or retry blocks handoff/);
+  assert.doesNotMatch(sqlPolicy, /Before SQL writes.*--version|ensure-sqlfluff/);
   assert.match(sqlPolicy, /nonzero folder-format exit is incomplete and may be partial/i);
   assert.match(sqlPolicy, /broken file can stop parsing/i);
   assert.match(sqlPolicy, /single-file command per changed file/i);
   assert.match(sqlPolicy, /rerun the folder command to zero/i);
   assert.match(sqlPolicy, /Then run `validate-sql-artifacts\.mjs`/);
-  assert.match(sqlPolicy, /OS temp with guaranteed cleanup/);
+  assert.match(sqlPolicy, /Use OS temp for probes and always clean it/);
   assert.match(sqlPolicy, /never create `\.tmp-\*` under project\/workspace/);
   assert.doesNotMatch(sqlPolicy, /--ignore\s+parsing|finalize-sql-artifacts|sqlfluff fix|--force|\.sqlfluff/);
+});
+
+test("compact pattern references keep their canonical owners co-loaded", () => {
+  const pairs = [
+    ["refactor-be", ["backend-engineer.md", "patterns/backend.md"]],
+    ["refactor-fe", ["frontend-engineer.md", "patterns/frontend.md"]],
+    ["create-prompt", ["create-prompt.md", "subagents-and-branches.md"]],
+    ["execute", ["create-prompt.md", "subagents-and-branches.md"]],
+  ];
+  for (const [name, required] of pairs) {
+    const operation = operations.operations.find((item) => item.operation === name);
+    const routed = operation.references.map((item) => item.path);
+    for (const path of required) assert.ok(routed.includes(path), `${name} must load ${path}`);
+  }
+
+  assert.match(backendPattern, /Apply \[backend-engineer\.md\].*unchanged/);
+  for (const marker of ["Do not add Type A/B/C", "Ask the owner only when the signals", "### `backend_profile=agmbo`", "Structure over logic"])
+    assert.ok(backendDiscipline.includes(marker), `backend owner missing: ${marker}`);
+
+  assert.match(frontendPattern, /Apply \[frontend-engineer\.md\].*unchanged/);
+  for (const marker of ["Ask the owner only when the signals", "Structure over logic", "Reuse-first decision", "Reuse index"])
+    assert.ok(frontendDiscipline.includes(marker), `frontend owner missing: ${marker}`);
+
+  assert.match(promptPolicy, /exact \[Workspace-need contract\]/);
+  for (const marker of ["at most five active agents", "isolation: worktree", "required uncommitted parent state"])
+    assert.ok(delegationPolicy.includes(marker), `delegation owner missing: ${marker}`);
 });
