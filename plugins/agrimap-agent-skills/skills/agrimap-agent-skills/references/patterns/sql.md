@@ -25,7 +25,7 @@ Use golden AgriMap structure above a neighboring project's structure. Existing p
 5. Neighboring project structure only where the normalized contract and all applicable golden evidence are silent.
 6. General engineering practice.
 
-For new artifacts, resolved applicable golden structure outranks conflicting project structure; report the mismatch. This includes `legacy-compatible` structure, never its business semantics, and cannot change deployed data/behavior without authority.
+For new artifacts, resolved golden structure outranks conflicting project structure; report it. This includes `legacy-compatible` structure but never promotes its business semantics or changes deployed data/behavior without authority.
 
 Every new table and procedure belongs to `[agrimap_app]`. `[dbo]` is permitted only as the owner in `CREATE SCHEMA [agrimap_app] AUTHORIZATION [dbo]`; never declare a feature object under `[dbo]` or without a schema.
 
@@ -49,7 +49,7 @@ sql/
 - Store the domain's idempotent message inserts only in lowercase `sql/<GROUP_OR_DOMAIN>/messages.sql`.
 - Never combine multiple tables, multiple procedures, or a table and procedure in one file. Never put table/procedure definitions in `messages.sql`.
 - List every exact output path before writing. For a modified legacy artifact, preserve its existing path unless the task explicitly authorizes migration; apply this layout to all newly created artifacts.
-- Before SQL create/edit, run `node <skill-root>/scripts/ensure-sqlfluff.mjs`; it checks `sqlfluff --version`, runs `pip install sqlfluff` when missing, and verifies the command. Failure blocks SQL writes. Then choose:
+- Before SQL writes, run `node <skill-root>/scripts/ensure-sqlfluff.mjs`; it uses `sqlfluff --version`, then `pip install sqlfluff` if missing, and verifies it. Failure blocks SQL writes. Then choose:
 
 ```powershell
 sqlfluff format --exclude-rules "CP02, LT01, RF06" --dialect tsql <FILE>.sql
@@ -59,7 +59,7 @@ sqlfluff format --exclude-rules "CP02, LT01, RF06" --dialect tsql .
 
 A broken file can stop parsing. Its nonzero folder-format exit is incomplete and may be partial. Do not validate/finish. Isolate from its error path with the single-file command per changed file; fix only in scope; rerun the folder command to zero. Never bypass errors. Then run `validate-sql-artifacts.mjs` on changed/new canonical paths. QA never runs it.
 
-Temporary probes use the OS temp directory with guaranteed cleanup; never create `.tmp-*` under a project/workspace.
+For probes, use OS temp with guaranteed cleanup; never create `.tmp-*` under project/workspace.
 
 ## Do not invent
 

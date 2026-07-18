@@ -54,7 +54,7 @@ test("SQL writers format directly and fail closed when folder parsing stops", ()
   assert.match(sqlPolicy, /single-file command per changed file/i);
   assert.match(sqlPolicy, /rerun the folder command to zero/i);
   assert.match(sqlPolicy, /Then run `validate-sql-artifacts\.mjs`/);
-  assert.match(sqlPolicy, /OS temp directory with guaranteed cleanup/);
-  assert.match(sqlPolicy, /never create `\.tmp-\*` under a project\/workspace/);
+  assert.match(sqlPolicy, /OS temp with guaranteed cleanup/);
+  assert.match(sqlPolicy, /never create `\.tmp-\*` under project\/workspace/);
   assert.doesNotMatch(sqlPolicy, /--ignore\s+parsing|finalize-sql-artifacts|sqlfluff fix|--force|\.sqlfluff/);
 });
