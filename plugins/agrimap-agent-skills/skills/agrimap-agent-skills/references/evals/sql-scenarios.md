@@ -12,6 +12,7 @@ Run these scenarios on the same clean fixture with Claude, Codex, and Gemini aft
 - [S6 — Procedure flow comments](#s6--procedure-flow-comments)
 - [S7 — Session actor versus target user](#s7--session-actor-versus-target-user)
 - [S8 — SQL QA stays light and closed](#s8--sql-qa-stays-light-and-closed)
+- [S9 — SQLFluff owns cosmetics and covers every changed file](#s9--sqlfluff-owns-cosmetics-and-covers-every-changed-file)
 - [Release gate](#release-gate)
 
 ## S1 — Golden structure wins over a mixed project
@@ -120,6 +121,20 @@ Run these scenarios on the same clean fixture with Claude, Codex, and Gemini aft
 - **[RUBRIC]** Missing runtime evidence is reported as a limitation; it is not used to broaden tools, self-fix, or wait for an unnecessary agent.
 
 **Anti-pattern:** Select full because the target is SQL, then launch a parser/database check or silently wait for a verifier agent.
+
+## S9 — SQLFluff owns cosmetics and covers every changed file
+
+**Situation:** A direct feature creates a table, a procedure, and `messages.sql`. The first drafts are parseable and contract-complete but not manually aligned.
+
+**Prompt:** "Create the three-file SQL slice and finish writer verification."
+
+- **[HARD]** The writer does not spend a separate pass hand-aligning indentation, columns, wrapping, or whitespace before SQLFluff.
+- **[HARD]** `format_set` contains all three changed paths, including `messages.sql`; no created or modified SQL file is omitted.
+- **[HARD]** Successful direct file/folder commands cover the complete set and the result reports `formatted 3/3`.
+- **[HARD]** `validate-sql-artifacts.mjs --files` receives the identical three-path set after formatting.
+- **[RUBRIC]** Folder formatting is used only when its working directory covers every target without changing out-of-scope SQL; otherwise each path is formatted directly.
+
+**Anti-pattern:** Manually perfect spacing, format only the procedure, or validate a smaller path set than was changed.
 
 ## Release gate
 

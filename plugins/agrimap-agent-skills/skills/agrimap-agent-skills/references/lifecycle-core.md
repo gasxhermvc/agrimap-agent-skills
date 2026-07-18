@@ -8,7 +8,7 @@ Use only a depth allowed by the operation:
 
 - `light`: bounded direct work; at most three product artifacts, one writer/contract, no delegation, durable audit, or regulated trigger.
 - `standard`: resumable non-regulated work needing attribution or multiple milestones.
-- `regulated`: separate QA/delegation, public/cross-service or persisted-data contracts, security/access, shared registries/generators, destructive action, material owner decisions, or commit/publish/release.
+- `regulated`: separate QA/delegation, public/cross-service contracts, unresolved/material persisted-data decisions, security/access, shared registries/generators, destructive action, material owner decisions, or commit/publish/release.
 
 Help and history are always `light`. Any other read-only query remains `light` unless durable tracking is explicit. Promote before the next product write; never demote active state.
 

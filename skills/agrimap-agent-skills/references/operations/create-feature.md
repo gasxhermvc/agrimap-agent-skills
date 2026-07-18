@@ -18,10 +18,10 @@
 
 1. This operation is light/direct only: never start tracked task state, invoke QA, select qa_mode, delegate/spawn/wait, or write .agrimap-agent artifacts, memory, prompts, or logs.
 2. Inspect existing structure and propose the smallest complete slice with every output path before writing; after confirmation, implement that slice and verify it proportionally.
-3. If scope includes separate QA, a persisted-data contract, standard/regulated depth, more than three product artifacts, material owner decisions, or a new scaffold, stop before product writes and route the work to agm-create-prompt; never promote or partially execute here.
+3. If scope includes separate QA, an unresolved or material persisted-data decision, standard/regulated depth, more than three product artifacts, material owner decisions, or a new scaffold, stop before product writes and route the work to agm-create-prompt; never promote or partially execute here.
 4. Return the result only after product writes and verification finish using proportional writer checks; never pre-write a result artifact.
 5. Use the matching target discipline.
-6. For direct SQL, first run sql-contract-preflight.mjs once per named object and load every returned path; use [agrimap_app], golden-first canonical files, executable guarded messages.sql inserts, and the SQLFluff format-then-validate gate. Never use a database, ScriptDom, or another parser/runtime.
+6. For direct SQL, a bounded slice within the three-artifact limit and resolved owner/golden/schema/caller evidence remains direct. Run sql-contract-preflight.mjs per named object and load every returned path; use [agrimap_app], canonical files, guarded messages.sql inserts, and the SQLFluff format-then-validate gate. Do not hand-tune cosmetic layout: format every declared changed .sql path, validate the same complete set, and report formatted N/N. Never use a database, ScriptDom, or another parser/runtime.
 
 ## Load now
 

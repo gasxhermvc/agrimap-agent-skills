@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.7 - 2026-07-18
+
+- Assigned cosmetic SQL indentation, alignment, wrapping, and whitespace to SQLFluff instead of model hand-formatting; semantic SQL structure remains enforced.
+- Added an exact `format_set` gate: every changed SQL path must be formatted and the identical complete set validated, with `formatted N/N` reported before handoff.
+- Kept resolved SQL slices of at most three artifacts direct/light in `agm-create-feature`; only unresolved or material persisted-data decisions escalate to `agm-create-prompt`.
+
 ## 0.1.6 - 2026-07-18
 
 - Changed SQLFluff setup to lazy installation: format directly, install only on command-not-found, then retry once; parser/format errors never reinstall.

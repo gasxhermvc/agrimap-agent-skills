@@ -21,8 +21,13 @@ test("create-feature stays direct while tracked feature artifacts follow phase o
   assert.match(createFeature.instructions.join("\n"), /route the work to agm-create-prompt/i);
   assert.match(createFeature.instructions.join("\n"), /Return the result only after product writes and verification finish/i);
   assert.match(createFeature.instructions.join("\n"), /never start tracked task state, invoke QA, select qa_mode, delegate\/spawn\/wait/i);
-  assert.match(createFeature.instructions.join("\n"), /persisted-data contract/i);
+  assert.match(createFeature.instructions.join("\n"), /unresolved or material persisted-data decision/i);
+  assert.match(createFeature.instructions.join("\n"), /bounded slice within the three-artifact limit.*remains direct/i);
   assert.match(createFeature.instructions.join("\n"), /sql-contract-preflight\.mjs/i);
+  assert.match(createFeature.instructions.join("\n"), /Do not hand-tune cosmetic layout/i);
+  assert.match(createFeature.instructions.join("\n"), /format every declared changed \.sql path/i);
+  assert.match(createFeature.instructions.join("\n"), /validate the same complete set/i);
+  assert.match(createFeature.instructions.join("\n"), /formatted N\/N/i);
   assert.match(createFeature.instructions.join("\n"), /never use a database, ScriptDom/i);
 
   assert.match(createPrompt.deliverable, /brief\.md and acceptance checklist\.md/i);

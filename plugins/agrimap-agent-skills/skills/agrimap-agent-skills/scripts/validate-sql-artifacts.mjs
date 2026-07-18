@@ -109,9 +109,9 @@ function maskCommentsPreserveLayout(sql) {
 }
 
 function procedureSections(sql) {
-  const pattern = /^([ \t]*)--[ \t]*={20,}[ \t]*\r?\n\1--[ \t]*([^\r\n]*\S)[ \t]*\r?\n\1--[ \t]*={20,}[ \t]*$/gm;
+  const pattern = /^[ \t]*--[ \t]*={20,}[ \t]*\r?\n[ \t]*--[ \t]*([^\r\n]*\S)[ \t]*\r?\n[ \t]*--[ \t]*={20,}[ \t]*$/gm;
   return [...sql.matchAll(pattern)].map((match) => ({
-    label: match[2].trim(),
+    label: match[1].trim(),
     index: match.index,
     end: match.index + match[0].length,
   }));

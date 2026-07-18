@@ -18,7 +18,7 @@
 
 1. Load matching schema facts and select one mode. If ambiguous, show all five enums with one-line boundaries and mark one recommendation in the first reply; never return a recommendation alone.
 2. Preserve result sets, transactions, side effects, error mapping, and deployment idempotency unless authorized otherwise.
-3. After each SQL write, run its exact format command. Only missing sqlfluff triggers install-sqlfluff.mjs plus one retry; no other failure installs. On folder nonzero, isolate changed files, fix in-scope errors, rerun folder to zero, then validate.
+3. After all SQL writes, format every declared changed .sql path, validate the same set, and report formatted N/N. Only missing sqlfluff triggers install-sqlfluff.mjs plus one retry; other failures never install. Folder nonzero follows patterns/sql.md recovery.
 
 ## Load now
 

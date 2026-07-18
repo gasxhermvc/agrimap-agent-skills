@@ -16,6 +16,7 @@ const frontendPattern = await read("skills/agrimap-agent-skills/references/patte
 const frontendDiscipline = await read("skills/agrimap-agent-skills/references/frontend-engineer.md");
 const promptPolicy = await read("skills/agrimap-agent-skills/references/create-prompt.md");
 const delegationPolicy = await read("skills/agrimap-agent-skills/references/subagents-and-branches.md");
+const createFeatureEntrypoint = await read("skills/agrimap-agent-skills/references/operations/create-feature.md");
 
 const modes = [
   "performance-preserve-behavior",
@@ -56,17 +57,32 @@ test("SQL writers install lazily only on command-not-found and fail closed when 
   assert.match(sqlPolicy, /install-sqlfluff\.mjs/);
   assert.match(sqlPolicy, /CommandNotFound/);
   assert.match(sqlPolicy, /ENOENT/);
-  assert.match(sqlPolicy, /Parse, templating, or format failures never trigger installation/);
-  assert.match(sqlPolicy, /Failed install or retry blocks handoff/);
+  assert.match(sqlPolicy, /other failures never install/);
   assert.doesNotMatch(sqlPolicy, /Before SQL writes.*--version|ensure-sqlfluff/);
-  assert.match(sqlPolicy, /nonzero folder-format exit is incomplete and may be partial/i);
-  assert.match(sqlPolicy, /broken file can stop parsing/i);
-  assert.match(sqlPolicy, /single-file command per changed file/i);
+  assert.match(sqlPolicy, /nonzero folder exit is incomplete and may be partial/i);
+  assert.match(sqlPolicy, /run each changed file separately/i);
   assert.match(sqlPolicy, /rerun the folder command to zero/i);
-  assert.match(sqlPolicy, /Then run `validate-sql-artifacts\.mjs`/);
+  assert.match(sqlPolicy, /validate-sql-artifacts\.mjs --files/);
   assert.match(sqlPolicy, /Use OS temp for probes and always clean it/);
   assert.match(sqlPolicy, /never create `\.tmp-\*` under project\/workspace/);
   assert.doesNotMatch(sqlPolicy, /--ignore\s+parsing|finalize-sql-artifacts|sqlfluff fix|--force|\.sqlfluff/);
+});
+
+test("create-feature SQL loads the complete command owner and proves format coverage", () => {
+  const operation = operations.operations.find((item) => item.operation === "create-feature");
+  assert.ok(operation.conditionalReferences.some((item) => item.when === "target is SQL" && item.path === "patterns/sql.md"));
+  assert.match(createFeatureEntrypoint, /When target is SQL: \[patterns\/sql\.md\]/);
+  for (const marker of [
+    "sql-contract-preflight.mjs --target-kind sql-table|sql-procedure --object <OBJECT>",
+    'sqlfluff format --exclude-rules "CP02, LT01, RF06" --dialect tsql <FILE>.sql',
+    'sqlfluff format --exclude-rules "CP02, LT01, RF06" --dialect tsql .',
+    "install-sqlfluff.mjs",
+    "validate-sql-artifacts.mjs --files",
+    "format_set",
+    "formatted N/N",
+  ]) assert.ok(sqlPolicy.includes(marker), `SQL command/coverage marker missing: ${marker}`);
+  assert.match(sqlPolicy, /Do not hand-tune cosmetic indentation, alignment, wrapping, or whitespace/);
+  assert.doesNotMatch(sqlPolicy, /align the block with the statement/);
 });
 
 test("compact pattern references keep their canonical owners co-loaded", () => {

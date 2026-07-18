@@ -6,13 +6,13 @@
 - [Output artifact contract](#output-artifact-contract)
 - [Do not invent](#do-not-invent)
 - [Table work](#table-work)
-- [DDL Standard](#ddl-standard--canonical-format-for-new-table-scripts-owner-approved-2026-07-16)
+- [DDL contract](#ddl-contract--canonical-semantics-for-new-table-scripts-owner-approved-2026-07-16)
 - [Stored procedure work](#stored-procedure-work)
 - [Message collection gate](#message-collection-gate)
 - [Golden examples and conflicts](#golden-examples-and-conflicts)
 - [SQL verification](#sql-verification)
 
-Classify as `sql-table`, `sql-procedure`, or `sql-table-and-procedure`. Before project SQL inspection, identify each object and run `sql-contract-preflight.mjs --target-kind sql-table|sql-procedure --object <OBJECT>` once per object. Load all returned references and selected golden paths; failure blocks inspection/generation. Then inspect schema, callers, objects, data behavior, and deployment conventions before writing.
+Classify as `sql-table`, `sql-procedure`, or `sql-table-and-procedure`. Before project SQL inspection, identify each object and run `node <skill-root>/scripts/sql-contract-preflight.mjs --target-kind sql-table|sql-procedure --object <OBJECT>` once per object. Load all returned references and selected golden paths; failure blocks inspection/generation. Then inspect schema, callers, objects, data behavior, and deployment conventions before writing.
 
 ## Source priority
 
@@ -25,7 +25,7 @@ Golden AgriMap structure outranks neighboring project structure; mixed project c
 5. Neighboring project structure only where the normalized contract and all applicable golden evidence are silent.
 6. General engineering practice.
 
-For new artifacts, resolved golden structure outranks conflicting project structure; report it. This includes `legacy-compatible` structure but never promotes its business semantics or changes deployed data/behavior without authority.
+Report structural conflicts. Priority, including `legacy-compatible` evidence, never authorizes business-semantic or deployed-behavior changes.
 
 Every new table and procedure belongs to `[agrimap_app]`. `[dbo]` is permitted only as the owner in `CREATE SCHEMA [agrimap_app] AUTHORIZATION [dbo]`; never declare a feature object under `[dbo]` or without a schema.
 
@@ -43,23 +43,33 @@ sql/
     └── messages.sql
 ```
 
-- Use one domain segment such as `UM`, `CONTENT`, or `AUTH_FLOW`. Select the business domain from the feature/golden evidence; do not derive `AUTH_FLOW` as merely `AUTH` by splitting at the first underscore.
-- Store exactly one `CREATE TABLE` object in `sql/<GROUP_OR_DOMAIN>/table/<TABLE>.sql`. Match the uppercase filename stem to the table name, for example `sql/UM/table/UM_USER.sql` or `sql/AUTH_FLOW/table/AUTH_FLOW_TRANSACTION.sql`.
-- Store exactly one `CREATE|ALTER|CREATE OR ALTER PROCEDURE` object in `sql/<GROUP_OR_DOMAIN>/procedure/<PROCEDURE>.sql`. Match the uppercase filename stem to the procedure name, for example `sql/UM/procedure/UM_USER_I.sql`.
-- Store the domain's idempotent message inserts only in lowercase `sql/<GROUP_OR_DOMAIN>/messages.sql`.
-- Never combine multiple tables, multiple procedures, or a table and procedure in one file. Never put table/procedure definitions in `messages.sql`.
-- List every exact output path before writing. For a modified legacy artifact, preserve its existing path unless the task explicitly authorizes migration; apply this layout to all newly created artifacts.
-- After each SQL create/edit, run the selected command:
+- Derive one full domain segment from feature/golden evidence (`UM`, `CONTENT`, `AUTH_FLOW`); never split `AUTH_FLOW` into `AUTH`.
+- Table: exactly one `CREATE TABLE` at `sql/<GROUP_OR_DOMAIN>/table/<TABLE>.sql`; uppercase stem equals object name.
+- Procedure: exactly one `CREATE|ALTER|CREATE OR ALTER PROCEDURE` at `sql/<GROUP_OR_DOMAIN>/procedure/<PROCEDURE>.sql`; uppercase stem equals object name.
+- Messages: idempotent inserts only at lowercase `sql/<GROUP_OR_DOMAIN>/messages.sql`.
+- Never bundle objects or put table/procedure definitions in `messages.sql`.
+- List every exact output path before writing. Preserve a modified legacy path unless migration is authorized; use this layout for new artifacts.
+- Draft parseable, contract-complete T-SQL. Do not hand-tune cosmetic indentation, alignment, wrapping, or whitespace; examples define semantics, not spacing. SQLFluff owns layout.
+- After writes, freeze `format_set`: every created/modified `.sql`, including `messages.sql`. Later edits make that path unformatted again.
+- For one file, run:
 
 ```powershell
 sqlfluff format --exclude-rules "CP02, LT01, RF06" --dialect tsql <FILE>.sql
+```
 
+- For multiple files inside one approved folder containing no out-of-scope SQL, run there:
+
+```powershell
 sqlfluff format --exclude-rules "CP02, LT01, RF06" --dialect tsql .
 ```
 
-- Shell command-not-found for `sqlfluff` (`CommandNotFound`, `ENOENT`, `127`, or `9009`) triggers `node <skill-root>/scripts/install-sqlfluff.mjs` and one retry of the same command. Parse, templating, or format failures never trigger installation. Failed install or retry blocks handoff.
+- Otherwise run the single-file command for every `format_set` path. Missing `sqlfluff` (`CommandNotFound`, `ENOENT`, `127`, `9009`) triggers `node <skill-root>/scripts/install-sqlfluff.mjs` and one retry; other failures never install.
+- Handoff requires `formatted N/N`: successful commands cover every path. A nonzero folder exit is incomplete and may be partial; run each changed file separately, fix in-scope parse defects, then rerun the folder command to zero.
+- Validate the same complete `format_set` after formatting:
 
-A broken file can stop parsing; a nonzero folder-format exit is incomplete and may be partial. Run the single-file command per changed file, fix only in-scope errors, and rerun the folder command to zero. Never bypass errors. Then run `validate-sql-artifacts.mjs` on changed/new canonical paths; QA never does.
+```powershell
+node <skill-root>/scripts/validate-sql-artifacts.mjs --files "<COMMA_SEPARATED_FORMAT_SET>"
+```
 
 Use OS temp for probes and always clean it; never create `.tmp-*` under project/workspace.
 
@@ -82,12 +92,9 @@ Determine:
 
 Use the matching golden header, column grouping, constraint sections, extended-property style, and `GO` rhythm. Do not copy a conflicting neighboring-project style into a new artifact. Do not normalize an unrelated existing table merely to make it look newer.
 
-## DDL Standard — canonical format for NEW table scripts (owner-approved 2026-07-16)
+## DDL contract — canonical semantics for NEW table scripts (owner-approved 2026-07-16)
 
-กติกานี้คือคำตอบของคำถาม "format ถูกไหม" สำหรับ **สคริปต์ใหม่** ทุกไฟล์ — ใช้สไตล์ modern
-(TRY/CATCH + named constraints) ผสม convention ของ AgriMap สคริปต์เก่าสไตล์ SSMS-export
-(`USE [AgriMapDB]`, `[nvarchar] (50)`, `WITH (PAD_INDEX...)`) เป็น legacy: อ่านเป็นหลักฐานได้
-แต่**ห้ามเขียนเพิ่มด้วยสไตล์นั้น** และห้ามไล่ rewrite ไฟล์เก่าให้เป็นสไตล์ใหม่นอกงานที่สั่ง
+ส่วนนี้กำหนด semantic order และ required tokens ของ **สคริปต์ใหม่**; SQLFluff จัด cosmetic layout. ใช้ modern structure (TRY/CATCH + named constraints). รูปแบบ SSMS-export เช่น `USE [AgriMapDB]`, `[nvarchar] (50)`, หรือ `WITH (PAD_INDEX...)` เป็น legacy evidence เท่านั้น: ห้ามเขียนเพิ่มหรือ rewrite ไฟล์เก่านอก scope.
 
 ### โครงไฟล์ (บังคับเรียงตามนี้)
 
@@ -263,7 +270,7 @@ WHERE [USER_ID] = @PI_USER_ID;
 
 ### Stored procedure section comments
 
-Every new procedure uses compact three-line section comments for control-flow gates and major business steps. Copy the separator exactly, keep the three lines adjacent, and align the block with the statement it describes:
+Every new procedure uses compact three-line section comments for control-flow gates and major business steps. Use the shown separator and keep the three lines adjacent; SQLFluff owns indentation.
 
 ```sql
 -- =============================================
@@ -383,4 +390,4 @@ For release evaluation after changing this SQL discipline or its golden guidance
 
 ## SQL verification
 
-Writer formats successfully before validation and handoff. QA uses only static inspection, `sql-contract-preflight.mjs`, and `validate-sql-artifacts.mjs`. Neither lane uses ScriptDom, `sqlcmd`, LocalDB/dbserver, SQL Server, another external parser/database/runtime, or missing evidence to promote QA mode.
+Writer reports `formatted N/N`, then validates the identical complete path set before handoff. QA uses only static inspection, `sql-contract-preflight.mjs`, and `validate-sql-artifacts.mjs`. Neither lane uses ScriptDom, `sqlcmd`, LocalDB/dbserver, SQL Server, another external parser/database/runtime, or missing evidence to promote QA mode.

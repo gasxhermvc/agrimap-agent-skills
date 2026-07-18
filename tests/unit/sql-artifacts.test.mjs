@@ -158,6 +158,22 @@ END;
   assert.equal(result.ok, true, JSON.stringify(result.issues));
 });
 
+test("procedure validation ignores cosmetic section-comment indentation", async (t) => {
+  const root = await fixture(t);
+  await put(root, "sql/UM/procedure/UM_USER_Q.sql", `
+CREATE PROCEDURE [agrimap_app].[UM_USER_Q]
+AS
+BEGIN
+-- =============================================
+      -- Step 1: Query active users
+  -- =============================================
+SELECT 1;
+END;
+`);
+  const result = await validateSqlArtifacts({ cwd: root, files: ["sql/UM/procedure/UM_USER_Q.sql"] });
+  assert.equal(result.ok, true, JSON.stringify(result.issues));
+});
+
 test("rejects actor and target user parameters with non-canonical types", async (t) => {
   const root = await fixture(t);
   await put(root, "sql/UM/procedure/UM_USER_Q.sql", `

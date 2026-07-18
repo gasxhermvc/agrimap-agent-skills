@@ -96,7 +96,7 @@ gemini extensions link .
 
 ## Provider hook isolation
 
-Provider identity is host-specific: Codex selects `plugins/agrimap-agent-skills/hooks/codex-hooks.json`, Claude selects `claude-hooks.json`, and Gemini alone uses the repository-root `hooks/hooks.json`. The shared Codex/Claude plugin root must not contain a default `hooks/hooks.json`, because both hosts can auto-discover it. Release `0.1.5` adds a verified first-use SQLFluff prerequisite and forbids workspace temp fixtures; reinstall/sync it before retesting so hosts do not retain an older cached alias.
+Provider identity is host-specific: Codex selects `plugins/agrimap-agent-skills/hooks/codex-hooks.json`, Claude selects `claude-hooks.json`, and Gemini alone uses the repository-root `hooks/hooks.json`. The shared Codex/Claude plugin root must not contain a default `hooks/hooks.json`, because both hosts can auto-discover it. Release `0.1.7` makes SQLFluff the cosmetic-layout owner and requires complete changed-file coverage; reinstall/sync it before retesting so hosts do not retain an older cached alias.
 
 Gemini may show its native consent prompt when activating a skill or fingerprinting a hook. The package does not add a second approval gate.
 
@@ -202,7 +202,7 @@ For new SQL artifacts, the normalized AgriMap golden contract outranks a project
 - Stored procedures use `_I`, `_U`, `_D`, `_Q`, or `_CHECK_Q` according to their operation.
 - Stored procedures mark validation gates, transaction boundaries, numbered business steps, and `PO_*` returns with canonical three-line section comments.
 
-Plugin installation does not install Python packages. The writer runs the direct `sqlfluff format --exclude-rules "CP02, LT01, RF06" --dialect tsql <FILE>.sql` command (or the folder form ending in `.`) without a version probe. Only command-not-found triggers `install-sqlfluff.mjs` and one retry; parser/format errors never reinstall. Temporary probes use OS temp with guaranteed cleanup, never the workspace. QA never installs or runs SQLFluff.
+Plugin installation does not install Python packages. SQL writers draft for semantics, not cosmetic indentation/alignment, then run direct `sqlfluff format --exclude-rules "CP02, LT01, RF06" --dialect tsql <FILE>.sql` (or the approved-folder form ending in `.`) without a version probe. Only command-not-found triggers `install-sqlfluff.mjs`. Handoff requires `formatted N/N` for every changed `.sql` path and validation of the identical set. Temporary probes use OS temp with guaranteed cleanup, never the workspace. QA never installs or runs SQLFluff.
 
 ## Model labels and prompt generation
 

@@ -12,7 +12,7 @@ test("applicable golden structure outranks neighboring project structure without
   const legacyGolden = sqlDiscipline.indexOf("4. Matching `legacy-compatible` or `unverified` golden evidence");
   const neighboringProject = sqlDiscipline.indexOf("5. Neighboring project structure");
   assert.ok(legacyGolden >= 0 && neighboringProject > legacyGolden);
-  assert.match(sqlDiscipline, /never promotes its business semantics/i);
+  assert.match(sqlDiscipline, /never authorizes business-semantic or deployed-behavior changes/i);
   assert.match(conflictResolution, /matching legacy-compatible structural evidence/i);
   assert.match(conflictResolution, /structural precedence is not permission to break a deployed contract/i);
 });
@@ -22,7 +22,7 @@ test("SQL eval catalog is reachable and encodes deterministic cross-provider gat
   assert.match(sqlDiscipline, /do not load the eval catalog during ordinary SQL work/i);
 
   const matches = [...evals.matchAll(/^## S(\d+) —[^\n]+\n([\s\S]*?)(?=^## S\d+ —|^## Release gate)/gm)];
-  assert.deepEqual(matches.map((match) => Number(match[1])), [1, 2, 3, 4, 5, 6, 7, 8]);
+  assert.deepEqual(matches.map((match) => Number(match[1])), [1, 2, 3, 4, 5, 6, 7, 8, 9]);
   for (const [scenarioId, body] of matches.map((match) => [`S${match[1]}`, match[2]])) {
     assert.match(body, /^\*\*Situation:\*\*/m, `${scenarioId}: Situation missing`);
     assert.match(body, /^\*\*Prompt:\*\*/m, `${scenarioId}: Prompt missing`);
@@ -34,4 +34,5 @@ test("SQL eval catalog is reachable and encodes deterministic cross-provider gat
   for (const provider of ["Claude", "Codex", "Gemini"]) assert.ok(evals.includes(provider));
   assert.match(evals, /at least three times/i);
   assert.match(evals, /validate-sql-artifacts\.mjs/);
+  assert.match(evals, /formatted 3\/3/);
 });
