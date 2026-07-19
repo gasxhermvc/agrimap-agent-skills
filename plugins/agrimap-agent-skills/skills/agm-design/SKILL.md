@@ -1,7 +1,9 @@
 ---
 name: agm-design
-description: Design a user flow, behavior, and acceptance criteria. Use only for the dedicated AgriMap `design` operation or when the requester explicitly invokes this alias; do not use it as a general AgriMap router.
+description: AgriMap-project-only operation. Invoke implicitly only in recognized AgriMap repositories; elsewhere require explicit host-native invocation of agm-design. Design a user flow, behavior, and acceptance criteria. Run only the dedicated AgriMap `design` operation and never use it as a general router.
 ---
+
+Scope gate: before loading lifecycle or applying any AgriMap workflow instruction, continue only when this turn contains AgriMap hook activation context or the current requester message explicitly invokes `agm-design` using the active provider's native syntax. If neither is present, stop applying this skill and answer as an ordinary non-AgriMap request without reading AgriMap references or writing AgriMap state.
 
 Run only operation `design`. Before conditional discipline, read exactly:
 

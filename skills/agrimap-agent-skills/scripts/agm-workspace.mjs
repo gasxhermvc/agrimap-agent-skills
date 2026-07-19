@@ -180,6 +180,9 @@ async function ensureLayout(root) {
       aiGateway: "disabled",
       retentionDays: 30,
       trackConciseLogs: true,
+      activation: {
+        auto: false,
+      },
       identity: {
         mode: "per-session",
         runtimePath: ".agrimap-agent/runtime/sessions",

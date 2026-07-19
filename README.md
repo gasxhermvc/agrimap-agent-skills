@@ -98,6 +98,8 @@ gemini extensions link .
 
 Provider identity is host-specific: Codex selects `plugins/agrimap-agent-skills/hooks/codex-hooks.json`, Claude selects `claude-hooks.json`, and Gemini alone uses the repository-root `hooks/hooks.json`. The shared Codex/Claude plugin root must not contain a default `hooks/hooks.json`, because both hosts can auto-discover it. Release `0.1.7` makes SQLFluff the cosmetic-layout owner and requires complete changed-file coverage; reinstall/sync it before retesting so hosts do not retain an older cached alias.
 
+The plugin hooks are installed globally but non-candidates inspect only activation inputs (Git root/origin name, activation config, explicit prompt syntax, and the session active-task marker); they inject no context, read no identity or memory, and write no state. Generated skill bodies apply the same boundary before loading AgriMap lifecycle references, covering implicit model selection as well as hooks. Activation requires the Git root/remote name to match an AgriMap project, the current prompt to explicitly invoke a registered alias using provider-native syntax, the session to have an active tracked task, or `.agrimap-agent/config.json` to set `activation.auto` to `true`. Recognized one-repository/one-project names are `agmwa-<letters-and-hyphens>-ng`, `agmws-<letters-and-hyphens>-netcore`, `agmbo-<letters-and-hyphens>-netcore`, `agrimap-<letters-and-hyphens>`, and `AgriMap.<dot-separated-letters>`. Digits, underscores, arbitrary `agm-*` text, and `.agrimap-agent` directory existence alone do not activate the hook.
+
 Gemini may show its native consent prompt when activating a skill or fingerprinting a hook. The package does not add a second approval gate.
 
 ## Workflow depth and first tracked use

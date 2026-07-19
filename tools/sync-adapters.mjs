@@ -14,6 +14,7 @@ import {
   renderAliasSkill,
   renderGeminiCommandPrompt,
   renderOperationIndex,
+  renderOperationAliasesModule,
   renderOperationEntrypoint,
 } from "./operation-entrypoints.mjs";
 
@@ -38,6 +39,11 @@ for (const item of operations.operations) {
 await writeFile(
   path.join(canonicalSkill, "references", "operation-index.md"),
   renderOperationIndex(operations),
+  "utf8",
+);
+await writeFile(
+  path.join(canonicalSkill, "scripts", "operation-aliases.mjs"),
+  renderOperationAliasesModule(operations),
   "utf8",
 );
 const taskArtifactSchema = await loadTaskArtifactSchema(canonicalSkill);

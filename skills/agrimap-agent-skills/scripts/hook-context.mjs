@@ -6,6 +6,30 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { parseCliArgs } from "./cli-args.mjs";
 import { normalizeIdentity } from "./identity.mjs";
+import { AGRIMAP_OPERATION_ALIASES, AGRIMAP_ROUTER_ALIAS } from "./operation-aliases.mjs";
+
+const AGRIMAP_PROJECT_PATTERNS = Object.freeze([
+  /^agmwa-[a-z]+(?:-[a-z]+)*-ng$/i,
+  /^agm(?:ws|bo)-[a-z]+(?:-[a-z]+)*-netcore$/i,
+  /^agrimap-[a-z]+(?:-[a-z]+)*$/i,
+  /^agrimap\.[a-z]+(?:\.[a-z]+)*$/i,
+]);
+
+const EXPLICIT_SKILL_ALIASES = Object.freeze([
+  AGRIMAP_ROUTER_ALIAS,
+  ...AGRIMAP_OPERATION_ALIASES,
+]);
+
+const EXPLICIT_SKILL_ALTERNATION = EXPLICIT_SKILL_ALIASES.map(escapeRegex).join("|");
+const EXPLICIT_SKILL_PATTERNS = Object.freeze({
+  codex: new RegExp(`(?:^|\\s)\\$(?:${EXPLICIT_SKILL_ALTERNATION})(?=$|\\s)`, "i"),
+  claude: new RegExp(`(?:^|\\s)/agrimap-agent-skills:(?:${EXPLICIT_SKILL_ALTERNATION})(?=$|\\s)`, "i"),
+  gemini: new RegExp(`(?:^|\\s)/(?:${EXPLICIT_SKILL_ALTERNATION})(?=$|\\s)`, "i"),
+});
+
+function escapeRegex(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 
 function workspaceRoot(cwd) {
   try {
@@ -17,6 +41,41 @@ function workspaceRoot(cwd) {
   } catch {
     return cwd;
   }
+}
+
+function remoteRepositoryName(cwd) {
+  try {
+    const remote = execFileSync("git", ["config", "--get", "remote.origin.url"], {
+      cwd,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+    const tail = remote.replace(/[\\/]+$/, "").split(/[\\/:]/).filter(Boolean).at(-1) || "";
+    return tail.replace(/\.git$/i, "");
+  } catch {
+    return "";
+  }
+}
+
+function recognizedProjectName(value) {
+  const name = String(value || "").trim();
+  return Boolean(name) && AGRIMAP_PROJECT_PATTERNS.some((pattern) => pattern.test(name));
+}
+
+function explicitSkillInvocation(provider, prompt) {
+  const value = String(prompt || "");
+  const pattern = EXPLICIT_SKILL_PATTERNS[provider];
+  return Boolean(value) && Boolean(pattern) && pattern.test(value);
+}
+
+function projectActivation(cwd, config) {
+  if (config?.activation?.auto === true) return { active: true, reason: "config-opt-in" };
+  const rootName = path.basename(cwd);
+  if (recognizedProjectName(rootName)) return { active: true, reason: `project-name:${rootName}` };
+  const remoteName = remoteRepositoryName(cwd);
+  return recognizedProjectName(remoteName)
+    ? { active: true, reason: `remote-name:${remoteName}` }
+    : { active: false, reason: "not-agrimap" };
 }
 
 function safeSessionId(value) {
@@ -119,14 +178,30 @@ const sessionId = safeSessionId(input.session_id || input.sessionId || input.con
 const hookSessionKey = sessionId || safeSessionId(path.basename(input.transcript_path || input.transcriptPath || ""));
 const effectiveSessionId = hookSessionKey;
 const hostReportedModel = String(input.model || "").trim() || null;
+const activeTask = effectiveSessionId
+  ? await readJson(path.join(stateRoot, "runtime", "active", `${effectiveSessionId}.json`))
+  : null;
+const activationConfig = await readJson(path.join(stateRoot, "config.json"));
+const projectCandidate = projectActivation(cwd, activationConfig);
+const activation = activeTask
+  ? { active: true, reason: "active-task" }
+  : explicitSkillInvocation(provider, input.prompt)
+    ? { active: true, reason: "explicit-skill" }
+    : projectCandidate;
+
+if (!activation.active) {
+  await new Promise((resolve) => process.stdout.write(
+    JSON.stringify({ continue: true, suppressOutput: true }),
+    resolve,
+  ));
+  process.exit(0);
+}
+
 const rawIdentity = effectiveSessionId
   ? await readJson(path.join(stateRoot, "runtime", "sessions", `${effectiveSessionId}.json`))
   : null;
 const identity = rawIdentity ? normalizeIdentity(rawIdentity, { defaultProvider: provider }) : null;
 const confirmedIdentity = identity && !identity.expired ? identity : null;
-const activeTask = effectiveSessionId
-  ? await readJson(path.join(stateRoot, "runtime", "active", `${effectiveSessionId}.json`))
-  : null;
 const taskRequester = activeTask?.requestedBy || null;
 const execution = {
   ...(activeTask || confirmedIdentity || identity || {}),

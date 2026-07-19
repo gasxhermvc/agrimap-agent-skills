@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 export async function hooks(harness) {
@@ -21,6 +21,145 @@ export async function hooks(harness) {
       input: JSON.stringify(input),
     }));
   }
+
+  const externalProject = path.join(temp, "external-project");
+  await mkdir(externalProject, { recursive: true });
+  const nonCandidateSession = run(hookScript, ["--provider", "codex", "--mode", "session"], {
+    cwd: externalProject,
+    session_id: "non-candidate-session",
+    hook_event_name: "SessionStart",
+  });
+  assert.equal(nonCandidateSession.hookSpecificOutput, undefined);
+  await assert.rejects(
+    readFile(path.join(externalProject, ".agrimap-agent", "runtime", "hooks", "codex-non-candidate-session.json"), "utf8"),
+    { code: "ENOENT" },
+  );
+
+  for (const prompt of [
+    "Explain why agm-analyze exists without activating it",
+    "$agm-unknown must not activate an unregistered alias",
+  ]) {
+    const plainMention = run(hookScript, ["--provider", "codex", "--mode", "task"], {
+      cwd: externalProject,
+      session_id: `plain-mention-${prompt.length}`,
+      hook_event_name: "UserPromptSubmit",
+      prompt,
+    });
+    assert.equal(plainMention.hookSpecificOutput, undefined);
+  }
+
+  for (const [provider, hookEventName, prompt] of [
+    ["codex", "UserPromptSubmit", "$agm-analyze objective=\"Inspect this external repository\""],
+    ["claude", "UserPromptSubmit", "/agrimap-agent-skills:agm-review inspect this external repository"],
+    ["gemini", "BeforeAgent", "/agm-plan inspect this external repository"],
+  ]) {
+    const explicitAlias = run(hookScript, ["--provider", provider, "--mode", "task"], {
+      cwd: externalProject,
+      session_id: `explicit-${provider}`,
+      hook_event_name: hookEventName,
+      prompt,
+    });
+    assert.match(explicitAlias.hookSpecificOutput.additionalContext, /AgriMap: requester is not persisted/);
+  }
+
+  for (const [provider, prompt] of [
+    ["codex", "/agm-analyze must not use Gemini syntax"],
+    ["codex", "/agrimap-agent-skills:agm-analyze must not use Claude syntax"],
+    ["claude", "$agm-analyze must not use Codex syntax"],
+    ["claude", "/agm-analyze must not use Gemini syntax"],
+    ["gemini", "$agm-analyze must not use Codex syntax"],
+    ["gemini", "/agrimap-agent-skills:agm-analyze must not use Claude syntax"],
+  ]) {
+    const crossProviderSyntax = run(hookScript, ["--provider", provider, "--mode", "task"], {
+      cwd: externalProject,
+      session_id: `cross-provider-${provider}-${prompt.length}`,
+      hook_event_name: "UserPromptSubmit",
+      prompt,
+    });
+    assert.equal(crossProviderSyntax.hookSpecificOutput, undefined);
+  }
+
+  run(workspaceScript, [
+    "identify", "--cwd", externalProject, "--session", "external-active-task", "--owner", "External Owner",
+  ]);
+  run(workspaceScript, [
+    "start", "--cwd", externalProject, "--session", "external-active-task", "--task", "external-task",
+    "--operation", "analyze", "--title", "Continue explicitly activated tracked work",
+  ]);
+  const activeTaskContinuation = run(hookScript, ["--provider", "codex", "--mode", "session"], {
+    cwd: externalProject,
+    session_id: "external-active-task",
+    hook_event_name: "SessionStart",
+  });
+  assert.match(activeTaskContinuation.hookSpecificOutput.additionalContext, /Active task: external-task/);
+  const stateDirectoryAlone = run(hookScript, ["--provider", "codex", "--mode", "session"], {
+    cwd: externalProject,
+    session_id: "state-directory-alone",
+    hook_event_name: "SessionStart",
+  });
+  assert.equal(stateDirectoryAlone.hookSpecificOutput, undefined);
+
+  const optedInProject = path.join(temp, "renamed-opt-in");
+  await mkdir(path.join(optedInProject, ".agrimap-agent"), { recursive: true });
+  await writeFile(
+    path.join(optedInProject, ".agrimap-agent", "config.json"),
+    `${JSON.stringify({ activation: { auto: true } }, null, 2)}\n`,
+    "utf8",
+  );
+  const optedInHook = run(hookScript, ["--provider", "codex", "--mode", "session"], {
+    cwd: optedInProject,
+    session_id: "opted-in-project",
+    hook_event_name: "SessionStart",
+  });
+  assert.match(optedInHook.hookSpecificOutput.additionalContext, /AgriMap identity and audit context/);
+
+  const projectCandidatesRoot = path.join(temp, "project-candidates");
+  for (const projectName of [
+    "agmwa-platform-ng",
+    "agmwa-suite-ng",
+    "agmwa-pro-ng",
+    "agmws-identity-netcore",
+    "agmws-data-manaagement-netcore",
+    "agmbo-publisher-netcore",
+    "agrimap-platform",
+    "AgriMap.Platform",
+  ]) {
+    const projectPath = path.join(projectCandidatesRoot, projectName);
+    await mkdir(projectPath, { recursive: true });
+    const projectHook = run(hookScript, ["--provider", "codex", "--mode", "session"], {
+      cwd: projectPath,
+      session_id: `project-${projectName}`,
+      hook_event_name: "SessionStart",
+    });
+    assert.match(projectHook.hookSpecificOutput.additionalContext, /AgriMap identity and audit context/);
+  }
+
+  for (const projectName of ["agmwa-platform2-ng", "agmws-data_management-netcore", "ordinary-project"]) {
+    const projectPath = path.join(projectCandidatesRoot, projectName);
+    await mkdir(projectPath, { recursive: true });
+    const rejectedProject = run(hookScript, ["--provider", "codex", "--mode", "session"], {
+      cwd: projectPath,
+      session_id: `rejected-${projectName}`,
+      hook_event_name: "SessionStart",
+    });
+    assert.equal(rejectedProject.hookSpecificOutput, undefined);
+  }
+
+  const renamedCheckout = path.join(projectCandidatesRoot, "renamed-checkout");
+  await mkdir(renamedCheckout, { recursive: true });
+  execFileSync("git", ["init"], { cwd: renamedCheckout, stdio: "ignore" });
+  execFileSync("git", ["remote", "add", "origin", "git@gitlab.company.local:agrimap/agmwa-platform-ng.git"], { cwd: renamedCheckout });
+  const remoteProjectHook = run(hookScript, ["--provider", "codex", "--mode", "session"], {
+    cwd: renamedCheckout,
+    session_id: "remote-project-name",
+    hook_event_name: "SessionStart",
+  });
+  assert.match(remoteProjectHook.hookSpecificOutput.additionalContext, /AgriMap identity and audit context/);
+
+  const configPath = path.join(temp, ".agrimap-agent", "config.json");
+  const activationConfig = JSON.parse(await readFile(configPath, "utf8"));
+  activationConfig.activation = { auto: true };
+  await writeFile(configPath, `${JSON.stringify(activationConfig, null, 2)}\n`, "utf8");
 
   const hookA = run(hookScript, ["--provider", "gemini", "--mode", "task"], {
     cwd: temp,

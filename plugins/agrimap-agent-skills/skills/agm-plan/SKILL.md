@@ -1,7 +1,9 @@
 ---
 name: agm-plan
-description: Create a reverse-engineered execution plan. Use only for the dedicated AgriMap `plan` operation or when the requester explicitly invokes this alias; do not use it as a general AgriMap router.
+description: AgriMap-project-only operation. Invoke implicitly only in recognized AgriMap repositories; elsewhere require explicit host-native invocation of agm-plan. Create a reverse-engineered execution plan. Run only the dedicated AgriMap `plan` operation and never use it as a general router.
 ---
+
+Scope gate: before loading lifecycle or applying any AgriMap workflow instruction, continue only when this turn contains AgriMap hook activation context or the current requester message explicitly invokes `agm-plan` using the active provider's native syntax. If neither is present, stop applying this skill and answer as an ordinary non-AgriMap request without reading AgriMap references or writing AgriMap state.
 
 Run only operation `plan`. Before conditional discipline, read exactly:
 

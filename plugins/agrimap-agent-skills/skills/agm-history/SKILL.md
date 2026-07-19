@@ -1,7 +1,9 @@
 ---
 name: agm-history
-description: Query workflow attribution and audit-storage status by person, task, event, or UTC time range. Use only for the dedicated AgriMap `history` operation or when the requester explicitly invokes this alias; do not use it as a general AgriMap router.
+description: AgriMap-project-only operation. Invoke implicitly only in recognized AgriMap repositories; elsewhere require explicit host-native invocation of agm-history. Query workflow attribution and audit-storage status by person, task, event, or UTC time range. Run only the dedicated AgriMap `history` operation and never use it as a general router.
 ---
+
+Scope gate: before loading lifecycle or applying any AgriMap workflow instruction, continue only when this turn contains AgriMap hook activation context or the current requester message explicitly invokes `agm-history` using the active provider's native syntax. If neither is present, stop applying this skill and answer as an ordinary non-AgriMap request without reading AgriMap references or writing AgriMap state.
 
 Run only operation `history`. Before conditional discipline, read exactly:
 

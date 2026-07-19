@@ -15,6 +15,7 @@ import {
   operationEntrypointPath,
   renderAliasSkill,
   renderGeminiCommandPrompt,
+  renderOperationAliasesModule,
   renderOperationIndex,
   renderOperationEntrypoint,
 } from "./operation-entrypoints.mjs";
@@ -83,6 +84,7 @@ for (const required of [
   "skills/agrimap-agent-skills/references/service-ownership.md",
   "skills/agrimap-agent-skills/references/evals/sql-scenarios.md",
   "skills/agrimap-agent-skills/scripts/log-events.mjs",
+  "skills/agrimap-agent-skills/scripts/operation-aliases.mjs",
   "skills/agrimap-agent-skills/scripts/install-sqlfluff.mjs",
   "skills/agrimap-agent-skills/scripts/identity.mjs",
   "skills/agrimap-agent-skills/scripts/task-artifact-schema.mjs",
@@ -156,6 +158,12 @@ if (operations) {
     errors.push(`${path.relative(root, operationIndexPath)}: operation routing index missing; run npm run sync.`);
   } else if (await readFile(operationIndexPath, "utf8") !== renderOperationIndex(operations)) {
     errors.push(`${path.relative(root, operationIndexPath)}: operation routing index is stale; run npm run sync.`);
+  }
+  const operationAliasesPath = path.join(root, "skills", "agrimap-agent-skills", "scripts", "operation-aliases.mjs");
+  if (!(await exists(operationAliasesPath))) {
+    errors.push(`${path.relative(root, operationAliasesPath)}: operation alias registry missing; run npm run sync.`);
+  } else if (await readFile(operationAliasesPath, "utf8") !== renderOperationAliasesModule(operations)) {
+    errors.push(`${path.relative(root, operationAliasesPath)}: operation alias registry is stale; run npm run sync.`);
   }
   for (const item of operations.operations || []) {
     const entrypointPath = operationEntrypointPath(path.join(root, "skills", "agrimap-agent-skills"), item);

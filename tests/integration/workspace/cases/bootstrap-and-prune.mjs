@@ -29,6 +29,7 @@ export async function bootstrapAndPrune(harness) {
   assert.equal(stateConfig.stateScope, "target-project");
   assert.equal(stateConfig.installDirectoryWrites, false);
   assert.equal(stateConfig.aiGateway, "disabled");
+  assert.equal(stateConfig.activation.auto, false);
 
   const configPath = path.join(temp, ".agrimap-agent", "config.json");
   const oldRecentPath = path.join(temp, ".agrimap-agent", "memory", "recent", "prune-old.md");

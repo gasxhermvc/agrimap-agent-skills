@@ -22,12 +22,15 @@ Evidence mode is separate from authority:
 | FE main architecture, generated API, and mandatory store/facade tests | `current` | Use `golden/frontend-main`; match the active Angular version and deployed contracts. |
 | FE library public API, naming, generated API, Playground, and smoke-test baseline | `current` | Use `golden/frontend-libraries`; richer assertions and full semver rules remain decision-owner evidence gaps. |
 | BE new boundary placement | `verified` | Map transport DTOs before inward repository ports; classify models by meaning. Do not silently migrate legacy code. |
-| BE main with `backend_profile=agmws` examples | `legacy-compatible` | Layer flow is useful; exact port location, route/response conventions, and Domain versus persistence examples still need owner evidence. |
+| BE main/library C# programming templates NULL-01 through TOOL-01 | `current` | Owner-confirmed 2026-07-19 in `patterns/csharp.md`; governs new code and behavior-safe refactors even when no local example exists. Raw legacy files remain compatibility evidence. |
+| BE main with `backend_profile=agmws` examples | `legacy-compatible` | Raw layer flow remains useful evidence; `patterns/csharp.md` now owns new port placement and route/response conventions. Project behavior and business/data semantics still require active evidence. |
 | BE main with `backend_profile=agmbo` scheduler | `missing-owner-example` | Requires `Infrastructure/Jobs/JobScheduler.cs`, registration, retry, and concurrency examples. |
 | BE library behavior, configuration, README-style usage, and Playground | `current` | Use `golden/backend-libraries`; the active package's published API and source remain authoritative. |
 | BE main/library HTTP request-value normalization | `current` | Use `013-1-extensions-request-value-normalize.md`; verify the active `AgriMap.Platform.Extensions` package surface before migrating callers. |
 | SQL collection | `mixed` | Read every entry's status in `golden/sql/manifest.json`; never infer data semantics from collection status. |
 | SQL relationship/data semantics | `unverified` | Cascade, seed IDs, list input, indexing, and replace semantics require active-project evidence or owner decision. |
-| BE/SQL unit and integration tests | `missing-owner-example` | Read the target framework and neighboring tests first. FE test baselines are documented separately above. |
+| BE unit-test scaffold and route-precedence matrix | `current` | Owner-approved target: xUnit + NSubstitute under `Tests/`; this is a target convention, not evidence that product repositories already contain tests. |
+| BE integration tests and SQL tests | `missing-owner-example` | Read the target framework and neighboring tests; no broader owner-authored integration/SQL test template has been supplied. |
+| BE shared analyzer/formatting tooling | `current` | Owner-approved target at the shared `services/` root; do not claim `.editorconfig`, `Directory.Build.props`, analyzers, or Jenkins format gates already exist until verified. |
 
 Change authority only with owner approval or strong current-project evidence. Record the decision in `.agrimap-agent/decisions/` and the knowledge index. Coverage or maturity such as `90%+`/`near-complete` describes breadth, not authority.

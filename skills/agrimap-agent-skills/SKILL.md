@@ -1,9 +1,11 @@
 ---
 name: agrimap-agent-skills
-description: Route an ambiguous or direct umbrella AgriMap request to exactly one dedicated agm-* operation skill. Use when the requester asks which AgriMap operation to choose, invokes the umbrella without a dedicated alias, or provides an unknown legacy operation name. Do not use this router to execute engineering, QA, history, memory, delegation, or prompt-generation work when a dedicated agm-* skill is known.
+description: AgriMap-project-only router. Invoke implicitly only in recognized AgriMap repositories; elsewhere require explicit host-native invocation of agrimap-agent-skills. Route an ambiguous or direct umbrella request to exactly one dedicated agm-* operation skill, and never execute engineering, QA, history, memory, delegation, or prompt-generation work when a dedicated alias is known.
 ---
 
 # AgriMap operation router
+
+Scope gate: before reading the operation index or applying any AgriMap routing instruction, continue only when this turn contains AgriMap hook activation context or the current requester message explicitly invokes `agrimap-agent-skills` using the active provider's native syntax. If neither is present, stop applying this skill and answer as an ordinary non-AgriMap request without reading AgriMap references or writing AgriMap state.
 
 Perform one task only: select one dedicated `agm-*` skill. Do not execute that skill's workflow, inspect product code, create task state, load domain patterns, update memory/logs, delegate, or run QA from this router.
 

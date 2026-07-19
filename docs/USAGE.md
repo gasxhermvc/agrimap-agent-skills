@@ -30,6 +30,17 @@ $agm-analyze requested_by=Billy target_files=src/app.ts objective="Find the root
 
 การคัดลอกเฉพาะ routing skill จะเลือก operation ได้แต่ execute ไม่ได้ ต้องติดตั้ง alias folders เช่น `agm-analyze/` ด้วยก่อนใช้รูปแบบ `/<alias>`.
 
+### ขอบเขตการ activate อัตโนมัติ
+
+แม้ plugin/extension ถูกติดตั้งในระดับ global แต่ hook ของ non-candidate จะตรวจเฉพาะ activation inputs ได้แก่ชื่อ Git root/`origin`, activation config, explicit prompt syntax และ active-task marker จากนั้นจบโดยไม่ส่ง AgriMap context, ไม่อ่าน identity/memory และไม่เขียน workflow state. ตัว skill ที่ถูก model เลือกแบบ implicit ก็มี scope gate เดียวกันก่อนโหลด AgriMap lifecycle/reference. Hook/skill จะ active เฉพาะ candidate ต่อไปนี้:
+
+- Git root หรือชื่อ repository จาก `origin` ตรง `agmwa-<letters-and-hyphens>-ng`, `agmws-<letters-and-hyphens>-netcore`, `agmbo-<letters-and-hyphens>-netcore`, `agrimap-<letters-and-hyphens>` หรือ `AgriMap.<dot-separated-letters>`;
+- prompt ปัจจุบันเรียก alias ที่มีจริงด้วย syntax ของ provider ตามตารางด้านบน;
+- session เดิมมี active tracked task; หรือ
+- project ที่ถูกเปลี่ยนชื่อ opt-in ด้วย `activation.auto: true` ใน `.agrimap-agent/config.json`.
+
+ชื่อที่มีตัวเลข/underscore, ข้อความ `agm-*` ที่ไม่ใช่ registered alias, การกล่าวถึง `agm-analyze` แบบข้อความธรรมดา และการมี directory `.agrimap-agent` เพียงอย่างเดียวไม่ทำให้ hook active. ค่า `activation.auto` เริ่มต้นเป็น `false` เพื่อไม่ให้ repo ภายนอกที่เคยเรียก skill กลายเป็น auto-active ถาวร.
+
 หาก alias ไม่ปรากฏหลังติดตั้ง ให้เปิด session ใหม่ก่อน หากยังไม่พบ ให้ sync/reinstall package ห้ามใช้ router เป็น execution fallback:
 
 ```text

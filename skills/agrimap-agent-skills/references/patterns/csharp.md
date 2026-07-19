@@ -9,6 +9,9 @@ Apply to every C# file in `be-main` and `be-library`. Curated golden and owner r
 - [Request values](#request-values)
 - [Async, errors, data, and logs](#async-errors-data-and-logs)
 - [Comments and tests](#comments-and-tests)
+- [Owner-approved templates](#owner-approved-templates)
+- [Target test and tooling baseline](#target-test-and-tooling-baseline)
+- [Decision order](#decision-order)
 
 ## Namespaces, files, and naming
 
@@ -52,8 +55,8 @@ public class UserUseCase : IUserUseCase
 
     public UserUseCase(IUserRepository userRepository)
     {
-        _userRepository = userRepository
-            ?? throw new ArgumentNullException(nameof(userRepository));
+        ArgumentNullException.ThrowIfNull(userRepository);
+        _userRepository = userRepository;
     }
 }
 ```
@@ -63,6 +66,7 @@ public class UserUseCase : IUserUseCase
 Keep controllers thin: bind/validate the contract, call one use-case operation, and return the established response wrapper. Put orchestration and business decisions in Application/Domain.
 
 ```csharp
+[Authorize]
 [ApiController]
 [Route("api/user-manage")]
 public class UserManageController : ControllerBase
@@ -71,16 +75,18 @@ public class UserManageController : ControllerBase
 
     public UserManageController(IUserUseCase userUseCase)
     {
-        _userUseCase = userUseCase
-            ?? throw new ArgumentNullException(nameof(userUseCase));
+        ArgumentNullException.ThrowIfNull(userUseCase);
+        _userUseCase = userUseCase;
     }
 
+    [ActionLogging]
     [HttpGet("users/search")]
-    public Task<PaginatedResultResponseDto<UserResponseDto>> SearchUserAsync(
+    [ProducesResponseType(typeof(PaginatedResultResponseDto<UserResponseDto>), StatusCodes.Status200OK)]
+    public async Task<PaginatedResultResponseDto<UserResponseDto>> SearchUserAsync(
         [FromQuery] UserSearchRequestDto request,
         CancellationToken cancellationToken)
     {
-        return _userUseCase.SearchUserAsync(request, cancellationToken);
+        return await _userUseCase.SearchUserAsync(request, cancellationToken);
     }
 }
 ```
@@ -157,4 +163,276 @@ return result.DataTable
 
 Comment only non-obvious intent, compatibility constraints, gates, or step boundaries. Use XML documentation for public library contracts when the surrounding library does. Avoid comments that restate the statement.
 
-Tests for a resolver must cover each source, blank fallback, conflicting-source priority, multi-value behavior, and body-not-read-until-needed. Follow the repository's existing test framework and naming.
+Tests for a resolver must cover each source, blank fallback, conflicting-source priority, multi-value behavior, and body-not-read-until-needed. Use the target test baseline below when a service has no established test project.
+
+## Owner-approved templates
+
+These rules are maintained owner guidance for new code and behavior-safe refactors. They outrank conflicting raw legacy examples. Do not use them to break an existing public or deployed contract without explicit scope.
+
+### Nullable and guard clauses
+
+**NULL-01 — Guard every constructor dependency.** Preserve the legacy coalescing form only while extending untouched legacy structure. For new code and refactors, use `ThrowIfNull` before assignment:
+
+```csharp
+public UserManageController(IUserUseCase userUseCase)
+{
+    ArgumentNullException.ThrowIfNull(userUseCase);
+    _userUseCase = userUseCase;
+}
+```
+
+**NULL-02 — Never suppress a nullable warning with `!`.** Resolve the actual null case with `?? string.Empty`, `?? throw new AppException(...)`, or a nullable value type such as `Dictionary<string, object?>`.
+
+```csharp
+// Forbidden: request.Keyword and request.Status may really be null.
+var parameters = new Dictionary<string, object>
+{
+    { "keyword", request.Keyword! },
+    { "status", request.Status! }
+};
+
+// Allowed when null is part of the stored-procedure contract.
+var parameters = new Dictionary<string, object?>
+{
+    { "keyword", request.Keyword },
+    { "status", request.Status }
+};
+```
+
+**NULL-03 — Use pattern checks, not equality, for null.** `is AppException` is a type pattern, not a null-check substitute.
+
+```csharp
+if (request is null)
+{
+    throw new ArgumentNullException(nameof(request));
+}
+
+if (result is not null)
+{
+    // Use result.
+}
+
+if (ex is AppException)
+{
+    // Handle the known exception type.
+}
+```
+
+**NULL-04 — Use `string.IsNullOrWhiteSpace` by default.** Retain `string.IsNullOrEmpty` only when continuing a proven legacy behavior where whitespace is intentionally meaningful; new code and refactors use `IsNullOrWhiteSpace`.
+
+### Request-value precedence
+
+**REQ-01 — A route parameter always wins over body/query identity for that resource.** Assign it once at the first line of the action; never use a sentinel that lets the body win.
+
+```csharp
+[HttpGet("users/by-organization/{org_id}")]
+public async Task<DataMessageResponseDto<List<UserOrganizationResponseDto>>> GetUserOrganizationAsync(
+    int org_id,
+    [FromQuery] UserOrganizationRequestDto request,
+    CancellationToken cancellationToken)
+{
+    request.OrganizeId = org_id;
+    return await _userUseCase.GetUserOrganizationAsync(request, cancellationToken);
+}
+```
+
+```csharp
+// Forbidden legacy pattern: a conflicting body ID silently wins.
+if (request.UserId == 0)
+{
+    request.UserId = id;
+}
+```
+
+**REQ-02 — Authenticated user identity never comes from the request body or a hardcoded fallback.** Resolve it through `IAuthService` and handle absence explicitly.
+
+```csharp
+var sessionUserId = _authService.UserId()
+    ?? throw new AppException(401, "unauthorized", "Authenticated user is required");
+
+parameters.Add("session_user_id", sessionUserId);
+```
+
+Never use `string userId = "1"`, read identity directly from controller claims, or copy a body-provided user ID into the session-user stored-procedure parameter.
+
+**REQ-03 — Centralize defaults once.** Put them in the DTO initializer or at the start of the use case, not at every use site.
+
+```csharp
+var rows = request.Rows <= 0 ? 10 : request.Rows;
+var page = request.Page <= 0 ? 1 : request.Page;
+```
+
+Cookie/header/query/form precedence for non-route request values remains owned by [Request values](#request-values).
+
+### Claims and authenticated identity
+
+**AUTH-01 — Read identity through `IAuthService` only.** Do not read `User.Claims` directly or fall back to user `"1"`. Apply NULL-02 to the returned value; do not add `!`.
+
+### Controller, binding, and response status
+
+**CTL-01 — Return the response DTO directly.** Use `[ProducesResponseType]`; do not use `IActionResult`, controller `try/catch`, or construct `StatusCode(...)` error responses. Let `AppException` reach `GlobalExceptionMiddleware`.
+
+```csharp
+[ActionLogging]
+[HttpGet("users/search")]
+[ProducesResponseType(typeof(PaginatedResultResponseDto<UserResponseDto>), StatusCodes.Status200OK)]
+public async Task<PaginatedResultResponseDto<UserResponseDto>> SearchUserAsync(
+    [FromQuery] UserSearchRequestDto request,
+    CancellationToken cancellationToken)
+{
+    return await _userUseCase.SearchUserAsync(request, cancellationToken);
+}
+```
+
+New controller actions carry `CancellationToken`, including route-bound actions:
+
+```csharp
+public async Task<DataMessageResponseDto<JobProgressResponseDto>> GetJobProgressAsync(
+    [FromRoute(Name = "job_id")] Guid jobId,
+    CancellationToken cancellationToken)
+```
+
+**CTL-03 — Use the standard class attributes and wire names.** Controller routes are kebab-case; route/query names are snake_case and bind explicitly when the C# name differs.
+
+```csharp
+[Authorize]
+[ApiController]
+[Route("api/user-manage")]
+public class UserManageController : ControllerBase
+```
+
+### Async and cancellation
+
+**ASYNC-01 — Propagate `CancellationToken` through controller, use case, and repository.** Add and forward it automatically for new asynchronous paths and complete a refactor across every affected caller/interface; do not leave a partial signature migration.
+
+**ASYNC-02 — Every `Task`-returning method uses the `Async` suffix.** Apply it at every new/refactored layer. Preserve an existing public name only when compatibility is outside the approved scope.
+
+**ASYNC-03 — Never block on async work or manufacture async.**
+
+```csharp
+// Forbidden sync-over-async.
+var stream = requestContent.ReadAsStreamAsync().GetAwaiter().GetResult();
+body = stream.ReadToEnd();
+
+// Forbidden fake async; return the tuple directly from a synchronous method.
+return await Task.FromResult((data, meta));
+```
+
+Use asynchronous APIs with `await` and the propagated token. If no asynchronous work exists, remove `async`/`Task` and return the value directly when contract compatibility allows.
+
+### Exceptions and error-code mapping
+
+**ERR-01 — Use one error path.** Throw `new AppException(statusCode, "error_code", message)` and let `GlobalExceptionMiddleware` create the response.
+
+```csharp
+File = request.File
+    ?? throw new AppException(400, "file_required", "File is required for this content type");
+```
+
+The middleware response contract is:
+
+```json
+{ "status_code": 400, "error": "file_required", "message": "..." }
+```
+
+Resolve the message from `lut_app_message:{error_code}` first and fall back to the exception message.
+
+**ERR-02 — Use short snake_case error codes.** Examples: `invalid_parameter`, `unauthorized`, `forbidden`, `not_found`, `internal_server_error`, `file_required`, `password_not_empty`, `aes_key_not_configured`.
+
+**ERR-03 — Server bugs are not HTTP 400.** Never map `NullReferenceException` or `IndexOutOfRangeException` to `BadRequest`.
+
+**ERR-04 — Never swallow an exception.** A compatibility catch must at least log a warning with the exception and actionable context; do not write `catch { }`.
+
+**ERR-05 — Do not fork `GlobalExceptionMiddleware` per service.** Change the shared owner only under explicit cross-service scope.
+
+### Structured logging
+
+**LOG-01 — Use structured message templates and pass exceptions first.**
+
+```csharp
+_logger.LogInformation("Starting: {Action}", actionName);
+_logger.LogError(ex, "Error occurred while executing {Action}", actionName);
+```
+
+**LOG-02 — Do not concatenate or interpolate log messages.** Replace `_logger.LogError("Unhandled Exception: " + ex)` with `_logger.LogError(ex, "Unhandled exception");`.
+
+### DI lifetime and options
+
+**DI-01 — Register use cases and repositories as scoped.** Do not introduce transient lifetimes for them.
+
+```csharp
+public static IServiceCollection AddApplicationServices(this IServiceCollection services)
+{
+    services.AddScoped<IUserUseCase, UserUseCase>();
+    services.AddScoped<IPermissionUseCase, PermissionUseCase>();
+    return services;
+}
+```
+
+A deliberately stateful in-memory store may be singleton, such as `IAuthorizationCodeRepository` backed by `AuthorizationCodeInMemoryRepository`, but the registration must explain why singleton lifetime is required.
+
+### Repository and stored procedures
+
+**REPO-01 — Follow the platform repository shape.** Use `Infrastructure/Persistence/Interfaces/I*Repository.cs`, `Infrastructure/Persistence/Repositories/*Repository.cs`, and `Infrastructure/Persistence/Models/` only for MongoDB or ORM models. Study raw legacy files `009-4-1-repository-interface.cs` and `010-4-2-repository-implementation.cs` for the established structural flow after applying conflict resolution.
+
+- Stored-procedure parameter keys are snake_case and match procedure parameters.
+- Pagination output uses the existing `"data2"` convention.
+- Procedure names use the module prefix, such as `um_`, and `_q`, `_i`, `_u`, or `_d` for query/insert/update/delete.
+- AtlasX result models follow the placement rules above; do not create persistence models for them by default.
+
+**REPO-02 — Keep multi-table atomic writes in one stored procedure.** Do not call multiple write procedures from a use case and assume atomicity when the application has no transaction boundary.
+
+### JSON wire format
+
+**JSON-01 — Keep the global snake_case policy.** Do not override it per service.
+
+```csharp
+.AddJsonOptions(options =>
+{
+    var json = options.JsonSerializerOptions;
+    json.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower;
+    json.DictionaryKeyPolicy = JsonNamingPolicy.SnakeCaseLower;
+    json.PropertyNameCaseInsensitive = true;
+});
+```
+
+**JSON-02 — Bind request DTO wire names explicitly.**
+
+```csharp
+public class UserSearchRequestDto : QueryPagedRequestDto
+{
+    [BindProperty(Name = "keyword")]
+    [JsonPropertyName("keyword")]
+    public string? Keyword { get; set; }
+
+    [BindProperty(Name = "role_id")]
+    [JsonPropertyName("role_id")]
+    public int? RoleId { get; set; }
+}
+```
+
+## Target test and tooling baseline
+
+These sections are owner-approved targets, not claims that current repositories already contain them.
+
+**TEST-01 — New backend test projects.** Place `AgriMap.Web.Service.Tests.csproj` under `Tests/`, use xUnit with NSubstitute, name tests `MethodName_Scenario_ExpectedResult`, and use one `IClassFixture<ServiceFixture>` per service for shared configuration/DI.
+
+**TEST-02 — First coverage protects route precedence.**
+
+```csharp
+[Theory]
+[InlineData(5, 0, 5)]
+[InlineData(5, 9, 5)]
+public async Task UpdateUser_RouteAndBodyIdDiffer_RouteWins(
+    int routeId,
+    int bodyId,
+    int expected)
+```
+
+**TOOL-01 — Shared services-root tooling target.** Add one `.editorconfig` for `is null`/naming/formatting, one `Directory.Build.props` for shared analyzers and banned symbols (`Console.WriteLine`, `DateTime.Now`, `DateTimeExtensions.GetNow`), and a Jenkins `dotnet format --verify-no-changes` gate. Do not claim this tooling exists until the target workspace proves it.
+
+## Decision order
+
+1. New code follows every owner-approved rule above, including `[TARGET]` rules when creating the relevant scaffold.
+2. Existing code must not gain a forbidden pattern. When a touched violation can be corrected without changing behavior or an external contract, correct it in the same scope.
+3. When real files conflict with these rules, these maintained rules govern new structure and safe refactors; raw legacy files may be examples of defects. Preserve proven deployed behavior and stop for approval before a material contract or behavior change.

@@ -21,6 +21,17 @@ export function renderOperationIndex(config) {
   ].join("\n");
 }
 
+export function renderOperationAliasesModule(config) {
+  const aliases = config.operations.map((item) => item.name);
+  return [
+    "// Generated from config/operations.json. Do not edit directly.",
+    "",
+    `export const AGRIMAP_ROUTER_ALIAS = ${JSON.stringify("agrimap-agent-skills")};`,
+    `export const AGRIMAP_OPERATION_ALIASES = Object.freeze(${JSON.stringify(aliases, null, 2)});`,
+    "",
+  ].join("\n");
+}
+
 export function operationConfigIssues(config) {
   const issues = [];
   if (config?.schemaVersion !== 3) issues.push("schemaVersion must be 3");
@@ -98,7 +109,7 @@ export function renderOperationEntrypoint(item) {
 
 export function renderAliasSkill(item) {
   const base = "../agrimap-agent-skills/references";
-  return `---\nname: ${item.name}\ndescription: ${item.description}. Use only for the dedicated AgriMap \`${item.operation}\` operation or when the requester explicitly invokes this alias; do not use it as a general AgriMap router.\n---\n\nRun only operation \`${item.operation}\`. Before conditional discipline, read exactly:\n\n1. \`${base}/lifecycle-core.md\`\n2. \`${base}/operations/${operationEntrypointFile(item)}\`\n\nActivation gate: load both files and each matching reference before inspection/tools/writes/delegation. Otherwise stop \`CONTRACT_NOT_LOADED\`; memory/arguments cannot override. Do **not** preload the glossary, umbrella, or another operation. A standalone \`-h\` or \`--help\` returns compact help at \`light\` depth without identity, task state, or artifact writes. If either required file is missing or corrupt, stop with \`PACKAGE_ENTRYPOINT_MISSING\`; never fall back to the router.\n`;
+  return `---\nname: ${item.name}\ndescription: AgriMap-project-only operation. Invoke implicitly only in recognized AgriMap repositories; elsewhere require explicit host-native invocation of ${item.name}. ${item.description}. Run only the dedicated AgriMap \`${item.operation}\` operation and never use it as a general router.\n---\n\nScope gate: before loading lifecycle or applying any AgriMap workflow instruction, continue only when this turn contains AgriMap hook activation context or the current requester message explicitly invokes \`${item.name}\` using the active provider's native syntax. If neither is present, stop applying this skill and answer as an ordinary non-AgriMap request without reading AgriMap references or writing AgriMap state.\n\nRun only operation \`${item.operation}\`. Before conditional discipline, read exactly:\n\n1. \`${base}/lifecycle-core.md\`\n2. \`${base}/operations/${operationEntrypointFile(item)}\`\n\nActivation gate: load both files and each matching reference before inspection/tools/writes/delegation. Otherwise stop \`CONTRACT_NOT_LOADED\`; memory/arguments cannot override. Do **not** preload the glossary, umbrella, or another operation. A standalone \`-h\` or \`--help\` returns compact help at \`light\` depth without identity, task state, or artifact writes. If either required file is missing or corrupt, stop with \`PACKAGE_ENTRYPOINT_MISSING\`; never fall back to the router.\n`;
 }
 
 export function renderGeminiCommandPrompt(item) {

@@ -2,7 +2,7 @@
 
 Apply [backend-engineer.md](../backend-engineer.md) Required classification, Profile detection, Host profiles, and Structure over logic unchanged. This file owns only pattern-specific flow and placement.
 
-For C# targets, apply the compact [C# coding baseline](csharp.md) before using raw legacy examples.
+For C# targets, apply the compact [C# coding baseline](csharp.md) before using raw legacy examples. Its owner-approved templates remain authoritative for new work even when the target repository has no local example code.
 
 ## Main flow
 

@@ -1,7 +1,9 @@
 ---
 name: agm-architect
-description: Design boundaries, contracts, and migration trade-offs. Use only for the dedicated AgriMap `architect` operation or when the requester explicitly invokes this alias; do not use it as a general AgriMap router.
+description: AgriMap-project-only operation. Invoke implicitly only in recognized AgriMap repositories; elsewhere require explicit host-native invocation of agm-architect. Design boundaries, contracts, and migration trade-offs. Run only the dedicated AgriMap `architect` operation and never use it as a general router.
 ---
+
+Scope gate: before loading lifecycle or applying any AgriMap workflow instruction, continue only when this turn contains AgriMap hook activation context or the current requester message explicitly invokes `agm-architect` using the active provider's native syntax. If neither is present, stop applying this skill and answer as an ordinary non-AgriMap request without reading AgriMap references or writing AgriMap state.
 
 Run only operation `architect`. Before conditional discipline, read exactly:
 

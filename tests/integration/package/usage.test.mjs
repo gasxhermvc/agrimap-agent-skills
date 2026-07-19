@@ -37,6 +37,9 @@ test("published aliases use operation-specific progressive-disclosure entrypoint
     assert.doesNotMatch(aliasSkill, /references\/(?:runtime-core|glossary)\.md/);
     assert.ok(aliasSkill.includes(`references/operations/${item.operation}.md`));
     assert.ok(aliasSkill.includes(`Run only operation \`${item.operation}\``));
+    assert.match(aliasSkill, /Scope gate: before loading lifecycle/);
+    assert.ok(aliasSkill.includes(`explicitly invokes \`${item.name}\``));
+    assert.match(aliasSkill, /ordinary non-AgriMap request without reading AgriMap references or writing AgriMap state/);
     assert.match(aliasSkill, /Do \*\*not\*\* preload the glossary, umbrella, or another operation/);
     assert.match(aliasSkill, /never fall back to the router/);
     assert.match(aliasSkill, /standalone `-h` or `--help`/);
@@ -86,6 +89,8 @@ test("plugin routing skill and shared resources mirror the canonical source", as
 
 test("usage documentation separates routing from operation activation and help", async () => {
   assert.match(canonical, /AgriMap router active/);
+  assert.match(canonical, /Scope gate: before reading the operation index/);
+  assert.match(canonical, /explicitly invokes `agrimap-agent-skills`/);
   assert.match(canonical, /Perform one task only/);
   assert.match(canonical, /For `-h`, `--help`/);
   assert.doesNotMatch(canonical, /## Start every task|## Delegate deliberately|## Verify and close/);
@@ -160,6 +165,21 @@ test("C# and request-value contracts route through every backend operation", asy
   assert.match(csharp, /Subfolders may organize files but never extend the namespace/);
   assert.match(csharp, /Infrastructure\.Persistence\.Models.*MongoDB.*ORM/s);
   assert.match(csharp, /AtlasX Core Query results.*Domain\.Entities.*Presentation\.DTOs\.Responses/s);
+  for (const ruleId of [
+    "NULL-01", "NULL-02", "NULL-03", "NULL-04",
+    "REQ-01", "REQ-02", "REQ-03", "AUTH-01",
+    "CTL-01", "CTL-03",
+    "ASYNC-01", "ASYNC-02", "ASYNC-03",
+    "ERR-01", "ERR-02", "ERR-03", "ERR-04", "ERR-05",
+    "LOG-01", "LOG-02", "DI-01", "REPO-01", "REPO-02",
+    "JSON-01", "JSON-02", "TEST-01", "TEST-02", "TOOL-01",
+  ]) {
+    assert.match(csharp, new RegExp(`\\*\\*${ruleId} —`), `missing owner template ${ruleId}`);
+  }
+  assert.match(csharp, /maintained owner guidance for new code and behavior-safe refactors/);
+  assert.match(csharp, /These sections are owner-approved targets, not claims that current repositories already contain them/);
+  assert.match(csharp, /real files conflict with these rules.*maintained rules govern new structure/s);
+  assert.ok(csharp.split(/\r?\n/).length <= 500, "keep the always-loaded C# baseline under 500 lines");
   assert.doesNotMatch(csharp, /namespace ArgiMap|AgriMap\.Wokrer/);
   assert.doesNotMatch(backendEngineer, /TaskScheduler\.cs/);
   assert.match(requestGolden, /Cookie \(highest\) -> Header -> QueryString \(lowest\)/);

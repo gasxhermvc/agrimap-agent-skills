@@ -1,7 +1,9 @@
 ---
 name: agm-exec
-description: Execute one decision-owner-approved generated prompt as the execution source of truth with checkpoints, deviation stops, and a Result Package. Use only for the dedicated AgriMap `execute` operation or when the requester explicitly invokes this alias; do not use it as a general AgriMap router.
+description: AgriMap-project-only operation. Invoke implicitly only in recognized AgriMap repositories; elsewhere require explicit host-native invocation of agm-exec. Execute one decision-owner-approved generated prompt as the execution source of truth with checkpoints, deviation stops, and a Result Package. Run only the dedicated AgriMap `execute` operation and never use it as a general router.
 ---
+
+Scope gate: before loading lifecycle or applying any AgriMap workflow instruction, continue only when this turn contains AgriMap hook activation context or the current requester message explicitly invokes `agm-exec` using the active provider's native syntax. If neither is present, stop applying this skill and answer as an ordinary non-AgriMap request without reading AgriMap references or writing AgriMap state.
 
 Run only operation `execute`. Before conditional discipline, read exactly:
 
