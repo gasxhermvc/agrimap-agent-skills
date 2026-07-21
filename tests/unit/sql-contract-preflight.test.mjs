@@ -31,3 +31,23 @@ test("fails closed before golden selection when SQL identity is incomplete", asy
   assert.equal(result.gate, "SQL_CONTRACT_BLOCKED");
   assert.ok(result.issues.some((issue) => issue.code === "PROCEDURE_SUFFIX_INVALID"));
 });
+
+test("continues with actionable warnings when released package integrity is invalid", async () => {
+  const result = await sqlContractPreflight({
+    targetKind: "sql-table",
+    objectName: "TEST_TABLE",
+    integrityVerifier: async () => ({
+      ok: false,
+      failures: [{ code: "HASH_MISMATCH", path: "frontend-main/example.md" }],
+    }),
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.gate, "SQL_CONTRACT_READY");
+  assert.deepEqual(result.warnings, [{
+    code: "GOLDEN_INTEGRITY_INVALID",
+    message: "Package-wide golden integrity validation failed; continuing with installed SQL references.",
+    issues: [{ code: "HASH_MISMATCH", path: "frontend-main/example.md" }],
+  }]);
+  assert.ok(result.selectedGolden.length > 0);
+});

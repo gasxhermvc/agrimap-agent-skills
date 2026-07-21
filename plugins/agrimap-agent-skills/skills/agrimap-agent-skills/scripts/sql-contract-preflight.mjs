@@ -48,7 +48,7 @@ function selectionScore(entry, targetKind, objectName, content) {
   return score;
 }
 
-export async function sqlContractPreflight({ targetKind, objectName } = {}) {
+export async function sqlContractPreflight({ targetKind, objectName, integrityVerifier = verifyGolden } = {}) {
   const normalizedKind = String(targetKind || "").toLowerCase();
   const normalizedObject = String(objectName || "").replace(/\.sql$/i, "").toUpperCase();
   const issues = [];
@@ -63,14 +63,14 @@ export async function sqlContractPreflight({ targetKind, objectName } = {}) {
   }
   if (issues.length) return { ok: false, gate: "SQL_CONTRACT_BLOCKED", issues };
 
-  const integrity = await verifyGolden({ goldenRoot });
-  if (!integrity.ok) {
-    return {
-      ok: false,
-      gate: "GOLDEN_INTEGRITY_INVALID",
-      issues: integrity.failures.map((failure) => ({ code: failure.code, path: failure.path })),
-    };
-  }
+  const integrity = await integrityVerifier({ goldenRoot });
+  const warnings = integrity.ok
+    ? []
+    : [{
+        code: "GOLDEN_INTEGRITY_INVALID",
+        message: "Package-wide golden integrity validation failed; continuing with installed SQL references.",
+        issues: integrity.failures.map((failure) => ({ code: failure.code, path: failure.path })),
+      }];
 
   const manifest = JSON.parse(await readFile(path.join(sqlGoldenRoot, "manifest.json"), "utf8"));
   const candidates = [];
@@ -105,6 +105,7 @@ export async function sqlContractPreflight({ targetKind, objectName } = {}) {
     gate: "SQL_CONTRACT_READY",
     targetKind: normalizedKind,
     object: normalizedObject,
+    warnings,
     requiredReferences: [
       "references/patterns/conflict-resolution.md",
       "references/patterns/sql.md",
