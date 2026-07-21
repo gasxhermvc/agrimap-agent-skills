@@ -7,6 +7,8 @@
 - Mode: `product-read-only`
 - Purpose: Design a user flow, behavior, and acceptance criteria.
 - Deliverable: direct design at light; tracked design artifact only at standard/regulated
+- Compatibility: deprecated; use agm-fe|agm-be|agm-sql action=design, or passive design in agm-create-prompt. Preserve this operation name only for existing prompts, audit, and automation.
+
 
 ## Inputs and help
 

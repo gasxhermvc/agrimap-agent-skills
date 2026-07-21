@@ -17,6 +17,8 @@ const frontendDiscipline = await read("skills/agrimap-agent-skills/references/fr
 const promptPolicy = await read("skills/agrimap-agent-skills/references/create-prompt.md");
 const delegationPolicy = await read("skills/agrimap-agent-skills/references/subagents-and-branches.md");
 const createFeatureEntrypoint = await read("skills/agrimap-agent-skills/references/operations/create-feature.md");
+const passiveCapabilities = await read("skills/agrimap-agent-skills/references/passive-capabilities.md");
+const lifecycle = await read("skills/agrimap-agent-skills/references/lifecycle-core.md");
 
 const modes = [
   "performance-preserve-behavior",
@@ -33,6 +35,41 @@ test("SQL refactor exposes all five modes instead of a recommendation-only extra
   assert.match(operation.instructions.join("\n"), /show all five enums/i);
   assert.match(operation.instructions.join("\n"), /never return a recommendation alone/i);
   assert.match(elicitation, /ตอบเลขหรือ enum/);
+});
+
+test("domain façades resolve one action and keep passive capabilities read-only", async () => {
+  for (const name of ["fe", "be", "sql"]) {
+    const operation = operations.operations.find((item) => item.operation === name);
+    assert.equal(operation.mode, "action-routed");
+    assert.match(operation.instructions.join("\n"), /Resolve exactly one action before inspection/i);
+    const entrypoint = await read(`skills/agrimap-agent-skills/references/operations/${name}.md`);
+    assert.match(entrypoint, /Resolve exactly one action.*before target inspection or product writes/i);
+    for (const action of operation.actions.filter((item) => item.activation === "explicit-or-passive")) {
+      assert.equal(action.mode, "product-read-only");
+    }
+  }
+  assert.match(lifecycle, /Passive activation never grants write authority/);
+  assert.match(passiveCapabilities, /never grant product-write authority/);
+  assert.match(passiveCapabilities, /Do not create tests from passive activation/);
+  assert.match(passiveCapabilities, /Explicit `action=test`/);
+});
+
+test("SQL explain is evidence-labelled and cannot execute or edit", () => {
+  const sql = operations.operations.find((item) => item.operation === "sql");
+  const explain = sql.actions.find((item) => item.name === "explain");
+  assert.equal(explain.mode, "product-read-only");
+  assert.equal(explain.activation, "explicit-or-passive");
+  for (const marker of ["FACT", "INFERENCE", "UNKNOWN", "do not execute SQL", "connect to a database", "never edits"])
+    assert.ok(passiveCapabilities.includes(marker), `SQL explain marker missing: ${marker}`);
+});
+
+test("one public refactor routes FE, BE, and SQL while legacy aliases stay compatibility-only", () => {
+  const refactor = operations.operations.find((item) => item.operation === "refactor");
+  assert.deepEqual(refactor.requiredInputs.slice(0, 1), ["target=fe|be|sql"]);
+  for (const target of ["fe", "be", "sql"])
+    assert.ok(refactor.conditionalReferences.some((item) => item.when === `target=${target}`));
+  for (const name of ["agm-refactor-fe", "agm-refactor-be", "agm-refactor-sql"])
+    assert.equal(operations.operations.find((item) => item.name === name).visibility, "compatibility");
 });
 
 test("light analysis is CLI-readable and database conclusions fail soft on missing project evidence", () => {

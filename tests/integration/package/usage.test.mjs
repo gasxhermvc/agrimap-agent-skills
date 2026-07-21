@@ -6,6 +6,8 @@ import { projectRoot } from "../../helpers/harness.mjs";
 
 const read = (relativePath) => readFile(path.join(projectRoot, relativePath), "utf8");
 const operations = JSON.parse(await read("config/operations.json")).operations;
+const publicOperations = operations.filter((item) => item.visibility !== "compatibility");
+const compatibilityOperations = operations.filter((item) => item.visibility === "compatibility");
 const usage = await read("docs/USAGE.md");
 const canonical = await read("skills/agrimap-agent-skills/SKILL.md");
 const operationIndex = await read("skills/agrimap-agent-skills/references/operation-index.md");
@@ -30,7 +32,11 @@ async function filesUnder(directory) {
 test("published aliases use operation-specific progressive-disclosure entrypoints", async () => {
   assert.ok(operations.some((item) => item.name === "agm-history" && item.operation === "history"));
   for (const item of operations) {
-    assert.ok(operationIndex.includes(`| \`${item.name}\` | \`${item.operation}\` |`));
+    if (item.visibility === "compatibility") {
+      assert.ok(!operationIndex.includes(`| \`${item.name}\` | \`${item.operation}\` |`));
+    } else {
+      assert.ok(operationIndex.includes(`| \`${item.name}\` | \`${item.operation}\` |`));
+    }
     const aliasSkill = await read(`plugins/agrimap-agent-skills/skills/${item.name}/SKILL.md`);
     const geminiCommand = await read(`commands/${item.name}.toml`);
     assert.match(aliasSkill, /references\/lifecycle-core\.md/);
@@ -55,22 +61,16 @@ test("published aliases use operation-specific progressive-disclosure entrypoint
     assert.ok(operationEntrypoint.includes(`Workflow depth: default \`${item.depth.default}\``));
     for (const depth of item.depth.allowed) assert.ok(operationEntrypoint.includes(`\`${depth}\``));
     assert.match(operationEntrypoint, /PACKAGE_ENTRYPOINT_MISSING/);
-    assert.ok(usage.includes(`\`${item.name}\``));
-    assert.ok(usage.includes(`$${item.name} `));
   }
 
   const commands = (await readdir(path.join(projectRoot, "commands"))).filter((name) => name.endsWith(".toml"));
   assert.deepEqual(commands.sort(), operations.map((item) => `${item.name}.toml`).sort());
   assert.equal(operations.some((item) => item.name === "agm-fe-engineer"), false);
-  assert.deepEqual(
-    Object.fromEntries(["light", "standard", "regulated"].map((depth) => [
-      depth,
-      operations.filter((item) => item.depth.default === depth).length,
-    ])),
-    { light: 13, standard: 1, regulated: 2 },
-  );
+  assert.deepEqual(publicOperations.filter((item) => item.mode === "action-routed").map((item) => item.name).sort(), ["agm-be", "agm-fe", "agm-sql"]);
+  assert.deepEqual(compatibilityOperations.map((item) => item.name).sort(), ["agm-analyze", "agm-create-feature", "agm-create-unit-test", "agm-design", "agm-refactor-be", "agm-refactor-fe", "agm-refactor-sql"]);
   assert.deepEqual(operations.find((item) => item.operation === "history").depth.allowed, ["light"]);
   assert.match(operationIndex, /not an execution contract/);
+  assert.match(operationIndex, /Deprecated compatibility aliases.*omitted/i);
 });
 
 test("plugin routing skill and shared resources mirror the canonical source", async () => {
@@ -104,8 +104,8 @@ test("usage documentation separates routing from operation activation and help",
   assert.match(usage, /รูปภาพและ visual reference/);
   assert.match(usage, /Attachments, pointed files, directories, and exact lines/);
   assert.match(usage, /Automated smoke test vs\. live-provider check/);
-  assert.match(usage, /\$agm-analyze -h/);
-  assert.match(usage, /\/agrimap-agent-skills:agm-analyze -h/);
+  assert.match(usage, /\$agm-be -h/);
+  assert.match(usage, /\/agrimap-agent-skills:agm-be -h/);
   assert.match(usage, /\$agrimap-agent-skills -h/);
   assert.match(usage, /\/agrimap-agent-skills:agrimap-agent-skills -h/);
   assert.doesNotMatch(usage, /agrimap-agent-skills operation=analyze/);
@@ -131,6 +131,8 @@ test("C# and request-value contracts route through every backend operation", asy
     "design",
     "architect",
     "review",
+    "be",
+    "refactor",
     "refactor-be",
     "qa",
     "create-unit-test",

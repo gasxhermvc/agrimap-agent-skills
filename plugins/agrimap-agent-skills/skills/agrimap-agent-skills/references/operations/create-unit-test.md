@@ -7,6 +7,8 @@
 - Mode: `product-write`
 - Purpose: Create target-specific unit or regression tests.
 - Deliverable: selected tests plus direct verified result at light or schema result at standard/regulated
+- Compatibility: deprecated; use agm-fe|agm-be action=test; SQL verification stays under agm-sql. Preserve this operation name only for existing prompts, audit, and automation.
+
 
 ## Inputs and help
 

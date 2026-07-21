@@ -19,16 +19,16 @@
 
 ```text
 # Codex
-$agm-analyze requested_by=Billy target_files=src/app.ts objective="Find the root cause; do not edit"
+$agm-be action=analyze requested_by=Billy target_files=src/app.cs objective="Find the root cause; do not edit"
 
 # Claude Code plugin
-/agrimap-agent-skills:agm-analyze requested_by=Billy target_files=src/app.ts objective="Find the root cause; do not edit"
+/agrimap-agent-skills:agm-be action=analyze requested_by=Billy target_files=src/app.cs objective="Find the root cause; do not edit"
 
 # Gemini CLI
-/agm-analyze requested_by=Billy target_files=src/app.ts objective="Find the root cause; do not edit"
+/agm-be action=analyze requested_by=Billy target_files=src/app.cs objective="Find the root cause; do not edit"
 ```
 
-การคัดลอกเฉพาะ routing skill จะเลือก operation ได้แต่ execute ไม่ได้ ต้องติดตั้ง alias folders เช่น `agm-analyze/` ด้วยก่อนใช้รูปแบบ `/<alias>`.
+การคัดลอกเฉพาะ routing skill จะเลือก operation ได้แต่ execute ไม่ได้ ต้องติดตั้ง alias folders เช่น `agm-be/` ด้วยก่อนใช้รูปแบบ `/<alias>`.
 
 ### ขอบเขตการ activate อัตโนมัติ
 
@@ -39,12 +39,12 @@ $agm-analyze requested_by=Billy target_files=src/app.ts objective="Find the root
 - session เดิมมี active tracked task; หรือ
 - project ที่ถูกเปลี่ยนชื่อ opt-in ด้วย `activation.auto: true` ใน `.agrimap-agent/config.json`.
 
-ชื่อที่มีตัวเลข/underscore, ข้อความ `agm-*` ที่ไม่ใช่ registered alias, การกล่าวถึง `agm-analyze` แบบข้อความธรรมดา และการมี directory `.agrimap-agent` เพียงอย่างเดียวไม่ทำให้ hook active. ค่า `activation.auto` เริ่มต้นเป็น `false` เพื่อไม่ให้ repo ภายนอกที่เคยเรียก skill กลายเป็น auto-active ถาวร.
+ชื่อที่มีตัวเลข/underscore, ข้อความ `agm-*` ที่ไม่ใช่ registered alias, การกล่าวถึง `agm-be` แบบข้อความธรรมดา และการมี directory `.agrimap-agent` เพียงอย่างเดียวไม่ทำให้ hook active. ค่า `activation.auto` เริ่มต้นเป็น `false` เพื่อไม่ให้ repo ภายนอกที่เคยเรียก skill กลายเป็น auto-active ถาวร.
 
 หาก alias ไม่ปรากฏหลังติดตั้ง ให้เปิด session ใหม่ก่อน หากยังไม่พบ ให้ sync/reinstall package ห้ามใช้ router เป็น execution fallback:
 
 ```text
-PACKAGE_ENTRYPOINT_MISSING: agm-analyze
+PACKAGE_ENTRYPOINT_MISSING: agm-be
 npm run sync  # local package development; otherwise reinstall the plugin/extension
 ```
 
@@ -54,16 +54,16 @@ npm run sync  # local package development; otherwise reinstall the plugin/extens
 
 ```text
 # Codex
-$agm-analyze -h
+$agm-be -h
 
 # Claude Code plugin
-/agrimap-agent-skills:agm-analyze -h
+/agrimap-agent-skills:agm-be -h
 
 # Claude standalone ที่ติดตั้ง alias folder แล้ว
-/agm-analyze -h
+/agm-be -h
 
 # Gemini CLI
-/agm-analyze -h
+/agm-be -h
 ```
 
 Help ของ dedicated skill ต้องแสดง command, purpose, required/conditional inputs และ minimal example ของ operation นั้น. `$agrimap-agent-skills -h` หรือ `/agrimap-agent-skills:agrimap-agent-skills -h` แสดง catalog เพื่อเลือก alias เท่านั้น. หากต้องการเปิดคู่มือฉบับเต็มบน Windows ให้รันจาก PowerShell; เลือกอย่างใดอย่างหนึ่ง:
@@ -156,7 +156,7 @@ Full QA is mandatory when any schema trigger applies:
 
 ```text
 # ถามกว้าง ๆ ได้เลย — free text คือ objective
-$agm-analyze มีการเพิ่ม cache ที่ไหนบ้างของระบบ login
+$agm-be action=analyze มีการเพิ่ม cache ที่ไหนบ้างของระบบ login
 
 # ชี้ไฟล์ + ขยายความสั้น ๆ — @file คือ target, ข้อความคือการจำกัด scope
 $agm-review @README.md ตรวจคำผิด
@@ -193,24 +193,23 @@ Agent: สร้าง draft prompt แล้ว; ยังไม่รันค
 
 งานสร้างโปรเจกต์ใหม่ทั้งก้อนเกิน light scope เสมอ จึงใช้ `agm-create-prompt` เพื่อบันทึก company template `dotnet new agmwa|agmws|agmbo`, ค่าที่ derive, คำสั่งเต็ม และ working directory แล้วรันภายหลังผ่าน `agm-exec` เมื่อ approve เท่านั้น ส่วน direct feature ในโปรเจกต์เดิม ทุก path ที่จะสร้าง/แก้ต้องเห็นครบใน slice plan ก่อนไฟล์แรกถูกเขียน.
 
-`agm-create-unit-test` ใช้ propose-first: ตรวจ target จาก path/โครงสร้างเอง แล้วเสนอรายการจุดเสี่ยงที่ควรมีเทสพร้อม mark recommended ให้เลือกตอบ `approve` / `all` / เลขที่ต้องการ เช่น `1 2 5` — ไม่มีเทสไหนถูกสร้างโดยไม่เห็นในรายการก่อน. ส่วน refactor ที่ไม่ระบุ mode จะได้เมนูภาษาคน 4 ระดับ (ห้ามเปลี่ยน logic / ปรับแต่พฤติกรรมเดิม 100% / เปลี่ยนเฉพาะจุดที่ตกลง / แก้บั๊กเดียว) — การรื้อใหม่ทั้งหมดไม่ใช่ refactor ให้ไป `agm-plan` + `agm-create-feature`.
+`agm-fe` และ `agm-be` มี test advisor แบบ passive: ตรวจ target, framework และจุดเสี่ยงแล้วเสนอ coverage แต่ไม่สร้างไฟล์เอง การสร้างเทสต้องมาจาก `action=test` หรือข้อความที่ขอสร้างเทสชัดเจน; ถ้าระบุ behavior มาแล้วทำได้เลย มิฉะนั้นเสนอรายการให้เลือก `approve` / `all` / เลข เช่น `1 2 5`. ส่วน refactor ที่ไม่ระบุ mode จะแสดงเมนูครบ 5 ระดับ — การรื้อใหม่ทั้งหมดไม่ใช่ refactor ให้ไป `agm-plan` แล้วใช้ domain create/edit หรือ `agm-create-prompt`.
 
 ### 3.3 เลือกคำสั่งไหน
 
 | คำสั่ง | ใช้เมื่อเสียงในหัวคือ | จบที่ |
 | --- | --- | --- |
-| `agm-analyze` | "มันคืออะไร อยู่ไหน กระทบอะไร" — ยังไม่มีอะไรพัง | evidence + options + recommendation |
+| `agm-fe` | งาน frontend: analyze/design/create/edit/test | ผลตาม action โดย passive ไม่เขียนไฟล์ |
+| `agm-be` | งาน backend: analyze/design/create/edit/test | ผลตาม action โดย passive ไม่เขียนไฟล์ |
+| `agm-sql` | งาน SQL: analyze/design/create/edit/explain | ผลตาม action; explain ไม่ execute/แก้ SQL |
+| `agm-refactor` | "ปรับคุณภาพโค้ดเดิม แบบคุมพฤติกรรม" | FE/BE/SQL changes ตาม target + mode |
 | `agm-diagnose` | "**ทำไม**มันพัง" — มีอาการอยู่จริง | root cause ที่พิสูจน์แล้ว |
 | `agm-simulate` | "**ถ้า**ทำ X จะเกิดอะไร" | scenarios + risks + observables |
 | `agm-plan` | "รู้แล้วจะทำอะไร ขอลำดับขั้น" | แผน execution ตรวจได้ |
-| `agm-design` | "หน้าตา/flow/พฤติกรรมควรเป็นยังไง" | flow + states + acceptance |
 | `agm-architect` | "ของนี้ควรอยู่ไหน ใครเป็นเจ้าของ contract" | decision record ถาวร ใช้ซ้ำได้ |
 | `agm-review` | "ช่วยตรวจของที่มีอยู่" | findings เรียง severity ไม่แก้ให้ |
 | `agm-history` | "ใครทำอะไรเมื่อไหร่" | คำตอบ audit จาก log จริง |
-| `agm-refactor-*` | "ปรับคุณภาพโค้ดเดิม แบบคุมพฤติกรรม" | โค้ด + หลักฐาน preserve ตาม mode |
 | `agm-qa` | "งานที่ว่าเสร็จ เสร็จจริงไหม" | passed/failed + evidence |
-| `agm-create-unit-test` | "อยากได้เทสกันพัง" | เทสตามรายการที่เลือก |
-| `agm-create-feature` | "สร้างของใหม่แบบเล็กและจบตรงนี้" | feature ไม่เกิน light scope + ผลสั้นในแชท; ไม่สร้าง workflow artifacts |
 | `agm-create-prompt` | "งานใหญ่/ต้อง track/ต้อง QA เตรียมโจทย์ก่อน" | brief + acceptance checklist + prompt SoT (ยังไม่รัน) |
 | `agm-exec` | "รัน prompt ที่ approve แล้วแบบมี rails" | Result Package รอ QA |
 
@@ -220,20 +219,17 @@ Agent: สร้าง draft prompt แล้ว; ยังไม่รันค
 
 | Alias | Minimal case |
 | --- | --- |
-| `agm-analyze` | `$agm-analyze depth=light target_files=src/orders.ts objective="Explain duplicate requests; do not edit"` |
+| `agm-fe` | `$agm-fe action=edit depth=light target_files=src/order.component.ts objective="Handle the empty state"` |
+| `agm-be` | `$agm-be action=create depth=light target_kind=be-main backend_profile=agmws objective="Add cancel-order endpoint"` |
+| `agm-sql` | `$agm-sql action=explain depth=light target_files=sql/ORDER/ORDER_Q.sql` |
+| `agm-refactor` | `$agm-refactor target=sql refactor_mode=performance-preserve-behavior target_files=sql/usp_Order_Search.sql` |
 | `agm-diagnose` | `$agm-diagnose depth=light symptom="Save returns 500" target_files=src/orders.ts,tests/orders.test.ts implementation=false` |
 | `agm-simulate` | `$agm-simulate depth=light scenario="Retry after timeout" inputs="timeout,retry-count" expected_output="state transitions and risks"` |
 | `agm-plan` | `$agm-plan depth=light objective="Add order cancellation" target_files=src/orders.ts,tests/orders.test.ts output="reverse-engineered steps"` |
-| `agm-design` | `$agm-design depth=light target_kind=fe-main phase=foundation objective="Design empty/loading/error states for order list"` |
 | `agm-architect` | `$agm-architect requested_by=Billy objective="Choose ownership boundary for order status" non_goals="implementation"` |
 | `agm-review` | `$agm-review depth=light target_files=src/orders.ts review_scope="correctness,regression,tests"` |
 | `agm-history` | `$agm-history requester=Billy days=5` |
-| `agm-refactor-fe` | `$agm-refactor-fe depth=light target_kind=fe-main phase=stabilization refactor_mode=strict-preserve-logic target_files=src/order-table.component.ts` |
-| `agm-refactor-be` | `$agm-refactor-be depth=light target_kind=be-main backend_profile=agmws phase=stabilization refactor_mode=performance-preserve-behavior target_files=Application/Orders/OrderUseCase.cs` |
-| `agm-refactor-sql` | `$agm-refactor-sql depth=light target_kind=sql-procedure refactor_mode=performance-preserve-behavior target_files=sql/usp_Order_Search.sql` |
 | `agm-qa` | `$agm-qa depth=light qa_mode=light artifact="current integrated workspace" acceptance="cancellation remains idempotent"` |
-| `agm-create-unit-test` | `$agm-create-unit-test depth=light target_kind=be-main backend_profile=agmws phase=active-development target_files=Application/Orders/OrderUseCase.cs objective="cover duplicate cancellation"` |
-| `agm-create-feature` | `$agm-create-feature depth=light target_kind=be-main backend_profile=agmws phase=active-development objective="Add cancel-order endpoint"` |
 | `agm-create-prompt` | `$agm-create-prompt requested_by=Billy provider=codex objective="Delegate cancel-order implementation" target_kind=be-main backend_profile=agmws phase=active-development` |
 | `agm-exec` | `$agm-exec requested_by=Billy prompt=.agrimap-agent/prompts/<task-id>/executor.prompt.md` |
 
@@ -243,20 +239,20 @@ Agent: สร้าง draft prompt แล้ว; ยังไม่รันค
 
 `agm-history` ตอบจาก workflow evidence: `requestedBy` คือผู้ขอ, executor คือ model/role/agent/provider จาก versioned event ที่ผ่าน validation และ `recordedFiles` คือไฟล์จาก valid versioned non-terminal event เท่านั้น ส่วน `legacyClaimedFiles` เป็นข้อมูลวินิจฉัยที่ห้ามยกระดับเป็น versioned attribution ทั้งหมดนี้ไม่ใช่หลักฐานว่าใครเป็นผู้พิมพ์แก้หรือ author ของ commit. ถ้าถามผู้แก้จริงให้ตรวจ Git log/blame แยกต่างหาก และต้องดู `auditStorage` ก่อน—logs ที่ ignored/untracked เป็นข้อมูลเฉพาะเครื่องและจะไม่ตามไป clone ใหม่.
 
-### Create-feature and create-unit-test target matrix
+### Domain create/edit/test matrix
 
-ทุก target ใช้ได้กับทั้ง `$agm-create-feature` และ `$agm-create-unit-test`; `agm-create-feature` ด้านล่างเป็น light/direct เท่านั้น ถ้า slice เกินสาม product artifacts หรือต้อง tracking/delegation/separate QA ให้ใช้ `agm-create-prompt`:
+คำสั่งเขียนด้านล่างเป็น light/direct เท่านั้น ถ้า slice เกินสาม product artifacts หรือต้อง tracking/delegation/separate QA ให้ใช้ `agm-create-prompt`. SQL ไม่มี `action=test`; ใช้ `action=explain` สำหรับคำอธิบายแบบ read-only และให้ verification อยู่ใน create/edit contract:
 
-| Case | Feature command | Unit-test command |
+| Case | Create/edit command | Explicit test command |
 | --- | --- | --- |
-| FE main | `$agm-create-feature depth=light target_kind=fe-main phase=active-development objective="Add order table"` | `$agm-create-unit-test requested_by=Billy target_kind=fe-main phase=active-development target_files=src/order-table.component.ts objective="cover empty and error states"` |
-| FE library | `$agm-create-feature depth=light target_kind=fe-library phase=active-development objective="Add reusable status badge"` | `$agm-create-unit-test requested_by=Billy target_kind=fe-library phase=active-development target_files=projects/ui/status-badge.component.ts objective="cover public states"` |
-| BE main web | `$agm-create-feature depth=light target_kind=be-main backend_profile=agmws phase=active-development objective="Add cancel endpoint"` | `$agm-create-unit-test requested_by=Billy target_kind=be-main backend_profile=agmws phase=active-development target_files=Application/Orders/CancelUseCase.cs objective="cover idempotency"` |
-| BE main batch | `$agm-create-feature depth=light target_kind=be-main backend_profile=agmbo phase=active-development objective="Add stale-order job"` | `$agm-create-unit-test requested_by=Billy target_kind=be-main backend_profile=agmbo phase=active-development target_files=Application/Orders/StaleOrderJob.cs objective="cover retry behavior"` |
-| BE library | `$agm-create-feature depth=light target_kind=be-library phase=active-development objective="Add order-id capability with README and Playground"` | `$agm-create-unit-test requested_by=Billy target_kind=be-library phase=active-development target_files=src/OrderId.cs objective="cover public contract"` |
-| SQL table | `$agm-create-feature depth=light target_kind=sql-table objective="Add ORDER_RETRY table in ORDER domain"` | `$agm-create-unit-test requested_by=Billy target_kind=sql-table target_files=sql/ORDER/table/ORDER_RETRY.sql objective="verify constraints and defaults"` |
-| SQL procedure | `$agm-create-feature depth=light target_kind=sql-procedure objective="Add ORDER_RETRY_Q query procedure"` | `$agm-create-unit-test requested_by=Billy target_kind=sql-procedure target_files=sql/ORDER/procedure/ORDER_RETRY_Q.sql objective="verify result and failure contracts"` |
-| SQL combined | `$agm-create-feature depth=light target_kind=sql-table-and-procedure objective="Add retry persistence slice in ORDER domain"` | `$agm-create-unit-test requested_by=Billy target_kind=sql-table-and-procedure target_files=sql/ORDER/table/ORDER_RETRY.sql,sql/ORDER/procedure/ORDER_RETRY_Q.sql,sql/ORDER/messages.sql objective="verify table, procedure, and guarded messages"` |
+| FE main | `$agm-fe action=create depth=light target_kind=fe-main objective="Add order table"` | `$agm-fe action=test target_files=src/order-table.component.ts objective="cover empty and error states"` |
+| FE library | `$agm-fe action=create depth=light target_kind=fe-library objective="Add reusable status badge"` | `$agm-fe action=test target_files=projects/ui/status-badge.component.ts objective="cover public states"` |
+| BE main web | `$agm-be action=create depth=light target_kind=be-main backend_profile=agmws objective="Add cancel endpoint"` | `$agm-be action=test backend_profile=agmws target_files=Application/Orders/CancelUseCase.cs objective="cover idempotency"` |
+| BE main batch | `$agm-be action=create depth=light target_kind=be-main backend_profile=agmbo objective="Add stale-order job"` | `$agm-be action=test backend_profile=agmbo target_files=Application/Orders/StaleOrderJob.cs objective="cover retry behavior"` |
+| BE library | `$agm-be action=create depth=light target_kind=be-library objective="Add order-id capability"` | `$agm-be action=test target_files=src/OrderId.cs objective="cover public contract"` |
+| SQL table | `$agm-sql action=create depth=light target_kind=sql-table objective="Add ORDER_RETRY table"` | — |
+| SQL procedure | `$agm-sql action=edit depth=light target_kind=sql-procedure target_files=sql/ORDER/procedure/ORDER_RETRY_Q.sql objective="Preserve result and failure contracts"` | — |
+| SQL combined | `$agm-sql action=create depth=light target_kind=sql-table-and-procedure objective="Add retry persistence slice"` | — |
 
 ### Refactor mode matrix
 
@@ -264,13 +260,15 @@ Agent: สร้าง draft prompt แล้ว; ยังไม่รันค
 
 | Mode | Runnable example |
 | --- | --- |
-| `performance-preserve-behavior` | `$agm-refactor-sql requested_by=Billy target_kind=sql-procedure refactor_mode=performance-preserve-behavior target_files=sql/usp_Order_Search.sql metric="duration and logical reads"` |
-| `readability-organization` | `$agm-refactor-fe requested_by=Billy target_kind=fe-main phase=stabilization refactor_mode=readability-organization target_files=src/order-table.component.ts` |
-| `strict-preserve-logic` | `$agm-refactor-be requested_by=Billy target_kind=be-main backend_profile=agmws phase=stabilization refactor_mode=strict-preserve-logic target_files=Application/Orders/OrderUseCase.cs` |
-| `strict-allow-logic-change` | `$agm-refactor-be requested_by=Billy target_kind=be-main backend_profile=agmws phase=stabilization refactor_mode=strict-allow-logic-change objective="Change retry rule after decision-owner trade-off"` |
-| `targeted-bug-fix` | `$agm-refactor-fe requested_by=Billy target_kind=fe-main phase=active-development refactor_mode=targeted-bug-fix symptom="double submit after timeout"` |
+| `performance-preserve-behavior` | `$agm-refactor target=sql refactor_mode=performance-preserve-behavior target_files=sql/usp_Order_Search.sql metric="duration and logical reads"` |
+| `readability-organization` | `$agm-refactor target=fe refactor_mode=readability-organization target_files=src/order-table.component.ts` |
+| `strict-preserve-logic` | `$agm-refactor target=be backend_profile=agmws refactor_mode=strict-preserve-logic target_files=Application/Orders/OrderUseCase.cs` |
+| `strict-allow-logic-change` | `$agm-refactor target=be backend_profile=agmws refactor_mode=strict-allow-logic-change objective="Change retry rule after decision-owner trade-off"` |
+| `targeted-bug-fix` | `$agm-refactor target=fe refactor_mode=targeted-bug-fix symptom="double submit after timeout"` |
 
-ถ้า `$agm-refactor-sql` ยังระบุ mode ไม่ได้ ต้องแสดงทั้ง 5 enum พร้อมขอบเขตหนึ่งบรรทัดและ mark ค่าแนะนำในคำตอบแรก ห้ามตอบเพียง recommendation. Writer เขียน SQL ให้ parse ได้และครบ semantic contract โดยไม่เสียรอบจัด indent/alignment เอง จากนั้นรวบรวมทุกไฟล์ที่สร้างหรือแก้เป็น `format_set`, รัน `sqlfluff format` ให้ครบ และรายงาน `formatted N/N`; folder run ใช้ได้เมื่อครอบทุกไฟล์โดยไม่แตะ SQL นอก scope มิฉะนั้นรันทีละไฟล์. เฉพาะ command-not-found จึงติดตั้งแล้ว retry; error อื่นห้ามติดตั้ง. Validate ด้วย path set เดิม. Fixture ชั่วคราวต้องอยู่ใน OS temp และ cleanup เสมอ ห้ามสร้าง `.tmp-*` ใน workspace. QA ห้ามติดตั้งหรือรัน SQLFluff.
+ถ้า `$agm-refactor target=sql` ยังระบุ mode ไม่ได้ ต้องแสดงทั้ง 5 enum พร้อมขอบเขตหนึ่งบรรทัดและ mark ค่าแนะนำในคำตอบแรก ห้ามตอบเพียง recommendation. Writer เขียน SQL ให้ parse ได้และครบ semantic contract จากนั้นรวบรวมทุกไฟล์ที่สร้างหรือแก้เป็น `format_set`, รัน `sqlfluff format` ให้ครบ และรายงาน `formatted N/N`.
+
+Compatibility aliases `agm-analyze`, `agm-design`, `agm-create-feature`, `agm-create-unit-test`, และ `agm-refactor-fe|be|sql` ยังเรียกได้สำหรับ prompt/automation เดิม แต่ไม่อยู่ใน primary help และควรย้ายมาใช้ domain commands ด้านบน.
 
 ## 4. Larger text / ข้อความยาว
 
@@ -285,7 +283,7 @@ Agent ต้องวัดขนาด, อ่านเต็มเมื่อ
 ถ้าจำเป็นต้อง paste ใน chat ให้ใช้ขอบเขตที่ชัดเจน:
 
 ```text
-$agm-analyze requested_by=Billy objective="Analyze all content between markers; do not edit"
+$agm-be action=analyze requested_by=Billy objective="Analyze all content between markers; do not edit"
 
 --- BEGIN OWNER INPUT: order-cancellation-v2 ---
 <large text>
@@ -299,7 +297,7 @@ $agm-analyze requested_by=Billy objective="Analyze all content between markers; 
 ใช้ปุ่ม/คำสั่งแนบไฟล์ของ Codex, Claude หรือ Gemini ก่อน แล้วบอก label, intent, priority และสิ่งที่ต้องสังเกตใน prompt. ไม่มี attachment token กลางที่ใช้เหมือนกันทุกค่าย.
 
 ```text
-$agm-design requested_by=Billy target_kind=fe-main phase=foundation objective="Design the checkout states from the attached flow"
+$agm-fe action=design requested_by=Billy target_kind=fe-main phase=foundation objective="Design the checkout states from the attached flow"
 
 inputs:
 - id: checkout-flow

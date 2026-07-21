@@ -1,6 +1,6 @@
 ---
 name: agm-refactor-be
-description: AgriMap-project-only operation. Invoke implicitly only in recognized AgriMap repositories; elsewhere require explicit host-native invocation of agm-refactor-be. Refactor backend code using an explicit behavior mode. Run only the dedicated AgriMap `refactor-be` operation and never use it as a general router.
+description: AgriMap-project-only operation. Invoke implicitly only in recognized AgriMap repositories; elsewhere require explicit host-native invocation of agm-refactor-be. Refactor backend code using an explicit behavior mode. Deprecated; use agm-refactor target=be. Run only the dedicated AgriMap `refactor-be` operation and never use it as a general router.
 ---
 
 Scope gate: before loading lifecycle or applying any AgriMap workflow instruction, continue only when this turn contains AgriMap hook activation context, the current requester message explicitly invokes `agm-refactor-be` using the active provider's native syntax, or the generated command adapter contains `AGRIMAP_EXPLICIT_ALIAS=agm-refactor-be`. If none is present, stop applying this skill and answer as an ordinary non-AgriMap request without reading AgriMap references or writing AgriMap state.

@@ -4,6 +4,8 @@
     {
       "name": "agm-analyze",
       "operation": "analyze",
+      "visibility": "compatibility",
+      "replacedBy": "agm-fe|agm-be|agm-sql action=analyze",
       "depth": { "default": "light", "allowed": ["light", "standard", "regulated"] },
       "description": "Analyze scope, hidden problems, impacts, and trade-offs",
       "mode": "product-read-only",
@@ -91,6 +93,8 @@
     {
       "name": "agm-design",
       "operation": "design",
+      "visibility": "compatibility",
+      "replacedBy": "agm-fe|agm-be|agm-sql action=design, or passive design in agm-create-prompt",
       "depth": { "default": "light", "allowed": ["light", "standard", "regulated"] },
       "description": "Design a user flow, behavior, and acceptance criteria",
       "mode": "product-read-only",
@@ -170,8 +174,113 @@
       ]
     },
     {
+      "name": "agm-fe",
+      "operation": "fe",
+      "depth": { "default": "light", "allowed": ["light", "standard", "regulated"] },
+      "description": "Analyze, design, create, edit, or explicitly test frontend work through one domain façade",
+      "mode": "action-routed",
+      "deliverable": "action-specific frontend analysis, design, bounded implementation, or selected tests",
+      "requiredInputs": ["one action or unambiguous natural-language intent", "an objective or pointed frontend target"],
+      "conditionalInputs": ["phase and target_kind when repository evidence cannot resolve them", "requester selection when passive test advice finds unspecified coverage"],
+      "example": "$agm-fe action=edit target_files=src/order.component.ts objective=\"Handle the empty state\"",
+      "actions": [
+        { "name": "analyze", "mode": "product-read-only", "activation": "explicit-or-passive", "depths": ["light", "standard", "regulated"], "purpose": "Inspect frontend scope, behavior, callers, risks, and trade-offs without editing" },
+        { "name": "design", "mode": "product-read-only", "activation": "explicit-or-passive", "depths": ["light", "standard", "regulated"], "purpose": "Define frontend flow, states, accessibility, validation, and acceptance without editing" },
+        { "name": "create", "mode": "product-write", "activation": "explicit", "depths": ["light"], "purpose": "Create a bounded new frontend slice" },
+        { "name": "edit", "mode": "product-write", "activation": "explicit", "depths": ["light"], "purpose": "Modify a bounded existing frontend slice" },
+        { "name": "test", "mode": "product-write", "activation": "explicit", "depths": ["light"], "purpose": "Create explicitly requested or selected frontend tests after passive test advice" }
+      ],
+      "instructions": ["Resolve exactly one action before inspection. Explicit action= wins; otherwise infer only from unambiguous verbs and report the resolved action. Ask one short question when create versus edit or read versus write remains ambiguous.", "For analyze/design, never edit product files. For create/edit/test, show the bounded slice, stay within light limits, and route broader work to agm-create-prompt before any product write.", "Run the passive test advisor during analyze, design, create, and edit. Suggest prioritized coverage but never create tests unless action=test or the requester explicitly asked to create tests."],
+      "references": [
+        { "path": "passive-capabilities.md", "why": "passive design and test-advisor boundaries" },
+        { "path": "elicitation.md", "why": "action, scope, and propose-first resolution" },
+        { "path": "frontend-engineer.md", "why": "frontend phase discipline" },
+        { "path": "patterns/frontend.md", "why": "current frontend contract" }
+      ]
+    },
+    {
+      "name": "agm-be",
+      "operation": "be",
+      "depth": { "default": "light", "allowed": ["light", "standard", "regulated"] },
+      "description": "Analyze, design, create, edit, or explicitly test backend work through one domain façade",
+      "mode": "action-routed",
+      "deliverable": "action-specific backend analysis, design, bounded implementation, or selected tests",
+      "requiredInputs": ["one action or unambiguous natural-language intent", "an objective or pointed backend target"],
+      "conditionalInputs": ["target_kind, backend_profile, and phase when repository evidence cannot resolve them", "requester selection when passive test advice finds unspecified coverage"],
+      "example": "$agm-be action=create target_kind=be-main backend_profile=agmws objective=\"Add cancel-order endpoint\"",
+      "actions": [
+        { "name": "analyze", "mode": "product-read-only", "activation": "explicit-or-passive", "depths": ["light", "standard", "regulated"], "purpose": "Inspect backend scope, contracts, callers, data, risks, and trade-offs without editing" },
+        { "name": "design", "mode": "product-read-only", "activation": "explicit-or-passive", "depths": ["light", "standard", "regulated"], "purpose": "Define backend boundaries, flow, validation, failure behavior, and acceptance without editing" },
+        { "name": "create", "mode": "product-write", "activation": "explicit", "depths": ["light"], "purpose": "Create a bounded new backend slice" },
+        { "name": "edit", "mode": "product-write", "activation": "explicit", "depths": ["light"], "purpose": "Modify a bounded existing backend slice" },
+        { "name": "test", "mode": "product-write", "activation": "explicit", "depths": ["light"], "purpose": "Create explicitly requested or selected backend tests after passive test advice" }
+      ],
+      "instructions": ["Resolve exactly one action before inspection. Explicit action= wins; otherwise infer only from unambiguous verbs and report the resolved action. Ask one short question when create versus edit or read versus write remains ambiguous.", "For analyze/design, never edit product files. For create/edit/test, show the bounded slice, stay within light limits, and route broader work to agm-create-prompt before any product write.", "Run the passive test advisor during analyze, design, create, and edit. Suggest prioritized coverage but never create tests unless action=test or the requester explicitly asked to create tests."],
+      "references": [
+        { "path": "passive-capabilities.md", "why": "passive design and test-advisor boundaries" },
+        { "path": "elicitation.md", "why": "action, scope, and propose-first resolution" },
+        { "path": "backend-engineer.md", "why": "backend phase and profile discipline" },
+        { "path": "patterns/backend.md", "why": "current backend contract" }
+      ],
+      "conditionalReferences": [
+        { "when": "the backend target contains C#", "path": "patterns/csharp.md", "why": "project-wide C# baseline" },
+        { "when": "the target reads cookie, header, query, form, JSON body, or device ID", "path": "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md", "why": "request-value behavior and compatibility" }
+      ]
+    },
+    {
+      "name": "agm-sql",
+      "operation": "sql",
+      "depth": { "default": "light", "allowed": ["light", "standard", "regulated"] },
+      "description": "Analyze, design, create, edit, or explain SQL work through one domain façade",
+      "mode": "action-routed",
+      "deliverable": "action-specific SQL analysis, design, explanation, or bounded SQL implementation",
+      "requiredInputs": ["one action or unambiguous natural-language intent", "an objective or pointed SQL target"],
+      "conditionalInputs": ["target_kind when table/procedure placement cannot be resolved", "owner evidence for persisted-data or contract decisions"],
+      "example": "$agm-sql action=explain target_files=sql/ORDER/ORDER_Q.sql",
+      "actions": [
+        { "name": "analyze", "mode": "product-read-only", "activation": "explicit-or-passive", "depths": ["light", "standard", "regulated"], "purpose": "Inspect SQL scope, schema, callers, contracts, risks, and trade-offs without editing" },
+        { "name": "design", "mode": "product-read-only", "activation": "explicit-or-passive", "depths": ["light", "standard", "regulated"], "purpose": "Define SQL objects, data flow, result and error contracts, deployment, and acceptance without editing" },
+        { "name": "create", "mode": "product-write", "activation": "explicit", "depths": ["light"], "purpose": "Create a bounded new SQL object or slice" },
+        { "name": "edit", "mode": "product-write", "activation": "explicit", "depths": ["light"], "purpose": "Modify a bounded existing SQL object or slice" },
+        { "name": "explain", "mode": "product-read-only", "activation": "explicit-or-passive", "depths": ["light", "standard", "regulated"], "purpose": "Explain SQL purpose, contracts, reads/writes, flow, transactions, errors, assumptions, and risks without execution or edits" }
+      ],
+      "instructions": ["Resolve exactly one action before inspection. Explicit action= wins; otherwise infer only from unambiguous verbs and report the resolved action. Ask one short question when create versus edit or read versus write remains ambiguous.", "For analyze/design/explain, never execute SQL, connect to a database, or edit product files. Explain uses FACT, INFERENCE, and UNKNOWN and routes requested modifications to edit.", "For create/edit, show the bounded slice, stay within light limits, load applicable schema/caller evidence, and route broader work to agm-create-prompt before any product write."],
+      "references": [
+        { "path": "passive-capabilities.md", "why": "passive design and SQL explain boundaries" },
+        { "path": "elicitation.md", "why": "action and scope resolution" },
+        { "path": "patterns/sql.md", "why": "current SQL contract, formatting, and validation" }
+      ]
+    },
+    {
+      "name": "agm-refactor",
+      "operation": "refactor",
+      "depth": { "default": "light", "allowed": ["light", "standard", "regulated"] },
+      "description": "Refactor FE, BE, or SQL through one target-routed command with an explicit behavior mode",
+      "mode": "product-write",
+      "deliverable": "bounded target-specific changes with preserved or explicitly authorized behavior and proportional verification",
+      "requiredInputs": ["target=fe|be|sql", "target files or objective", "refactor_mode"],
+      "conditionalInputs": ["backend_profile for be-main", "decision-owner approval for logic, contract, data, or result-shape change"],
+      "example": "$agm-refactor target=sql refactor_mode=performance-preserve-behavior target_files=sql/usp_Order_Search.sql",
+      "instructions": ["Resolve exactly one target discipline and one refactor mode before editing; when mode is ambiguous, show all five modes with one recommendation.", "Dispatch to only the matching FE, BE, or SQL discipline. Preserve behavior except where the selected mode and recorded authority explicitly allow a change.", "For SQL, preserve result sets, transactions, side effects, error mapping, and deployment idempotency, then format and validate every declared changed SQL path."],
+      "references": [
+        { "path": "refactor-modes.md", "why": "allowed behavior-change boundary" },
+        { "path": "elicitation.md", "why": "target and mode resolution" }
+      ],
+      "conditionalReferences": [
+        { "when": "target=fe", "path": "frontend-engineer.md", "why": "frontend refactor discipline" },
+        { "when": "target=fe", "path": "patterns/frontend.md", "why": "current frontend contract" },
+        { "when": "target=be", "path": "backend-engineer.md", "why": "backend refactor discipline" },
+        { "when": "target=be", "path": "patterns/backend.md", "why": "current backend contract" },
+        { "when": "the backend target contains C#", "path": "patterns/csharp.md", "why": "project-wide C# refactor baseline" },
+        { "when": "the backend refactor touches request values or device-ID resolution", "path": "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md", "why": "request-value behavior and precedence" },
+        { "when": "target=sql", "path": "patterns/sql.md", "why": "current SQL refactor, formatting, and validation contract" }
+      ]
+    },
+    {
       "name": "agm-refactor-fe",
       "operation": "refactor-fe",
+      "visibility": "compatibility",
+      "replacedBy": "agm-refactor target=fe",
       "depth": { "default": "light", "allowed": ["light", "standard", "regulated"] },
       "description": "Refactor frontend code using an explicit behavior mode",
       "mode": "product-write",
@@ -189,6 +298,8 @@
     {
       "name": "agm-refactor-be",
       "operation": "refactor-be",
+      "visibility": "compatibility",
+      "replacedBy": "agm-refactor target=be",
       "depth": { "default": "light", "allowed": ["light", "standard", "regulated"] },
       "description": "Refactor backend code using an explicit behavior mode",
       "mode": "product-write",
@@ -210,6 +321,8 @@
     {
       "name": "agm-refactor-sql",
       "operation": "refactor-sql",
+      "visibility": "compatibility",
+      "replacedBy": "agm-refactor target=sql",
       "depth": { "default": "light", "allowed": ["light", "standard", "regulated"] },
       "description": "Refactor SQL using an explicit behavior mode",
       "mode": "product-write",
@@ -248,6 +361,8 @@
     {
       "name": "agm-create-unit-test",
       "operation": "create-unit-test",
+      "visibility": "compatibility",
+      "replacedBy": "agm-fe|agm-be action=test; SQL verification stays under agm-sql",
       "depth": { "default": "light", "allowed": ["light", "standard", "regulated"] },
       "description": "Create target-specific unit or regression tests",
       "mode": "product-write",
@@ -270,6 +385,8 @@
     {
       "name": "agm-create-feature",
       "operation": "create-feature",
+      "visibility": "compatibility",
+      "replacedBy": "agm-fe|agm-be|agm-sql action=create|edit",
       "depth": { "default": "light", "allowed": ["light"] },
       "description": "Create a bounded FE, BE, batch, library, or SQL feature",
       "mode": "product-write",
@@ -302,6 +419,7 @@
       "instructions": ["Own the tracked feature contract: run staged elicitation, write the approved brief.md and acceptance checklist.md, build one execution SoT per task, and create separate Leader/executor/QA prompts when implementation is delegated.", "Generation ends in draft and a non-terminal scope-decision checkpoint; never execute the generated prompt, create qa.md, create result.md, or complete the implementation task in this operation."],
       "references": [
         { "path": "create-prompt.md", "why": "prompt lifecycle and provider rendering" },
+        { "path": "passive-capabilities.md", "why": "passive design discipline used while shaping the approved brief and acceptance" },
         { "path": "subagents-and-branches.md", "why": "delegation, visibility, and integration" },
         { "path": "model-capability-matrix.yaml", "why": "capability-profile routing labels" }
       ],

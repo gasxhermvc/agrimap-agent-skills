@@ -16,6 +16,8 @@ Help and history are always `light`. Any other read-only query remains `light` u
 
 `agm-create-feature` is a special bounded-write operation and is always `light`. It still writes the mandatory task, memory, and log evidence. If scope would promote, stop before product writes and route the whole task to `agm-create-prompt`.
 
+For an `action-routed` domain operation, resolve exactly one action before target inspection. The action-level mode overrides the façade label: `analyze`, `design`, and SQL `explain` are product-read-only; `create`, `edit`, and explicit FE/BE `test` are product-write. Passive activation never grants write authority. Direct domain writes are `light`; route broader execution to `agm-create-prompt` before product writes.
+
 ## Execute the selected depth
 
 - `light`: identify the requester, start with `--depth light`, create concise task artifacts, update current memory, append created/milestone/terminal logs, use one agent, avoid separate QA, and keep the result compact.
@@ -37,7 +39,7 @@ Do not checkpoint reads, diagnostics, individual files/tools, unchanged retries,
 
 ## Common boundaries
 
-- Obey operation `Mode`; product-read-only never edits product artifacts.
+- Obey operation `Mode`, or the resolved action-level mode for `action-routed`; product-read-only never edits product artifacts.
 - Stop for unresolved material authority or unsafe/irreversible action.
 - Load only routed references and one matching FE/BE/SQL pattern.
 - Report consequential assumptions, changed files, verification, and concerns without copying this policy.

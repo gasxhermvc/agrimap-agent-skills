@@ -7,6 +7,8 @@
 - Mode: `product-write`
 - Purpose: Refactor SQL using an explicit behavior mode.
 - Deliverable: bounded SQL changes plus direct verified result at light or schema result at standard/regulated
+- Compatibility: deprecated; use agm-refactor target=sql. Preserve this operation name only for existing prompts, audit, and automation.
+
 
 ## Inputs and help
 

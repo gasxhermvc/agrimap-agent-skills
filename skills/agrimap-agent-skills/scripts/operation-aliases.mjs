@@ -10,6 +10,10 @@ export const AGRIMAP_OPERATION_ALIASES = Object.freeze([
   "agm-architect",
   "agm-review",
   "agm-history",
+  "agm-fe",
+  "agm-be",
+  "agm-sql",
+  "agm-refactor",
   "agm-refactor-fe",
   "agm-refactor-be",
   "agm-refactor-sql",
@@ -18,4 +22,28 @@ export const AGRIMAP_OPERATION_ALIASES = Object.freeze([
   "agm-create-feature",
   "agm-create-prompt",
   "agm-exec"
+]);
+export const AGRIMAP_PUBLIC_OPERATION_ALIASES = Object.freeze([
+  "agm-diagnose",
+  "agm-simulate",
+  "agm-plan",
+  "agm-architect",
+  "agm-review",
+  "agm-history",
+  "agm-fe",
+  "agm-be",
+  "agm-sql",
+  "agm-refactor",
+  "agm-qa",
+  "agm-create-prompt",
+  "agm-exec"
+]);
+export const AGRIMAP_COMPATIBILITY_ALIASES = Object.freeze([
+  "agm-analyze",
+  "agm-design",
+  "agm-refactor-fe",
+  "agm-refactor-be",
+  "agm-refactor-sql",
+  "agm-create-unit-test",
+  "agm-create-feature"
 ]);

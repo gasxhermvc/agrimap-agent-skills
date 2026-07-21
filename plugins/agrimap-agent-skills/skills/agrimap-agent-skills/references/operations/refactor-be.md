@@ -7,6 +7,8 @@
 - Mode: `product-write`
 - Purpose: Refactor backend code using an explicit behavior mode.
 - Deliverable: bounded backend changes plus direct verified result at light or schema result at standard/regulated
+- Compatibility: deprecated; use agm-refactor target=be. Preserve this operation name only for existing prompts, audit, and automation.
+
 
 ## Inputs and help
 

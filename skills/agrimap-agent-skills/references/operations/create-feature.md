@@ -7,6 +7,8 @@
 - Mode: `product-write`
 - Purpose: Create a bounded FE, BE, batch, library, or SQL feature.
 - Deliverable: confirmed bounded vertical slice plus concise tracked brief, checklist, memory, logs, and verified result; no separate QA artifact
+- Compatibility: deprecated; use agm-fe|agm-be|agm-sql action=create|edit. Preserve this operation name only for existing prompts, audit, and automation.
+
 
 ## Inputs and help
 

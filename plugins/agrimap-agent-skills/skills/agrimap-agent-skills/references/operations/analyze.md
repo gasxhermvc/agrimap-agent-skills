@@ -7,6 +7,8 @@
 - Mode: `product-read-only`
 - Purpose: Analyze scope, hidden problems, impacts, and trade-offs.
 - Deliverable: direct analysis response at light; tracked analysis artifact only at standard/regulated
+- Compatibility: deprecated; use agm-fe|agm-be|agm-sql action=analyze. Preserve this operation name only for existing prompts, audit, and automation.
+
 
 ## Inputs and help
 

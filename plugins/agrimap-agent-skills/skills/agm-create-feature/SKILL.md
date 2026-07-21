@@ -1,6 +1,6 @@
 ---
 name: agm-create-feature
-description: AgriMap-project-only operation. Invoke implicitly only in recognized AgriMap repositories; elsewhere require explicit host-native invocation of agm-create-feature. Create a bounded FE, BE, batch, library, or SQL feature. Run only the dedicated AgriMap `create-feature` operation and never use it as a general router.
+description: AgriMap-project-only operation. Invoke implicitly only in recognized AgriMap repositories; elsewhere require explicit host-native invocation of agm-create-feature. Create a bounded FE, BE, batch, library, or SQL feature. Deprecated; use agm-fe|agm-be|agm-sql action=create|edit. Run only the dedicated AgriMap `create-feature` operation and never use it as a general router.
 ---
 
 Scope gate: before loading lifecycle or applying any AgriMap workflow instruction, continue only when this turn contains AgriMap hook activation context, the current requester message explicitly invokes `agm-create-feature` using the active provider's native syntax, or the generated command adapter contains `AGRIMAP_EXPLICIT_ALIAS=agm-create-feature`. If none is present, stop applying this skill and answer as an ordinary non-AgriMap request without reading AgriMap references or writing AgriMap state.

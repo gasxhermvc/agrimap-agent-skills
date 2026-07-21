@@ -27,7 +27,7 @@ Resolve each input in this order and stop at the first source that answers it:
 
 | Tier | Rule | Inputs |
 | --- | --- | --- |
-| 1 — never guess | No direct evidence → ask in one batch. Never default silently; a wrong value changes contracts, data, or behavior. | `target_kind`, `backend_profile`, `refactor_mode`, `provider` for create-prompt, new project/artifact names, the objective of any creation work, and the destination of a new project scaffold |
+| 1 — never guess | No direct evidence → ask in one batch. Never default silently; a wrong value changes contracts, data, or behavior. | domain `action` when read/write or create/edit intent is ambiguous, `target_kind`, `backend_profile`, `refactor_mode`, `provider` for create-prompt, new project/artifact names, the objective of any creation work, and the destination of a new project scaffold |
 | 2 — infer and declare | Infer from evidence, state the inferred value in the activation receipt, and proceed; the requester corrects cheaply. | `phase`, review scope, inferred target files, objective refinements |
 | 3 — fixed default, never ask | The discipline supplies it. | analyze/diagnose/simulate/plan/design/architect/review/history/qa are product-read-only and never edit product artifacts; each may write only its assigned workflow artifacts. Implementation requires a write operation requested within recorded authority. |
 
@@ -81,6 +81,9 @@ A generated analysis, plan, proposal list, or prompt is never permission to exec
 | `agm-architect` | free text is the boundary question | affected decisions from frontmatter lookup | the objective is empty |
 | `agm-review` | `@file` alone works | scope defaults to correctness → regressions → contracts/data → tests; free text narrows it (for example "ตรวจคำผิด") | no target |
 | `agm-history` | free text maps to filters ("ของ Billy 7 วันล่าสุด" → `--requester Billy --days 7`) | UTC boundaries from bare dates | person/time range stays ambiguous |
+| `agm-fe` / `agm-be` | explicit `action=analyze|design|create|edit|test` or a clear natural-language verb | target/profile/phase from path and repository evidence; passive test advice for every action | read versus write, create versus edit, or target/profile remains ambiguous |
+| `agm-sql` | explicit `action=analyze|design|create|edit|explain` or a clear natural-language verb | SQL object kind, schema, and callers from repository evidence | read versus write, create versus edit, or object placement remains ambiguous |
+| `agm-refactor` | `target=fe|be|sql` plus free text that selects a mode | target from pointed path; mode from intent when exactly one mode matches | target or mode cannot be resolved exactly |
 | `agm-refactor-fe/be/sql` | free text may select the mode | mode from intent ("เร็วขึ้น" → performance, "อ่านง่าย" → readability, "แก้บั๊ก X" → targeted-bug-fix); `target_kind` from alias + path; `backend_profile` from the host project | intent does not select exactly one mode, or the profile cannot be found |
 | `agm-qa` | bare works with an active task | `task_id` from the active task; product artifacts read-only and QA workflow writes are fixed | no active task and no `task_id` |
 | `agm-create-unit-test` | `@file` alone works | `target_kind`/`backend_profile` from path evidence; framework and naming from existing tests | placement evidence is missing; otherwise use the propose-first list below |
@@ -90,9 +93,9 @@ A generated analysis, plan, proposal list, or prompt is never permission to exec
 
 ## Propose-first creation
 
-`agm-create-unit-test` and `agm-create-feature` embed a bounded analysis pass; do not require a separate analyze task first.
+Domain `create`, `edit`, and explicit FE/BE `test` actions embed bounded passive analysis/design; do not require a separate analysis task first. Deprecated `agm-create-unit-test` and `agm-create-feature` preserve this behavior for compatibility.
 
-- Unit tests: classify the target from path evidence, inspect the existing framework and naming, then present a numbered list of behaviors and regression risks worth testing with recommended entries marked. The requester may pick routine coverage in one reply: `approve` (recommended only), `all`, or numbers such as `1 2 5`; a material behavior/contract choice requires decision-owner authority. Create only the selected tests. Skip the proposal when the requester already named the behaviors to cover.
+- Unit tests: passive FE/BE test advice classifies the target, existing framework, behavior branches, and regression risks but never writes. Explicit `action=test` or an unambiguous request to create tests supplies write intent. Present a numbered list with recommended entries when coverage is unspecified; accept `approve`, `all`, or numbers such as `1 2 5`. Skip the proposal when the requester already named the behaviors to cover, and create only the requested or selected tests.
 - Features: the objective is Tier 1 and never guessed. Infer placement from evidence, propose the smallest slice plan (files to create or modify), and confirm once. Build directly only when the entire slice remains light; when it needs more than three product artifacts, tracking, delegation, separate QA, or material owner decisions, route the unexecuted slice to `agm-create-prompt`.
 
 ## Refactor mode menu
@@ -108,4 +111,4 @@ When the request does not select exactly one mode, present every enum in one rep
 5 = targeted-bug-fix — แก้เฉพาะ defect ที่พิสูจน์แล้วพร้อม regression evidence
 ```
 
-A full rewrite is not a refactor. Route "เปลี่ยนทั้งหมด" requests to `agm-plan`/`agm-architect`, then use direct `agm-create-feature` only for a light slice or `agm-create-prompt` for tracked execution, so the word refactor never becomes a back door for rebuilding a system.
+A full rewrite is not a refactor. Route "เปลี่ยนทั้งหมด" requests to `agm-plan`/`agm-architect`, then use `agm-fe|agm-be|agm-sql action=create|edit` only for a light slice or `agm-create-prompt` for tracked execution, so the word refactor never becomes a back door for rebuilding a system.

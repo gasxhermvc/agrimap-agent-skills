@@ -13,3 +13,34 @@ GOLDEN_INTEGRITY_INVALID และพบ HASH_MISMATCH ถูก block ไปต
 
 ### [2026-07-21 19:21:26]
 แต่ถ้ามันเป็นแค่ dev mode ก็ยิงไม่ควรหลุดไป การใช้งานจริงเลย
+
+### [2026-07-21 19:53:29]
+ดำเนินการปรับแก้ไขเลย พร้อมคำสั่ง clear cache
+
+### [2026-07-21 19:53:30]
+หลังจากใช้งานช่วงนึงแล้วฉันเจอว่า คำสั่งมันยังแปลกๆ อยู่บ้างเช่น
+
+agm-create-feature มันกว้างเกินไปและรวมถึง การเพิ่มหรือแก้ไข ฉันอยากปรับเป็นแบบนี้นายคิดยังไง
+
+agm-be [analyzer(passive)/design(passive)/create/edit/unit-test(passive)]
+
+agm-fe [analyzer(passive)/design(passive)/create/edit/unit-test(passive)]
+
+agm-sql [analyzer(passive)/design(passive)/create/edit/explain(passive)]
+
+ส่วน
+
+agm-design จริง ๆให้กลายเป็น passive สกิลของ be/fe/sql/agm-create-promt
+
+ส่วน agm-refactor-fe , agm-refactor-be, agm-refector-fe ฉันว่ามันเยอะไป
+
+ให้เป็น agm-refector fe/be/sql พร้อมคำอธิบายไปเลย
+
+ส่วน agm-create-unit-test เอาคำสั่งออกปรับตัวเองเป็น passive แทน โดยจะต้องช่วยประเมินว่าส่วนไหนควรทำ unit test และเสนอ หรือตีความจากคสั่งว่าต้องการด้วย ค่อยสร้างให้
+
+ส่วน passive ของ explain นายเสนอมาว่าควรจะเขียนประมาณไหน
+
+วิเคราะห์หน่อยเอาเท่านี้ก่อนถ้าปรับกระทบเยอะไหม
+
+### [2026-07-21 20:00:00]
+ดำเนินการหน่อย

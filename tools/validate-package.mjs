@@ -215,6 +215,8 @@ for (const marker of ["Select one depth", "`light`", "`standard`", "`regulated`"
   if (!lifecycleCoreReference.includes(marker)) errors.push(`Lifecycle core missing marker: ${marker}`);
 for (const marker of ["`agm-create-feature` is a special bounded-write operation and is always `light`", "full artifact set is a completion set, not a start scaffold", "Never pre-create empty QA or result files"])
   if (!lifecycleCoreReference.includes(marker)) errors.push(`Feature lifecycle boundary missing marker: ${marker}`);
+for (const marker of ["`action-routed` domain operation", "resolve exactly one action before target inspection", "Passive activation never grants write authority", "Direct domain writes are `light`"])
+  if (!lifecycleCoreReference.includes(marker)) errors.push(`Domain action boundary missing marker: ${marker}`);
 if (lifecycleCoreReference.split(/\r?\n/).length > 70) errors.push("Lifecycle core exceeds its 70-line budget.");
 const runtimeCoreReference = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "runtime-core.md"), "utf8");
 if (!runtimeCoreReference.includes("compatibility pointer") || !runtimeCoreReference.includes("lifecycle-core.md")) errors.push("Legacy runtime-core.md must be only a compatibility pointer to lifecycle-core.md.");
@@ -401,7 +403,7 @@ if (backendDiscipline.includes("Require `change_kind`")) errors.push("Backend di
 for (const marker of ["## HTTP request-value normalization", "013-1-extensions-request-value-normalize.md", "both `be-main` and `be-library`", "direct `Request.Headers`", "require no DI registration", "Do not mass-replace mechanically"])
   if (!backendDiscipline.includes(marker)) errors.push(`Backend request normalization discipline missing marker: ${marker}`);
 const requestValueReference = "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md";
-for (const operation of ["analyze", "diagnose", "refactor-be", "qa"]) {
+for (const operation of ["analyze", "diagnose", "be", "refactor-be", "qa"]) {
   const item = operations?.operations?.find((candidate) => candidate.operation === operation);
   const routedReferences = [...(item?.references || []), ...(item?.conditionalReferences || [])];
   if (!routedReferences.some((reference) => reference.path === requestValueReference)) errors.push(`${operation} does not route to the backend request-value normalization contract.`);
@@ -469,6 +471,15 @@ if (operations) {
   if (new Set(names).size !== names.length) errors.push("Operation aliases are not unique.");
   if (names.includes("agm-fe-engineer")) errors.push("Passive frontend discipline must not expose agm-fe-engineer.");
   if (!operations.operations.some((item) => item.name === "agm-history" && item.operation === "history")) errors.push("agm-history operation is required for durable requester/task queries.");
+  for (const [name, actions] of Object.entries({ "agm-fe": ["analyze", "design", "create", "edit", "test"], "agm-be": ["analyze", "design", "create", "edit", "test"], "agm-sql": ["analyze", "design", "create", "edit", "explain"] })) {
+    const item = operations.operations.find((candidate) => candidate.name === name);
+    if (item?.mode !== "action-routed") errors.push(`${name} must be action-routed.`);
+    if (JSON.stringify(item?.actions?.map((action) => action.name)) !== JSON.stringify(actions)) errors.push(`${name} action list is invalid.`);
+  }
+  const publicRefactor = operations.operations.find((item) => item.name === "agm-refactor");
+  if (!publicRefactor?.requiredInputs?.includes("target=fe|be|sql")) errors.push("agm-refactor must route target=fe|be|sql.");
+  for (const oldName of ["agm-analyze", "agm-design", "agm-create-feature", "agm-create-unit-test", "agm-refactor-fe", "agm-refactor-be", "agm-refactor-sql"])
+    if (operations.operations.find((item) => item.name === oldName)?.visibility !== "compatibility") errors.push(`${oldName} must remain a compatibility alias.`);
   for (const name of names) {
     for (const target of [
       path.join(root, "commands", `${name}.toml`),

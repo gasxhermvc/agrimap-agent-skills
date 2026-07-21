@@ -46,7 +46,7 @@ codex plugin marketplace add gasxhermvc/agrimap-agent-skills
 codex plugin add agrimap-agent-skills@agrimap-agent-skills
 ```
 
-Start a new Codex session after installation. In Codex CLI, `/plugins` can also browse and install the plugin after the marketplace is added. Invoke `$agrimap-agent-skills` only to choose an operation; invoke a dedicated alias such as `$agm-create-feature` to execute it.
+Start a new Codex session after installation. In Codex CLI, `/plugins` can also browse and install the plugin after the marketplace is added. Invoke `$agrimap-agent-skills` only to choose an operation; invoke a domain alias such as `$agm-be action=create` to execute it.
 
 Local repository testing:
 
@@ -68,7 +68,7 @@ Or run the equivalent `/plugin marketplace add` and `/plugin install` commands i
 
 ```text
 /agrimap-agent-skills:agrimap-agent-skills
-/agrimap-agent-skills:agm-create-feature
+/agrimap-agent-skills:agm-be action=create
 /agrimap-agent-skills:agm-create-prompt
 ```
 
@@ -88,7 +88,7 @@ Run from the terminal, not from Gemini's interactive prompt:
 gemini extensions install https://github.com/gasxhermvc/agrimap-agent-skills
 ```
 
-Restart Gemini CLI after installation. Invoke `/agm-create-feature`, `/agm-plan`, or another generated command. For local development:
+Restart Gemini CLI after installation. Invoke `/agm-be action=create`, `/agm-plan`, or another generated command. For local development:
 
 ```powershell
 gemini extensions link .
@@ -104,7 +104,7 @@ Gemini may show its native consent prompt when activating a skill or fingerprint
 
 ## Workflow depth and first tracked use
 
-Each operation declares default and allowed workflow depths in `config/operations.json`. Every depth persists requester attribution plus concise task, memory, and log evidence. `light` handles help, history/read-only queries, and bounded work without delegation or separate QA. `agm-create-feature` is always light/direct; when a feature needs delegation, separate QA, or more than three product artifacts, use `agm-create-prompt` instead. Artifacts follow phases: start writes brief + checklist, QA later writes `qa.md` only when required, and the Leader writes `result.md` last at closure. The selector and phase rules live in [`lifecycle-core.md`](skills/agrimap-agent-skills/references/lifecycle-core.md).
+Each operation declares default and allowed workflow depths in `config/operations.json`. Every depth persists requester attribution plus concise task, memory, and log evidence. `light` handles help, history/read-only queries, and bounded work without delegation or separate QA. Direct `agm-fe|agm-be|agm-sql` create/edit/test actions are light-only; when work needs delegation, separate QA, or more than three product artifacts, use `agm-create-prompt` instead. Artifacts follow phases: start writes brief + checklist, QA later writes `qa.md` only when required, and the Leader writes `result.md` last at closure. The selector and phase rules live in [`lifecycle-core.md`](skills/agrimap-agent-skills/references/lifecycle-core.md).
 
 On the first `standard` or `regulated` interaction, the Leader resolves who is requesting the work. In a multi-person project there is no shared `owner.json`.
 
@@ -135,20 +135,21 @@ Commit `.agrimap-agent/tasks`, `memory/project.md`, task-scoped `memory/current|
 
 | Alias | Purpose |
 | --- | --- |
-| `agm-analyze` | hidden problem, scope, impact, options, trade-off |
+| `agm-fe` | frontend analyze/design/create/edit/test actions |
+| `agm-be` | backend analyze/design/create/edit/test actions |
+| `agm-sql` | SQL analyze/design/create/edit/explain actions |
+| `agm-refactor` | target-routed FE/BE/SQL refactor with an explicit behavior mode |
 | `agm-diagnose` | evidence-led root cause |
 | `agm-simulate` | scenarios, risks, transitions, observables |
 | `agm-plan` | reverse-engineered execution plan |
-| `agm-design` | flow, behavior, states, acceptance |
 | `agm-architect` | boundaries, contracts, migration |
 | `agm-review` | evidence-backed findings |
 | `agm-history` | read-only requester/task history by person, date, task, or event |
-| `agm-refactor-fe/be/sql` | explicit refactor behavior mode |
 | `agm-qa` | product-read-only QA; direct `light` by default, tracked only when regulated |
-| `agm-create-unit-test` | target-specific tests |
-| `agm-create-feature` | bounded direct FE/BE/batch/library/SQL feature; light and stateless |
 | `agm-create-prompt` | tracked feature brief, acceptance checklist, and provider/model-aware prompts |
 | `agm-exec` | execute one decision-owner-approved prompt under task/QA rails |
+
+Legacy `agm-analyze`, `agm-design`, `agm-create-feature`, `agm-create-unit-test`, and `agm-refactor-fe|be|sql` aliases remain callable for compatibility but are omitted from primary help.
 
 Audit examples:
 

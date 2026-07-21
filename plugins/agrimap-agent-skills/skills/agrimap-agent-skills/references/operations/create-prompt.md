@@ -22,6 +22,7 @@
 ## Load now
 
 - [create-prompt.md](../create-prompt.md) — prompt lifecycle and provider rendering
+- [passive-capabilities.md](../passive-capabilities.md) — passive design discipline used while shaping the approved brief and acceptance
 - [subagents-and-branches.md](../subagents-and-branches.md) — delegation, visibility, and integration
 - [model-capability-matrix.yaml](../model-capability-matrix.yaml) — capability-profile routing labels
 
