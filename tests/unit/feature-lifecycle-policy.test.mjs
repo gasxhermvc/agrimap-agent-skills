@@ -12,15 +12,15 @@ const memoryPolicy = await read("skills/agrimap-agent-skills/references/memory-a
 const workspaceScript = await read("skills/agrimap-agent-skills/scripts/agm-workspace.mjs");
 const schema = JSON.parse(await read("skills/agrimap-agent-skills/assets/task-artifact-schema.json"));
 
-test("create-feature stays direct while tracked feature artifacts follow phase ownership", () => {
+test("create-feature stays light while every feature writes concise durable state", () => {
   const createFeature = operations.operations.find((item) => item.operation === "create-feature");
   const createPrompt = operations.operations.find((item) => item.operation === "create-prompt");
 
   assert.deepEqual(createFeature.depth, { default: "light", allowed: ["light"] });
-  assert.match(createFeature.instructions.join("\n"), /never start tracked task state/i);
+  assert.match(createFeature.instructions.join("\n"), /start concise tracked task state/i);
   assert.match(createFeature.instructions.join("\n"), /route the work to agm-create-prompt/i);
   assert.match(createFeature.instructions.join("\n"), /Return the result only after product writes and verification finish/i);
-  assert.match(createFeature.instructions.join("\n"), /never start tracked task state, invoke QA, select qa_mode, delegate\/spawn\/wait/i);
+  assert.match(createFeature.instructions.join("\n"), /never invoke separate QA, select qa_mode, delegate\/spawn\/wait/i);
   assert.match(createFeature.instructions.join("\n"), /unresolved or material persisted-data decision/i);
   assert.match(createFeature.instructions.join("\n"), /bounded slice within the three-artifact limit.*remains direct/i);
   assert.match(createFeature.instructions.join("\n"), /sql-contract-preflight\.mjs/i);
@@ -39,7 +39,7 @@ test("create-feature stays direct while tracked feature artifacts follow phase o
   assert.deepEqual(schema.scaffoldOrder, ["brief.md", "checklist.md"]);
   assert.equal(schema.artifacts["qa.md"].writePhase, "verification");
   assert.equal(schema.artifacts["result.md"].writePhase, "closure");
-  assert.match(workspaceScript, /CREATE_FEATURE_TRACKING_FORBIDDEN/);
+  assert.match(workspaceScript, /TRACKED_WORKFLOW_DEPTHS/);
   assert.match(workspaceScript, /PREMATURE_RESULT_ARTIFACT/);
 });
 
@@ -48,5 +48,5 @@ test("checkpoint memory and logs use the same compact budget for every provider"
     assert.match(workspaceScript, new RegExp(marker));
   }
   assert.match(memoryPolicy, /Claude\/Fable, Codex\/GPT, and Gemini use the same milestone count and compact field budgets/);
-  assert.match(memoryPolicy, /Direct\/light operations, including `agm-create-feature`, write none of this state/);
+  assert.match(memoryPolicy, /Every activated operation, including direct\/light work and `agm-create-feature`, writes concise task, memory, and log state/);
 });

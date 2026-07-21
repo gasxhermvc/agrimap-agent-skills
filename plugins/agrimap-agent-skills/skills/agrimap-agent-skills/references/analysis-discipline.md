@@ -42,4 +42,4 @@ Return:
 
 For conclusions involving a database, require actual project code, the applicable local `db-schema`, and representative examples or data shapes. Never connect to a database to fill the gap. If any are absent, call the analysis `preliminary`, keep claims at `HYPOTHESIS`/`UNKNOWN`, and list the exact evidence needed for a conclusive rerun.
 
-At `light`, the direct chat response is the complete deliverable and writes no workflow artifact. At `standard` or `regulated`, also write the durable artifact with [../assets/templates/analysis.md](../assets/templates/analysis.md) to the task folder: `.agrimap-agent/tasks/<task-id>/analysis.md` for analyze, `diagnosis.md` for diagnose, or `simulation.md` for simulate.
+At `light`, keep the operation-specific analysis concise while still writing the mandatory brief, checklist, current memory, logs, and closure result. At `standard` or `regulated`, also write the expanded durable artifact with [../assets/templates/analysis.md](../assets/templates/analysis.md) to the task folder: `.agrimap-agent/tasks/<task-id>/analysis.md` for analyze, `diagnosis.md` for diagnose, or `simulation.md` for simulate.

@@ -65,7 +65,8 @@ function recognizedProjectName(value) {
 function explicitSkillInvocation(provider, prompt) {
   const value = String(prompt || "");
   const pattern = EXPLICIT_SKILL_PATTERNS[provider];
-  return Boolean(value) && Boolean(pattern) && pattern.test(value);
+  const adapterMarker = new RegExp(`(?:^|\\s)AGRIMAP_EXPLICIT_ALIAS=(?:${EXPLICIT_SKILL_ALTERNATION})(?=$|\\s)`, "i");
+  return Boolean(value) && ((Boolean(pattern) && pattern.test(value)) || adapterMarker.test(value));
 }
 
 function projectActivation(cwd, config) {
@@ -231,8 +232,8 @@ if (mode === "task") {
   if (!confirmedIdentity) {
     context.push(
       identity?.expired
-        ? `AgriMap: requester confirmation expired (last: ${identity.requestedBy}). Select workflow depth first; reconfirm only for standard/regulated work. Light work must not ask solely for attribution.`
-        : "AgriMap: requester is not persisted. Select workflow depth first; identify the human only for standard/regulated work. Light work proceeds without workflow attribution.",
+        ? `AgriMap: requester confirmation expired (last: ${identity.requestedBy}). Reconfirm the human before starting any operation so task, memory, and log attribution remain durable.`
+        : "AgriMap: requester is not persisted. Identify the human before starting any operation; light, standard, and regulated work all require task, memory, and log attribution.",
     );
   }
   if (activeTask && previousHookState && previousHookState.memoryFingerprint !== memoryFingerprint) {
@@ -253,23 +254,23 @@ context.push(
     : "- The hook did not report an active model. Record `model: unknown` only after checking the host runtime; never substitute a configured modelLabel as actual model.",
   effectiveSessionId
     ? `- Session: ${effectiveSessionId}${sessionId ? "" : " (derived from transcript path)"}`
-    : "- Session ID is unavailable. Create one only for standard/regulated work.",
+    : "- Session ID is unavailable. Create one before starting any operation.",
   confirmedIdentity
     ? `- Confirmed session requester: ${confirmedIdentity.requestedBy}; valid until ${confirmedIdentity.expiresAt}.`
     : identity?.expired
-      ? `- Requester confirmation expired. Last confirmed requester was ${identity.requestedBy}; reconfirm only for standard/regulated work.`
-      : "- Session requester is unknown. Resolve it only after selecting standard/regulated depth; light work skips persistence.",
+      ? `- Requester confirmation expired. Last confirmed requester was ${identity.requestedBy}; reconfirm before starting any operation.`
+      : "- Session requester is unknown. Resolve it before starting the operation; every depth persists concise task, memory, and log evidence.",
   taskRequester
     ? `- Active task requested by: ${taskRequester}; immutable task attribution comes from its tracked brief and created log event.`
     : "- No active task requester is recorded for this session.",
   `- Previously recorded execution identity (may be stale — your own runtime identity wins): model=${execution.model || "unrecorded"}, role=${execution.role || "leader"}, agent=${execution.agent || "primary"}, provider=${execution.provider || "unrecorded"}.`,
   effectiveSessionId
-    ? `- For standard/regulated work only, persist/reconfirm with agm-workspace.mjs identify --session ${effectiveSessionId} --owner <confirmed-human-name> --model "${hostReportedModel || "unknown"}" --provider ${provider}.`
-    : `- For standard/regulated work only, create a stable session ID and persist the confirmed human with --model "${hostReportedModel || "unknown"}" --provider ${provider}.`,
+    ? `- Persist/reconfirm with agm-workspace.mjs identify --session ${effectiveSessionId} --owner <confirmed-human-name> --model "${hostReportedModel || "unknown"}" --provider ${provider} before any operation.`
+    : `- Create a stable session ID and persist the confirmed human with --model "${hostReportedModel || "unknown"}" --provider ${provider} before any operation.`,
   suggestedRequester
     ? `- Unconfirmed Git-name suggestion: ${suggestedRequester}. Ask the human to confirm it; never attribute work automatically from this value.`
     : "- Do not substitute machine, OS, or Git identity for explicit human confirmation.",
-  "- Workflow depth: light creates no task artifacts or audit events; standard/regulated records requester/objective and milestone transitions.",
+  "- Workflow depth changes coordination, detail, and QA only. Every activated operation must create task artifacts, current memory, and created/milestone/terminal audit events.",
   "- For audit/history questions, run agm-workspace.mjs history with person/date/task filters; inspect attributionSemantics, auditStorage, invalidLines, and returned brief/result/QA/memory paths. Distinguish requester, workflow executor, claimed files, and Git author; never answer from conversational recall alone.",
   "- Durable project memory is .agrimap-agent/memory/project.md; reopen it when context was compacted or current project facts are needed.",
 );
@@ -295,8 +296,8 @@ if (mode !== "task") {
   context.push(
     "- For a generated agm alias, read exactly lifecycle-core.md and its operations/<operation>.md entrypoint; do not preload the glossary or routing umbrella. A missing/corrupt compact route is PACKAGE_ENTRYPOINT_MISSING.",
     "- Do not add permission gates. Discuss only material logic/contract/data/architecture trade-offs.",
-    "- Select light|standard|regulated before attribution or workflow writes. Light skips receipt, task artifacts, memory/logs, and separate QA.",
-    "- For standard/regulated work, reopen project memory on demand and update only at defined milestones; do not inject it into light work.",
+    "- Select light|standard|regulated, identify the requester, and start tracked state before substantive work. Every depth writes concise task artifacts, memory, and logs; light skips only delegation and separate QA.",
+    "- Reopen project memory on demand and update current task memory only at defined milestones; do not inject unrelated project memory into the task.",
   );
   if (currentTaskMemory) context.push("\nCurrent tracked-task memory:\n", currentTaskMemory);
 }

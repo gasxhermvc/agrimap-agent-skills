@@ -47,6 +47,6 @@ Each generated alias must contain only:
 4. an explicit instruction not to read the router during execution;
 5. no copied workflow rules.
 
-An alias receiving `-h` or `--help` returns purpose, required/conditional inputs, and the minimal example from its compact operation entrypoint without starting a task or writing project state. A missing/corrupt compact file is `PACKAGE_ENTRYPOINT_MISSING` and requires package sync/reinstallation; the routing skill is never an execution fallback.
+An alias receiving `-h` or `--help` returns purpose, required/conditional inputs, and the minimal example from its compact operation entrypoint at `light` depth while still recording concise task, memory, and log evidence. A missing/corrupt compact file is `PACKAGE_ENTRYPOINT_MISSING` and requires package sync/reinstallation; the routing skill is never an execution fallback.
 
 For large text, images, attachments, multiple files, and line-specific references, use [input-and-scope.md](input-and-scope.md). Attachments use the host's native attachment control; the request itself must provide a stable label, intent, priority, and expected coverage rather than depend on an invented cross-provider attachment token.

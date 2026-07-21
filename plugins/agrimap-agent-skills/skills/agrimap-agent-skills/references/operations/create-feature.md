@@ -6,7 +6,7 @@
 - Workflow depth: default `light`; allowed `light`
 - Mode: `product-write`
 - Purpose: Create a bounded FE, BE, batch, library, or SQL feature.
-- Deliverable: confirmed bounded vertical slice plus one concise direct verified result; no brief, checklist, QA, result, memory, or log artifacts
+- Deliverable: confirmed bounded vertical slice plus concise tracked brief, checklist, memory, logs, and verified result; no separate QA artifact
 
 ## Inputs and help
 
@@ -16,9 +16,9 @@
 
 ## Execute this contract
 
-1. This operation is light/direct only: never start tracked task state, invoke QA, select qa_mode, delegate/spawn/wait, or write .agrimap-agent artifacts, memory, prompts, or logs.
+1. This operation is light/direct only: start concise tracked task state and write the mandatory .agrimap-agent brief, checklist, memory, logs, and closure result; never invoke separate QA, select qa_mode, delegate/spawn/wait, or create prompts.
 2. Propose the smallest complete slice and output paths before writing; after confirmation, implement and verify proportionally.
-3. For separate QA, an unresolved or material persisted-data decision, standard/regulated depth, more than three product artifacts, material owner decisions, or a new scaffold, stop before writes and route the work to agm-create-prompt; never promote or partially execute.
+3. For separate QA, an unresolved or material persisted-data decision, standard/regulated depth, more than three product artifacts, material owner decisions, or a new scaffold, stop before writes and route the work to agm-create-prompt; never partially execute.
 4. Return the result only after product writes and verification finish; never pre-write a result artifact.
 5. Use the matching target discipline.
 6. For direct SQL, a bounded slice within the three-artifact limit remains direct only with resolved owner/golden/schema/caller evidence. Run sql-contract-preflight.mjs per object and load returned paths. Use [agrimap_app], canonical files, guarded messages.sql inserts, and the SQLFluff format-then-validate gate. Do not hand-tune cosmetic layout: format every declared changed .sql path, validate the same complete set, and report formatted N/N. Never use a database, ScriptDom, or other parser/runtime.

@@ -62,6 +62,14 @@ export async function hooks(harness) {
     assert.match(explicitAlias.hookSpecificOutput.additionalContext, /AgriMap: requester is not persisted/);
   }
 
+  const expandedAdapter = run(hookScript, ["--provider", "codex", "--mode", "task"], {
+    cwd: externalProject,
+    session_id: "expanded-adapter",
+    hook_event_name: "UserPromptSubmit",
+    prompt: "AGRIMAP_EXPLICIT_ALIAS=agm-analyze\n\nRun only AgriMap operation analyze",
+  });
+  assert.match(expandedAdapter.hookSpecificOutput.additionalContext, /task, memory, and log attribution/);
+
   for (const [provider, prompt] of [
     ["codex", "/agm-analyze must not use Gemini syntax"],
     ["codex", "/agrimap-agent-skills:agm-analyze must not use Claude syntax"],
@@ -231,7 +239,7 @@ export async function hooks(harness) {
   });
   assert.doesNotMatch(claudeSessionB.hookSpecificOutput.additionalContext, /Current project memory:/);
   assert.match(claudeSessionB.hookSpecificOutput.additionalContext, /Current tracked-task memory:/);
-  assert.match(claudeSessionB.hookSpecificOutput.additionalContext, /Light skips receipt, task artifacts, memory\/logs, and separate QA/);
+  assert.match(claudeSessionB.hookSpecificOutput.additionalContext, /Every depth writes concise task artifacts, memory, and logs/);
 
   const unchangedClaudePrompt = run(hookScript, ["--provider", "claude", "--mode", "task"], {
     cwd: temp,
@@ -265,7 +273,7 @@ export async function hooks(harness) {
     hook_event_name: "SessionStart",
   });
   assert.match(hookUnknown.hookSpecificOutput.additionalContext, /Session requester is unknown/);
-  assert.match(hookUnknown.hookSpecificOutput.additionalContext, /Resolve it only after selecting standard\/regulated depth/);
+  assert.match(hookUnknown.hookSpecificOutput.additionalContext, /Resolve it before starting the operation/);
   assert.doesNotMatch(hookUnknown.hookSpecificOutput.additionalContext, /Confirmed session requester: Bob/);
 
   const hookWithModel = run(hookScript, ["--provider", "codex", "--mode", "session"], {

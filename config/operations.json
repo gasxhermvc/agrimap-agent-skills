@@ -29,7 +29,7 @@
       "depth": { "default": "light", "allowed": ["light", "standard", "regulated"] },
       "description": "Diagnose a problem to a proven root cause",
       "mode": "product-read-only",
-      "deliverable": "direct diagnosis at light; tracked diagnosis artifact only at standard/regulated",
+      "deliverable": "concise tracked diagnosis task at light; expanded diagnosis artifact at standard/regulated",
       "requiredInputs": ["symptom"],
       "conditionalInputs": ["reproduction evidence when the symptom is not observable from the repository"],
       "example": "$agm-diagnose depth=light symptom=\"Save returns 500\" target_files=src/orders.ts implementation=false",
@@ -273,11 +273,11 @@
       "depth": { "default": "light", "allowed": ["light"] },
       "description": "Create a bounded FE, BE, batch, library, or SQL feature",
       "mode": "product-write",
-      "deliverable": "confirmed bounded vertical slice plus one concise direct verified result; no brief, checklist, QA, result, memory, or log artifacts",
+      "deliverable": "confirmed bounded vertical slice plus concise tracked brief, checklist, memory, logs, and verified result; no separate QA artifact",
       "requiredInputs": ["objective"],
       "conditionalInputs": ["target_kind if placement is unresolved", "backend_profile for be-main", "agm-create-prompt handoff beyond light or for a new scaffold"],
       "example": "$agm-create-feature depth=light target_kind=be-main backend_profile=agmws objective=\"Add cancel-order endpoint\"",
-      "instructions": ["This operation is light/direct only: never start tracked task state, invoke QA, select qa_mode, delegate/spawn/wait, or write .agrimap-agent artifacts, memory, prompts, or logs.", "Propose the smallest complete slice and output paths before writing; after confirmation, implement and verify proportionally.", "For separate QA, an unresolved or material persisted-data decision, standard/regulated depth, more than three product artifacts, material owner decisions, or a new scaffold, stop before writes and route the work to agm-create-prompt; never promote or partially execute.", "Return the result only after product writes and verification finish; never pre-write a result artifact.", "Use the matching target discipline.", "For direct SQL, a bounded slice within the three-artifact limit remains direct only with resolved owner/golden/schema/caller evidence. Run sql-contract-preflight.mjs per object and load returned paths. Use [agrimap_app], canonical files, guarded messages.sql inserts, and the SQLFluff format-then-validate gate. Do not hand-tune cosmetic layout: format every declared changed .sql path, validate the same complete set, and report formatted N/N. Never use a database, ScriptDom, or other parser/runtime."],
+      "instructions": ["This operation is light/direct only: start concise tracked task state and write the mandatory .agrimap-agent brief, checklist, memory, logs, and closure result; never invoke separate QA, select qa_mode, delegate/spawn/wait, or create prompts.", "Propose the smallest complete slice and output paths before writing; after confirmation, implement and verify proportionally.", "For separate QA, an unresolved or material persisted-data decision, standard/regulated depth, more than three product artifacts, material owner decisions, or a new scaffold, stop before writes and route the work to agm-create-prompt; never partially execute.", "Return the result only after product writes and verification finish; never pre-write a result artifact.", "Use the matching target discipline.", "For direct SQL, a bounded slice within the three-artifact limit remains direct only with resolved owner/golden/schema/caller evidence. Run sql-contract-preflight.mjs per object and load returned paths. Use [agrimap_app], canonical files, guarded messages.sql inserts, and the SQLFluff format-then-validate gate. Do not hand-tune cosmetic layout: format every declared changed .sql path, validate the same complete set, and report formatted N/N. Never use a database, ScriptDom, or other parser/runtime."],
       "references": [
         { "path": "elicitation.md", "why": "placement, naming, and scaffold gates" }
       ],

@@ -31,8 +31,8 @@ export function taskArtifactSchemaIssues(schema) {
     return issues;
   }
   const workflowDepths = schema.workflowDepths || [];
-  if (!Array.isArray(workflowDepths) || workflowDepths.length === 0 || workflowDepths.some((depth) => !["standard", "regulated"].includes(depth))) {
-    issues.push("workflowDepths must contain only standard|regulated");
+  if (!Array.isArray(workflowDepths) || workflowDepths.length === 0 || workflowDepths.some((depth) => !["light", "standard", "regulated"].includes(depth))) {
+    issues.push("workflowDepths must contain only light|standard|regulated");
   }
   const phaseOrder = schema.phaseOrder || [];
   if (JSON.stringify(phaseOrder) !== JSON.stringify(["contract", "verification", "closure"])) {

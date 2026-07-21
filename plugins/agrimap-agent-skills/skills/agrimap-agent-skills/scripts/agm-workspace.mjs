@@ -29,7 +29,6 @@ import { loadTaskArtifactSchema } from "./task-artifact-schema.mjs";
 const AUDIT_SCHEMA_VERSION = 3;
 const SUPPORTED_AUDIT_SCHEMA_VERSIONS = new Set([1, 2, AUDIT_SCHEMA_VERSION]);
 const TERMINAL_AUDIT_EVENTS = new Set([QA_FAILED_EVENT, "blocked", "cancelled", "completed"]);
-const TRACKED_START_FORBIDDEN_OPERATIONS = new Set(["create-feature"]);
 const CHECKPOINT_FIELD_BUDGETS = Object.freeze({
   summary: 240,
   reason: 400,
@@ -39,7 +38,7 @@ const CHECKPOINT_FIELD_BUDGETS = Object.freeze({
 });
 const skillRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const taskArtifactSchema = await loadTaskArtifactSchema(skillRoot);
-const TRACKED_WORKFLOW_DEPTHS = new Set(taskArtifactSchema.workflowDepths || ["standard", "regulated"]);
+const TRACKED_WORKFLOW_DEPTHS = new Set(taskArtifactSchema.workflowDepths || ["light", "standard", "regulated"]);
 const completionTemplateTokenNames = new Set();
 for (const definition of Object.values(taskArtifactSchema.artifacts || {})) {
   const template = await readFile(path.join(skillRoot, "assets", "templates", definition.template), "utf8");
@@ -463,21 +462,10 @@ async function init(root, args) {
 
 async function start(root, args) {
   const operation = String(args.operation || "task").trim().toLowerCase();
-  if (TRACKED_START_FORBIDDEN_OPERATIONS.has(operation)) {
-    return {
-      ok: false,
-      code: "CREATE_FEATURE_TRACKING_FORBIDDEN",
-      routeTo: "agm-create-prompt",
-      message: "agm-create-feature is light/direct only and must not create tracked state. Use agm-create-prompt for a tracked feature contract.",
-    };
-  }
   const state = await ensureLayout(root);
   const workflowDepth = String(args.depth || args["workflow-depth"] || "regulated").trim().toLowerCase();
-  if (workflowDepth === "light") {
-    return { ok: false, code: "LIGHT_DEPTH_STATE_FORBIDDEN", message: "Light depth must not start task state; execute directly without requester persistence or workflow artifacts." };
-  }
   if (!TRACKED_WORKFLOW_DEPTHS.has(workflowDepth)) {
-    return { ok: false, code: "INVALID_WORKFLOW_DEPTH", message: "--depth must be standard or regulated when starting tracked state." };
+    return { ok: false, code: "INVALID_WORKFLOW_DEPTH", message: "--depth must be light, standard, or regulated when starting task state." };
   }
   const sessionId = safeSessionId(args.session);
   if (!sessionId) {

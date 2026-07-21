@@ -12,7 +12,7 @@ The task-artifact structure is likewise centralized: [`task-artifact-schema.json
 - **Owner approval / owner decision**: an explicit decision by the decision owner, or by a requester whose recorded authority is `owner` or `delegated`. Silence, task submission, prior requester identity, and approval by a `requester-only`/`unknown` requester are not owner approval.
 - **Owner reference**: project material curated or accepted by a decision owner. This describes authority over the reference, not necessarily who requested the current task.
 
-Every `standard` or `regulated` task brief and generated prompt records `requested_by`, `requester_authority`, `decision_owner`, and `authority_evidence`. `light` work creates neither artifact. If a material decision is required while authority is `requester-only` or `unknown`, safe product-read-only investigation may continue, but the affected decision and any dependent write must stop.
+Every task brief records `requested_by`, `requester_authority`, `decision_owner`, and `authority_evidence`, including `light` work. Generated prompts record the same fields when that operation produces them. If a material decision is required while authority is `requester-only` or `unknown`, safe product-read-only investigation may continue, but the affected decision and any dependent write must stop.
 
 ## Work and artifact boundaries
 

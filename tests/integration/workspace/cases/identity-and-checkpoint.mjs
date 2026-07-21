@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { LOG_EVENTS, QA_FAILED_EVENT } from "../../../../skills/agrimap-agent-skills/scripts/log-events.mjs";
 
@@ -31,13 +31,15 @@ export async function identityAndCheckpoint(harness) {
   assert.equal(typeof identityA.osUser, "string");
 
   const taskA = run(workspaceScript, ["start", "--cwd", temp, "--session", "session-a", "--task", "task-a", "--operation", "analyze", "--title", "Analyze task A audit behavior"]);
-  const directFeatureStart = spawn(workspaceScript, ["start", "--cwd", temp, "--session", "session-b", "--task", "direct-feature", "--operation", "create-feature", "--title", "Build directly without workflow state"]);
-  assert.equal(directFeatureStart.status, 1);
-  assert.deepEqual(
-    { code: JSON.parse(directFeatureStart.stdout).code, routeTo: JSON.parse(directFeatureStart.stdout).routeTo },
-    { code: "CREATE_FEATURE_TRACKING_FORBIDDEN", routeTo: "agm-create-prompt" },
-  );
-  await assert.rejects(readFile(path.join(temp, ".agrimap-agent", "tasks", "direct-feature", "brief.md"), "utf8"), { code: "ENOENT" });
+  const directFeatureStart = run(workspaceScript, ["start", "--cwd", temp, "--session", "session-b", "--task", "direct-feature", "--operation", "create-feature", "--depth", "light", "--title", "Build directly with concise durable state"]);
+  assert.equal(directFeatureStart.activeTask.workflowDepth, "light");
+  for (const artifact of ["brief.md", "checklist.md"]) {
+    assert.equal(typeof await readFile(path.join(temp, ".agrimap-agent", "tasks", "direct-feature", artifact), "utf8"), "string");
+  }
+  assert.match(await readFile(path.join(temp, ".agrimap-agent", "memory", "current", "direct-feature.md"), "utf8"), /Workflow depth: `light`/);
+  assert.equal((await readTaskLog("direct-feature"))[0].workflowDepth, "light");
+  await writeFile(path.join(temp, ".agrimap-agent", "tasks", "direct-feature", "result.md"), "# Result\n\n- Outcome: `cancelled`\n", "utf8");
+  run(workspaceScript, ["close", "--cwd", temp, "--session", "session-b", "--task", "direct-feature", "--status", "cancelled"]);
 
   const taskB = run(workspaceScript, ["start", "--cwd", temp, "--session", "session-b", "--task", "task-b", "--operation", "create-prompt", "--title", "Prepare task B feature contract"]);
   run(workspaceScript, ["identify", "--cwd", temp, "--session", "collision-session", "--owner", "Mallory"]);

@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Made concise task artifacts, current memory, and append-only audit logs mandatory for every activated operation at `light`, `standard`, and `regulated` depth; depth now controls coordination and QA rather than persistence.
+- Added generated `AGRIMAP_EXPLICIT_ALIAS` markers so provider command expansion cannot hide a direct alias invocation from the activation gate.
+
 ## 0.1.7 - 2026-07-18
 
 - Assigned cosmetic SQL indentation, alignment, wrapping, and whitespace to SQLFluff instead of model hand-formatting; semantic SQL structure remains enforced.

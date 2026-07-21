@@ -351,9 +351,16 @@ export async function completion(harness) {
   const taskDLog = await readTaskLog("task-d");
   assert.equal(taskDLog.at(-1).event, "cancelled");
 
-  const lightStart = spawn(workspaceScript, ["start", "--cwd", temp, "--session", "session-a", "--depth", "light", "--title", "Must remain stateless"]);
-  assert.equal(lightStart.status, 1);
-  assert.equal(JSON.parse(lightStart.stdout).code, "LIGHT_DEPTH_STATE_FORBIDDEN");
+  const lightStart = spawn(workspaceScript, ["start", "--cwd", temp, "--session", "session-a", "--task", "task-light", "--depth", "light", "--title", "Must retain concise durable state"]);
+  assert.equal(lightStart.status, 0);
+  assert.equal(JSON.parse(lightStart.stdout).activeTask.workflowDepth, "light");
+  const lightDirectory = path.join(temp, ".agrimap-agent", "tasks", "task-light");
+  await writeFile(path.join(lightDirectory, "brief.md"), validBrief({ taskId: "task-light", depth: "light" }), "utf8");
+  await writeFile(path.join(lightDirectory, "checklist.md"), "# Checklist\n\n- [x] Concise tracked work completed.\n", "utf8");
+  await writeFile(path.join(lightDirectory, "result.md"), validResult({ depth: "light" }), "utf8");
+  const completedLight = run(workspaceScript, ["complete", "--cwd", temp, "--session", "session-a", "--task", "task-light"]);
+  assert.equal(completedLight.ok, true);
+  assert.equal((await readTaskLog("task-light")).at(-1).workflowDepth, "light");
 
   run(workspaceScript, ["start", "--cwd", temp, "--session", "session-a", "--task", "task-standard", "--operation", "refactor-be", "--depth", "standard", "--title", "Standard bounded refactor"]);
   const standardDirectory = path.join(temp, ".agrimap-agent", "tasks", "task-standard");

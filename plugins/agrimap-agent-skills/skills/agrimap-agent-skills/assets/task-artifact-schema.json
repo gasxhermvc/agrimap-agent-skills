@@ -1,7 +1,7 @@
 {
   "schemaVersion": 4,
   "description": "Canonical phase ownership, scaffold, and completion contract for AgriMap task artifacts.",
-  "workflowDepths": ["standard", "regulated"],
+  "workflowDepths": ["light", "standard", "regulated"],
   "phaseOrder": ["contract", "verification", "closure"],
   "scaffoldOrder": [
     "brief.md",
@@ -15,7 +15,7 @@
       "writer": "agm-create-prompt or the leader of a non-feature tracked operation",
       "scaffoldAtStart": true,
       "requiredForCompletion": true,
-      "requiredForDepths": ["standard", "regulated"],
+      "requiredForDepths": ["light", "standard", "regulated"],
       "requiredFields": [
         { "label": "Task ID" },
         { "label": "Requested by" },
@@ -29,7 +29,7 @@
         { "label": "Agent" },
         { "label": "Provider", "enum": ["codex", "claude", "gemini"] },
         { "label": "Operation" },
-        { "label": "Workflow depth", "enum": ["standard", "regulated"] },
+        { "label": "Workflow depth", "enum": ["light", "standard", "regulated"] },
         { "label": "Objective" },
         { "label": "Scope" },
         { "label": "Non-goals" }
@@ -49,7 +49,7 @@
       "writer": "agm-create-prompt initializes acceptance items; executor and leader update status",
       "scaffoldAtStart": true,
       "requiredForCompletion": true,
-      "requiredForDepths": ["standard", "regulated"],
+      "requiredForDepths": ["light", "standard", "regulated"],
       "kind": "checklist",
       "minimumItems": 1,
       "requireAllChecked": true
@@ -98,7 +98,7 @@
       "writer": "leader after implementation, verification, and applicable QA",
       "scaffoldAtStart": false,
       "requiredForCompletion": true,
-      "requiredForDepths": ["standard", "regulated"],
+      "requiredForDepths": ["light", "standard", "regulated"],
       "requiredFields": [
         { "label": "Outcome", "const": "completed" },
         { "label": "Requested by" },
@@ -108,7 +108,7 @@
         { "label": "Leader role", "const": "leader" },
         { "label": "Leader agent" },
         { "label": "Leader provider", "enum": ["codex", "claude", "gemini"] },
-        { "label": "Workflow depth", "enum": ["standard", "regulated"] },
+        { "label": "Workflow depth", "enum": ["light", "standard", "regulated"] },
         { "label": "QA status", "enum": ["passed", "not-applicable"] },
         { "label": "QA mode", "enum": ["not-applicable", "light", "full"] },
         { "label": "Delivery boundary", "enum": ["task", "commit", "publish", "release"] }

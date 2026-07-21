@@ -39,6 +39,7 @@ test("published aliases use operation-specific progressive-disclosure entrypoint
     assert.ok(aliasSkill.includes(`Run only operation \`${item.operation}\``));
     assert.match(aliasSkill, /Scope gate: before loading lifecycle/);
     assert.ok(aliasSkill.includes(`explicitly invokes \`${item.name}\``));
+    assert.ok(aliasSkill.includes(`AGRIMAP_EXPLICIT_ALIAS=${item.name}`));
     assert.match(aliasSkill, /ordinary non-AgriMap request without reading AgriMap references or writing AgriMap state/);
     assert.match(aliasSkill, /Do \*\*not\*\* preload the glossary, umbrella, or another operation/);
     assert.match(aliasSkill, /never fall back to the router/);
@@ -48,6 +49,7 @@ test("published aliases use operation-specific progressive-disclosure entrypoint
     assert.match(geminiCommand, /do not preload the glossary, routing SKILL\.md, or another operation/);
     assert.match(geminiCommand, /never fall back to the router/);
     assert.match(geminiCommand, /standalone -h or --help token/);
+    assert.ok(geminiCommand.includes(`AGRIMAP_EXPLICIT_ALIAS=${item.name}`));
     const operationEntrypoint = await read(`skills/agrimap-agent-skills/references/operations/${item.operation}.md`);
     assert.ok(operationEntrypoint.includes(`Operation: \`${item.operation}\``));
     assert.ok(operationEntrypoint.includes(`Workflow depth: default \`${item.depth.default}\``));
@@ -114,7 +116,7 @@ test("usage documentation separates routing from operation activation and help",
   assert.ok(rgIgnore.split(/\r?\n/).includes("/plugins/agrimap-agent-skills/skills/agrimap-agent-skills/**"));
   assert.match(usage, /ไม่เขียนทุก step\/tool call/);
   assert.match(usage, /light\|standard\|regulated/);
-  assert.match(usage, /ไม่ออก receipt, ไม่สร้าง brief\/checklist\/memory\/log\/QA\/prompt\/result/);
+  assert.match(usage, /พร้อม brief\/checklist\/memory\/log\/result แบบกระชับ/);
   assert.equal(await read("plugins/agrimap-agent-skills/docs/USAGE.md"), usage);
 });
 

@@ -213,7 +213,7 @@ const lifecycleCorePath = path.join(root, "skills", "agrimap-agent-skills", "ref
 const lifecycleCoreReference = await readFile(lifecycleCorePath, "utf8");
 for (const marker of ["Select one depth", "`light`", "`standard`", "`regulated`", "Help and history are always `light`", "read-only query remains `light`", "start with `--depth standard`", "start with `--depth regulated`", "Milestone checkpoints", "behaviorally complete acceptance slice", "not a file/tool/atomic subtask", "Common boundaries"])
   if (!lifecycleCoreReference.includes(marker)) errors.push(`Lifecycle core missing marker: ${marker}`);
-for (const marker of ["`agm-create-feature` is a special direct-write operation and is always `light`", "full artifact set is a completion set, not a start scaffold", "Never pre-create empty QA or result files"])
+for (const marker of ["`agm-create-feature` is a special bounded-write operation and is always `light`", "full artifact set is a completion set, not a start scaffold", "Never pre-create empty QA or result files"])
   if (!lifecycleCoreReference.includes(marker)) errors.push(`Feature lifecycle boundary missing marker: ${marker}`);
 if (lifecycleCoreReference.split(/\r?\n/).length > 70) errors.push("Lifecycle core exceeds its 70-line budget.");
 const runtimeCoreReference = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "runtime-core.md"), "utf8");
@@ -255,7 +255,7 @@ const workspaceScriptReference = await readFile(path.join(root, "skills", "agrim
 if (!workspaceScriptReference.includes('from "./log-events.mjs"')) {
   errors.push("agm-workspace.mjs does not enforce the canonical log event enum.");
 }
-for (const marker of ["auditEventIssues", 'case "history"', "REQUEST_OBJECTIVE_REQUIRED", "TASK_ID_EXISTS", "AMBIGUOUS_ACTIVE_TASK", "QA_CORRECTION_LIMIT", "QA_FINDING_PRODUCT_FILES_FORBIDDEN", "LIGHT_DEPTH_STATE_FORBIDDEN", "INVALID_WORKFLOW_DEPTH", "CHECKPOINT_EVENT_NOT_MILESTONE", "INVALID_MILESTONE"])
+for (const marker of ["auditEventIssues", 'case "history"', "REQUEST_OBJECTIVE_REQUIRED", "TASK_ID_EXISTS", "AMBIGUOUS_ACTIVE_TASK", "QA_CORRECTION_LIMIT", "QA_FINDING_PRODUCT_FILES_FORBIDDEN", "INVALID_WORKFLOW_DEPTH", "CHECKPOINT_EVENT_NOT_MILESTONE", "INVALID_MILESTONE"])
   if (!workspaceScriptReference.includes(marker)) errors.push(`Workspace audit implementation missing marker: ${marker}`);
 const terminalEventDeclaration = workspaceScriptReference.match(/const TERMINAL_AUDIT_EVENTS = new Set\(\[[^\]]+\]\)/)?.[0] || "";
 if (!terminalEventDeclaration || terminalEventDeclaration.includes('"qa-finding"')) errors.push("qa-finding must exist as a non-terminal audit checkpoint, not a terminal task outcome.");
@@ -266,7 +266,7 @@ for (const hardcodedTemplate of ['renderAssetTemplate("task-brief.md"', 'renderA
 
 if (taskArtifactSchema) {
   for (const issue of taskArtifactSchemaIssues(taskArtifactSchema)) errors.push(`Task artifact schema: ${issue}`);
-  if (JSON.stringify(taskArtifactSchema.workflowDepths) !== JSON.stringify(["standard", "regulated"])) errors.push("Task artifact schema workflowDepths must be standard|regulated.");
+  if (JSON.stringify(taskArtifactSchema.workflowDepths) !== JSON.stringify(["light", "standard", "regulated"])) errors.push("Task artifact schema workflowDepths must be light|standard|regulated.");
   if (JSON.stringify(taskArtifactSchema.artifacts?.["qa.md"]?.requiredForDepths) !== JSON.stringify(["regulated"])) errors.push("qa.md must be required only at regulated depth.");
   for (const [artifact, definition] of Object.entries(taskArtifactSchema.artifacts || {})) {
     const templatePath = path.join(root, "skills", "agrimap-agent-skills", "assets", "templates", definition.template || "");
@@ -357,12 +357,12 @@ for (const marker of ["Artifact ownership and phase order", "agm-exec` owns impl
 
 const createFeatureOperation = operations?.operations?.find((item) => item.operation === "create-feature");
 if (JSON.stringify(createFeatureOperation?.depth) !== JSON.stringify({ default: "light", allowed: ["light"] })) errors.push("create-feature must be light-only.");
-for (const marker of ["never start tracked task state", "route the work to agm-create-prompt", "Return the result only after product writes and verification finish"])
+for (const marker of ["start concise tracked task state", "route the work to agm-create-prompt", "Return the result only after product writes and verification finish"])
   if (!createFeatureOperation?.instructions?.join("\n").includes(marker)) errors.push(`create-feature direct boundary missing marker: ${marker}`);
-for (const marker of ["invoke QA", "delegate/spawn/wait", "persisted-data decision", "bounded slice within the three-artifact limit", "sql-contract-preflight.mjs", "Never use a database, ScriptDom"])
+for (const marker of ["invoke separate QA", "delegate/spawn/wait", "persisted-data decision", "bounded slice within the three-artifact limit", "sql-contract-preflight.mjs", "Never use a database, ScriptDom"])
   if (!createFeatureOperation?.instructions?.join("\n").includes(marker)) errors.push(`create-feature fail-closed boundary missing marker: ${marker}`);
 
-for (const marker of ["CREATE_FEATURE_TRACKING_FORBIDDEN", "PREMATURE_RESULT_ARTIFACT", "PREMATURE_QA_ARTIFACT", "CHECKPOINT_FIELD_BUDGETS"])
+for (const marker of ["PREMATURE_RESULT_ARTIFACT", "PREMATURE_QA_ARTIFACT", "CHECKPOINT_FIELD_BUDGETS"])
   if (!workspaceScriptReference.includes(marker)) errors.push(`Workspace phase/budget guard missing marker: ${marker}`);
 
 const qaReference = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "qa-and-done.md"), "utf8");
@@ -387,9 +387,8 @@ for (const [sourceName, content] of compactPolicySources) {
 if (delegationReference.split(/\r?\n/).length > 80) errors.push("Delegation reference exceeds its 80-line budget.");
 
 const hookContextReference = await readFile(path.join(root, "skills", "agrimap-agent-skills", "scripts", "hook-context.mjs"), "utf8");
-for (const marker of ["Light work proceeds without workflow attribution", "Light skips receipt, task artifacts, memory/logs, and separate QA", "reopen project memory on demand", "lifecycle-core.md"])
+for (const marker of ["every depth persists concise task, memory, and log evidence", "Every depth writes concise task artifacts, memory, and logs", "Reopen project memory on demand", "lifecycle-core.md"])
   if (!hookContextReference.includes(marker)) errors.push(`Hook lifecycle guidance missing marker: ${marker}`);
-if (hookContextReference.includes("Ask the human before substantive work")) errors.push("Hook still forces tracked attribution ceremony onto lightweight work.");
 
 const frontendDiscipline = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "frontend-engineer.md"), "utf8");
 if (!frontendDiscipline.includes("discipline layer, not a standalone workflow")) errors.push("Frontend engineering is not defined as a composable discipline.");

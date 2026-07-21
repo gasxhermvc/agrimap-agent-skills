@@ -45,7 +45,7 @@ test("light analysis is CLI-readable and database conclusions fail soft on missi
   assert.match(contract, /db-schema/i);
   assert.match(contract, /representative examples|representative local examples/i);
   assert.match(contract, /preliminary/i);
-  assert.match(analysis, /At `light`, the direct chat response is the complete deliverable/);
+  assert.match(analysis, /At `light`.*mandatory brief, checklist, current memory, logs, and closure result/);
   assert.doesNotMatch(analysis, /A chat answer alone is not a closed deliverable/);
 });
 

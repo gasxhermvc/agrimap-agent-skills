@@ -22,7 +22,7 @@ test("task artifact schema owns scaffold, completion fields, templates, and gene
   assert.equal(schema.schemaVersion, 4);
   assert.deepEqual(schema.phaseOrder, ["contract", "verification", "closure"]);
   assert.deepEqual(schema.scaffoldOrder, ["brief.md", "checklist.md"]);
-  assert.deepEqual(schema.workflowDepths, ["standard", "regulated"]);
+  assert.deepEqual(schema.workflowDepths, ["light", "standard", "regulated"]);
   assert.deepEqual(schema.artifacts["qa.md"].requiredForDepths, ["regulated"]);
   assert.equal(schema.artifacts["result.md"].requiredSections.includes("Outstanding items"), true);
   assert.equal(schema.artifacts["brief.md"].writePhase, "contract");

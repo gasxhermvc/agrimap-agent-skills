@@ -16,7 +16,7 @@
 
 Use `.agrimap-agent/` under the target project root as the cross-provider workspace state. Keep prose concise and factual. A globally installed Skill/plugin is stateless: never write memory, logs, identity, prompts, or task artifacts into its installation directory.
 
-Provider verbosity is not evidence quality. Claude/Fable, Codex/GPT, and Gemini use the same milestone count and compact field budgets; preserve decisions, results, and source pointers, not hidden reasoning or a transcript. Direct/light operations, including `agm-create-feature`, write none of this state.
+Provider verbosity is not evidence quality. Claude/Fable, Codex/GPT, and Gemini use the same milestone count and compact field budgets; preserve decisions, results, and source pointers, not hidden reasoning or a transcript. Every activated operation, including direct/light work and `agm-create-feature`, writes concise task, memory, and log state.
 
 ## State location
 
@@ -81,7 +81,7 @@ Record the actual model exposed by the running surface. If it is unavailable, us
 
 Writing and loading are asymmetric by design:
 
-- **Write by depth and milestone**: `light` writes none. `standard`/`regulated` append one event and update current memory only at the milestone types below; start and terminal commands write their own events.
+- **Write at every depth and by milestone**: `light`, `standard`, and `regulated` append one event and update current memory only at the milestone types below; start and terminal commands write their own events. Depth changes detail, coordination, and QA requirements, never whether audit state exists.
 - **Load on demand**: hooks inject only active-task memory, never the full project memory into unrelated work. Reopen project/current memory after compaction, an external-change pointer, or when tracked context is required.
 - **Honest expectation**: session memory is a งานตกค้าง-and-project-facts summary, not deep recall. Cross-session "knowing the owner's mind" is a harness-level capability, not something these rules can or should fake with heavier context injection.
 

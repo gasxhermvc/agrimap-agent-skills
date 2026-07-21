@@ -4,7 +4,7 @@ This file is the single policy source for direct `light` QA, tracked `regulated`
 
 ## Verifier boundary
 
-Product artifacts are read-only. At `light`, return evidence directly and create no `.agrimap-agent` state. At `regulated`, use a verifier context that did not write the product change; it may write only `qa.md`, checkpoint/log evidence, and an explicitly declared progress fallback. QA never fixes findings, deploys, mutates data, installs, publishes, regenerates, changes Git, or changes product files/configuration.
+Product artifacts are read-only. At `light`, record concise task, memory, and log evidence without creating `qa.md` or a separate verifier context. At `regulated`, use a verifier context that did not write the product change; it may write only `qa.md`, checkpoint/log evidence, and an explicitly declared progress fallback. QA never fixes findings, deploys, mutates data, installs, publishes, regenerates, changes Git, or changes product files/configuration.
 
 Treat the implementation Result Package as testimony: reopen actual files and diffs. A stronger model or provider does not receive broader tools or permission.
 
