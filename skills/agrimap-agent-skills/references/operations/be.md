@@ -5,7 +5,7 @@
 - Operation: `be`
 - Workflow depth: default `light`; allowed `light`, `standard`, `regulated`
 - Mode: `action-routed`
-- Purpose: Analyze, design, create, edit, or explicitly test backend work through one domain façade.
+- Purpose: Analyze, design, create, edit, refactor, or explicitly test backend work through one domain façade.
 - Deliverable: action-specific backend analysis, design, bounded implementation, or selected tests
 
 ## Action gate
@@ -18,6 +18,7 @@ Resolve exactly one action from an explicit `action=<name>` or unambiguous natur
 | `design` | `product-read-only` | `explicit-or-passive` | `light`, `standard`, `regulated` | Define backend boundaries, flow, validation, failure behavior, and acceptance without editing |
 | `create` | `product-write` | `explicit` | `light` | Create a bounded new backend slice |
 | `edit` | `product-write` | `explicit` | `light` | Modify a bounded existing backend slice |
+| `refactor` | `product-write` | `explicit` | `light`, `standard`, `regulated` | Refactor backend code under exactly one behavior mode and a proven preservation boundary |
 | `test` | `product-write` | `explicit` | `light` | Create explicitly requested or selected backend tests after passive test advice |
 
 ## Inputs and help
@@ -28,12 +29,14 @@ Resolve exactly one action from an explicit `action=<name>` or unambiguous natur
 
 ## Execute this contract
 
-1. Resolve exactly one action before inspection. Explicit action= wins; otherwise infer only from unambiguous verbs and report the resolved action. Ask one short question when create versus edit or read versus write remains ambiguous.
-2. For analyze/design, never edit product files. For create/edit/test, show the bounded slice, stay within light limits, and route broader work to agm-create-prompt before any product write.
-3. Run the passive test advisor during analyze, design, create, and edit. Suggest prioritized coverage but never create tests unless action=test or the requester explicitly asked to create tests.
+1. Resolve exactly one action before inspection. Explicit action= wins; otherwise infer only from unambiguous verbs and report the resolved action. Ask one short question when create, edit, refactor, or read versus write remains ambiguous.
+2. For analyze/design, never edit product files. For create/edit/test, show the bounded slice, stay within light limits, and route broader work to agm-prompt before any product write.
+3. For action=refactor, require exactly one mode before editing, preserve the declared logic boundary, and stop with all five modes plus one recommendation when ambiguous.
+4. Run the passive test advisor during analyze, design, create, edit, and refactor. Suggest prioritized coverage but never create tests unless action=test, the requester explicitly asked, or required regression coverage is already inside authorized product-write scope.
 
 ## Load now
 
+- [goal-rules.md](../goal-rules.md) — mandatory Think/Simplicity/Surgical/Goal-Driven discipline
 - [passive-capabilities.md](../passive-capabilities.md) — passive design and test-advisor boundaries
 - [elicitation.md](../elicitation.md) — action, scope, and propose-first resolution
 - [backend-engineer.md](../backend-engineer.md) — backend phase and profile discipline
@@ -41,7 +44,9 @@ Resolve exactly one action from an explicit `action=<name>` or unambiguous natur
 
 ## Load only when the condition matches
 
+- When action=refactor: [refactor-modes.md](../refactor-modes.md) — exact refactor behavior and logic-change boundary
 - When the backend target contains C#: [patterns/csharp.md](../patterns/csharp.md) — project-wide C# baseline
 - When the target reads cookie, header, query, form, JSON body, or device ID: [patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md](../patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md) — request-value behavior and compatibility
+- When URL, domain, redirect, or callback logic is in scope: [application-url-matrix.md](../application-url-matrix.md) — authoritative environment-specific URL values
 
 Do not read the router `SKILL.md` during operation execution. If this generated entrypoint is missing or corrupt, stop with `PACKAGE_ENTRYPOINT_MISSING` and ask for package sync/reinstallation; never broaden into the router.

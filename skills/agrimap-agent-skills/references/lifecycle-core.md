@@ -43,7 +43,7 @@ On completion:
 5. remove the matching current-memory file;
 6. move tracked task artifacts to `tasks/complete/`.
 
-Raw requester prompts are immutable input evidence under `prompts/YYYY-MM/<conversation-id>/<context>.md`; completion never moves or rewrites them. Generated executor/QA instructions belong under `instructions/YYYY-MM/<task-id>/`.
+Raw requester submissions are append-only input evidence under `prompts/YYYY-MM/<conversation-id>/history.md` and never include AI answers. Immutable Prompt Results use `prompts/YYYY-MM/<conversation-id>/<context>-vNNN.md`. Completion never moves or rewrites either. Execution-generated executor/QA instructions belong under `instructions/YYYY-MM/<task-id>/`.
 
 ## Milestone checkpoints
 

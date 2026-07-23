@@ -260,8 +260,10 @@ export async function hooks(harness) {
   assert.match(refreshedClaudePrompt.hookSpecificOutput.additionalContext, /task\/project memory changed on disk since the last refresh/);
   assert.doesNotMatch(refreshedClaudePrompt.hookSpecificOutput.additionalContext, /Task B context changed/);
   const promptPeriods = await readdir(path.join(temp, ".agrimap-agent", "prompts"));
-  const rawPrompt = await readFile(path.join(temp, ".agrimap-agent", "prompts", promptPeriods.sort().at(-1), "session-b", "continue-after-checkpoint.md"), "utf8");
-  assert.match(rawPrompt, /^\d{4}-\d{2}-\d{2}T.*Z\nCommand: Continue after the checkpoint/m);
+  const rawPrompt = await readFile(path.join(temp, ".agrimap-agent", "prompts", promptPeriods.sort().at(-1), "session-b", "history.md"), "utf8");
+  assert.match(rawPrompt, /^### \[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\]\nContinue the task/m);
+  assert.match(rawPrompt, /### \[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\]\nContinue after the checkpoint/m);
+  assert.doesNotMatch(rawPrompt, /Command:/);
   assert.doesNotMatch(rawPrompt, /Task B context changed|tool output|reasoning/i);
 
   const repeatedClaudePrompt = run(hookScript, ["--provider", "claude", "--mode", "task"], {

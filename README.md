@@ -14,7 +14,7 @@ skills/agrimap-agent-skills/       routing-only skill + shared resources/scripts
               ├── Claude plugin skills (/agrimap-agent-skills:agm-*)
               └── Gemini extension commands (/agm-*) + routing skill
 
-project/.agrimap-agent/            execution memory, daily logs, tracked tasks, raw prompts, reports
+project/.agrimap-agent/            execution memory, daily logs, tracked tasks, raw history, Prompt Results, reports
 project/.agrimap-agent/runtime/    ignored per-session identity + active tasks + hook refresh state
 ```
 
@@ -69,7 +69,7 @@ Or run the equivalent `/plugin marketplace add` and `/plugin install` commands i
 ```text
 /agrimap-agent-skills:agrimap-agent-skills
 /agrimap-agent-skills:agm-be action=create
-/agrimap-agent-skills:agm-create-prompt
+/agrimap-agent-skills:agm-prompt
 ```
 
 Local validation and installation:
@@ -125,11 +125,11 @@ Manual bootstrap or diagnostics:
 ```powershell
 node <installed-package>\skills\agrimap-agent-skills\scripts\agm-workspace.mjs init --cwd .
 node <installed-package>\skills\agrimap-agent-skills\scripts\agm-workspace.mjs identify --cwd . --session <session-id> --requested-by "Billy" --model-label "GPT-5.6-sol" --model "<host-reported-model>" --role leader --agent primary --provider codex
-node <installed-package>\skills\agrimap-agent-skills\scripts\agm-workspace.mjs start --cwd . --session <session-id> --depth regulated --operation create-prompt --title "Prepare shared-table feature contract" --requester-authority owner --decision-owner "Billy" --authority-evidence "confirmed in this session"
+node <installed-package>\skills\agrimap-agent-skills\scripts\agm-workspace.mjs start --cwd . --session <session-id> --depth light --operation prompt --title "Prepare shared-table Prompt Result" --requester-authority owner --decision-owner "Billy" --authority-evidence "confirmed in this session"
 node <installed-package>\skills\agrimap-agent-skills\scripts\agm-workspace.mjs checkpoint --cwd . --session <session-id> --execution <ddHHmmss> --milestone acceptance-slice --summary "Shared table slice completed" --files "src/a.ts,src/b.ts" --verification "typecheck passed"
 ```
 
-Project policy decides which durable `.agrimap-agent/` evidence is tracked. `prompts/` contains raw requester input only; generated instructions live in `instructions/`. Never commit `.agrimap-agent/runtime` or `.agrimap-agent/cache`.
+Project policy decides which durable `.agrimap-agent/` evidence is tracked. Raw requester submits without AI answers append to `prompts/YYYY-MM/<conversation>/history.md`; immutable Prompt Results use `prompts/YYYY-MM/<conversation>/<context>-vNNN.md`; execution-generated role instructions live in `instructions/`. Never commit `.agrimap-agent/runtime` or `.agrimap-agent/cache`.
 
 ## Operations
 
@@ -137,10 +137,9 @@ Project policy decides which durable `.agrimap-agent/` evidence is tracked. `pro
 | --- | --- |
 | `agm-analyze` | cross-discipline evidence-led analysis |
 | `agm-design` | unified FE/BE/SQL/architecture design, product-read-only |
-| `agm-fe` | frontend analyze/design/create/edit/test actions |
-| `agm-be` | backend analyze/design/create/edit/test actions |
-| `agm-sql` | SQL analyze/design/create/edit/explain actions |
-| `agm-refactor` | target-routed FE/BE/SQL refactor with an explicit behavior mode |
+| `agm-fe` | frontend analyze/design/create/edit/refactor/test actions |
+| `agm-be` | backend analyze/design/create/edit/refactor/test actions |
+| `agm-sql` | SQL analyze/design/create/edit/refactor/explain actions |
 | `agm-diagnose` | evidence-led root cause |
 | `agm-simulate` | scenarios, risks, transitions, observables |
 | `agm-plan` | reverse-engineered execution plan |
@@ -148,10 +147,12 @@ Project policy decides which durable `.agrimap-agent/` evidence is tracked. `pro
 | `agm-review` | evidence-backed findings |
 | `agm-history` | read-only requester/task history by person, date, task, or event |
 | `agm-qa` | product-read-only QA; direct `light` by default, tracked only when regulated |
-| `agm-create-prompt` | tracked brief, acceptance checklists, and provider/model-aware generated instructions |
+| `agm-prompt` | light/artifactless immutable Prompt Result V1→VN with explicit Main/Subagent ownership |
 | `agm-exec` | execute one decision-owner-approved prompt under task/QA rails |
 
-Removed aliases `agm-create-feature`, `agm-create-unit-test`, and `agm-refactor-fe|be|sql` are not distributed. Use `agm-fe|agm-be|agm-sql`, `agm-refactor target=fe|be|sql`, and the passive unit-test decision policy. Historical log/task strings remain readable.
+Removed aliases `agm-create-feature`, `agm-create-unit-test`, `agm-create-prompt`, `agm-refactor`, and `agm-refactor-fe|be|sql` are not distributed. Use `agm-prompt`, domain `action=refactor`, and the passive unit-test decision policy. Historical log/task operation strings remain readable.
+
+The mandatory passive Goal Rules—Think Before Coding, Simplicity First, Surgical Changes, and Goal-Driven Execution—apply to all reasoning/implementation/QA/prompt operations without granting write authority. Passive routing is machine-readable in [`passive-skill-map.json`](skills/agrimap-agent-skills/assets/passive-skill-map.json). FE/BE work involving domain concatenation, redirects, or callbacks must select exact values from the authoritative [`application-url-matrix.md`](skills/agrimap-agent-skills/references/application-url-matrix.md), never generic fallback concatenation.
 
 Audit examples:
 
@@ -233,9 +234,9 @@ The task-artifact contract below is generated from `skills/agrimap-agent-skills/
 <!-- Generated by npm run sync from skills/agrimap-agent-skills/assets/task-artifact-schema.json. -->
 | Artifact | Write phase / owner | Required depths | Template | Purpose | Required fields | Required sections |
 | --- | --- | --- | --- | --- | --- | --- |
-| `brief.md` | `contract`<br>agm-create-prompt or the leader of a non-feature tracked operation | `standard`<br>`regulated` | `task-brief.md` | Requester, authority, execution identity, objective, scope, ownership, and decisions. | `Task ID`<br>`Requested by`<br>`Identity source`<br>`Requester authority`<br>`Decision owner`<br>`Authority evidence`<br>`Model label`<br>`Actual model`<br>`Role`<br>`Agent`<br>`Provider`<br>`Operation`<br>`Workflow depth`<br>`Objective`<br>`Scope`<br>`Non-goals` | `File and logical-contract ownership`<br>`Inputs`<br>`Authorized decisions and trade-offs`<br>`Service ownership references`<br>`Concerns` |
+| `brief.md` | `contract`<br>the leader starting a standard/regulated execution; agm-prompt is artifactless | `standard`<br>`regulated` | `task-brief.md` | Requester, authority, execution identity, objective, scope, ownership, and decisions. | `Task ID`<br>`Requested by`<br>`Identity source`<br>`Requester authority`<br>`Decision owner`<br>`Authority evidence`<br>`Model label`<br>`Actual model`<br>`Role`<br>`Agent`<br>`Provider`<br>`Operation`<br>`Workflow depth`<br>`Objective`<br>`Scope`<br>`Non-goals` | `File and logical-contract ownership`<br>`Inputs`<br>`Authorized decisions and trade-offs`<br>`Service ownership references`<br>`Concerns` |
 | `analysis.md` | `contract`<br>leader or executor after target inspection and before implementation completion | `standard`<br>`regulated` | `analysis.md` | Evidence-backed current state, findings, impact, and approved approach for tracked work. | — | `Current State`<br>`Findings`<br>`Proposed Approach` |
-| `checklists.md` | `contract`<br>agm-create-prompt initializes acceptance items; executor and leader update status | `standard`<br>`regulated` | `checklists.md` | Checked completion ledger derived from the task contract. | — | — |
+| `checklists.md` | `contract`<br>the tracked execution leader initializes acceptance items; executor and leader update status | `standard`<br>`regulated` | `checklists.md` | Checked completion ledger derived from the task contract. | — | — |
 | `qa.md` | `verification`<br>agm-qa after implementation evidence exists | `standard`<br>`regulated` | `qa.md` | Tracked QA evidence under the canonical product-read-only verifier contract. | `Status`<br>`QA mode`<br>`QA mode reason`<br>`Coverage key`<br>`Light sequence`<br>`Patterns`<br>`Requested by`<br>`Decision owner`<br>`QA model label`<br>`QA actual model`<br>`QA role`<br>`QA agent`<br>`QA provider`<br>`Product artifacts modified`<br>`Workflow artifacts written`<br>`Implementation model label`<br>`Implementation actual model`<br>`Implementation role`<br>`Implementation agent`<br>`Implementation provider` | `Requirement evidence`<br>`Commands and observed results`<br>`Limitations` |
 | `result.md` | `closure`<br>leader after implementation, verification, and applicable QA | `standard`<br>`regulated` | `result.md` | Leader closure result, QA boundary, verification, memory, and outstanding work. | `Outcome`<br>`Requested by`<br>`Decision owner`<br>`Leader model label`<br>`Leader actual model`<br>`Leader role`<br>`Leader agent`<br>`Leader provider`<br>`Workflow depth`<br>`QA status`<br>`QA mode`<br>`Delivery boundary` | `Authorized decisions`<br>`Changes and verification`<br>`Checklist and memory`<br>`Concerns and commit boundary`<br>`Outstanding items` |
 
@@ -262,7 +263,7 @@ Full QA is mandatory when any schema trigger applies:
 
 The global installation is stateless. On real work, both logs and memory are written to the project currently being changed: `<target-project>/.agrimap-agent/`. The Skill/plugin installation directory is never a state destination.
 
-This repository is the Skill's development source, so its entire `.agrimap-agent/` is local-only and ignored by Git. Its separate repository-local `AGENTS.md` raw-prompt history rule is not exported to target projects. In a target project, runtime is ignored; raw prompts, generated instructions, task results, reports, memory, and concise logs retain distinct directories and ownership.
+This repository is the Skill's development source, so its entire `.agrimap-agent/` is local-only and ignored by Git. Repository-local `AGENTS.md` wording remains local, while the package's target-project hook independently enforces the same conversation-scoped raw-history format. Raw history, versioned Prompt Results, generated instructions, task results, reports, memory, and concise logs retain distinct ownership.
 
 AI Gateway storage is not part of v1.
 

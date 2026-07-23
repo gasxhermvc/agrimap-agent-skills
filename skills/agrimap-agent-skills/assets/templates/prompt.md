@@ -1,77 +1,52 @@
-# Task execution source of truth
+# Prompt Result — {{title}}
 
-> Keep the language simple. Do not remove a contract field merely to make the prompt shorter.
+> One immutable Prompt Package version. Keep the language simple and preserve every required contract field.
 
-## Prompt identity
+## Problem and Required End State
 
-- `prompt_id`: {{prompt_id}}
-- `prompt_role`: `{{leader_executor_or_qa}}`
-- `prompt_status`: `draft|owner-approved|superseded|executed`
-- `task_id`: {{task_id}}
-- Supersedes / superseded by: {{prompt_version_pointer_or_none}}
+{{problem_current_behavior_required_end_state}}
 
-## Requester and assignment
+## Evidence and Source of Trust
 
-- `requested_by`: {{requested_by}}
-- `requester_authority`: `{{requester_authority}}`
-- `decision_owner`: {{decision_owner_or_not_required}}
-- `authority_evidence`: {{authority_evidence_or_not_required}}
-- `provider`: {{provider}}
-- `model_profile`: {{model_profile}}
-- `model_label`: {{configurable_model_label}}
-- `actual_model`: `unresolved-until-dispatch`
-- `role`: {{leader_executor_qa_reviewer_or_analyst}}
-- `agent_name`: {{primary_fe_be_sql_designer_qa_or_custom}}
-- `target_kind`: {{target_kind}}
-- `backend_profile`: {{backend_profile_if_be_main}}
-- `required_skills`: {{required_skills}}
+{{facts_inferences_unknowns_and_canonical_references}}
 
-## Problem, required end state, and done
+## Authorized Decisions and Requester Inputs
 
-{{problem_current_behavior_required_end_state_acceptance}}
+{{authority_requester_inputs_and_material_decisions}}
 
-## Evidence and source of trust
+## Scope and Non-goals
 
-{{facts_inferences_hypotheses_unknowns_with_sources}}
+{{scope_non_goals_exact_write_boundary}}
 
-- Service ownership references: {{service_ids_or_not_applicable}}
+## Logic, Contract, and Data Constraints
 
-## Authorized decisions and requester inputs
+{{behavior_to_preserve_behavior_allowed_to_change_contract_data_url_matrix_constraints}}
 
-{{authorized_decisions_and_requester_input_manifest}}
+## Main Assignment
 
-## Scope and non-goals
+- Owner: Main
+- Model/profile: {{main_model_and_profile}}
+- Files/contracts owned: {{main_ownership}}
+- Forbidden files/contracts: {{main_forbidden_scope}}
+- Integration responsibility: {{main_integration}}
+- Verification: {{main_verification}}
+- Handoff: {{main_handoff}}
 
-{{scope_non_goals_logic_contract_data_impact}}
+## Subagent Assignments
 
-## Workspace and ownership
+{{none_main_owns_all_work_or_bounded_subagent_assignments}}
 
-- Workspace need: {{workspace_need}}
-- Verified workspace mode: `{{workspace_mode}}`
-- Base ref/commit containing required state: {{base_ref_and_commit}}
-- Provider instruction: {{provider_workspace_instruction}}
-- Visibility check: {{workspace_visibility_check}}
-- Unsupported-mode fallback: {{workspace_fallback}}
-- Integration owner: {{integration_owner}}
-- Subagent display label: {{display_label_or_not_applicable}}
-- Progress channel: {{native_thread_or_explicit_fallback_path}}
-- Branch/worktree: {{branch_or_not_applicable}}
-- File/logical-contract ownership: {{file_ownership}}
-- Forbidden files/contracts: {{forbidden_overlap}}
+Each assignment must name model/profile, exact files/contracts, forbidden overlap, ordered work, verification, workspace/integration return, and handoff.
 
-## Targets
+## Ordered Execution and Verification
 
-{{branch_files_lines_stable_anchors}}
+{{ordered_steps_with_target_action_reason_constraints_verification_expected_output}}
 
-## Ordered steps and reasons
+## Acceptance Criteria
 
-For each step include target, action, reason, constraints, verification, expected output, and required reference.
+{{measurable_acceptance_and_test_decision}}
 
-{{ordered_steps}}
-
-## Logic constraints and deviation policy
-
-{{behavior_contract_data_and_generated_code_constraints}}
+## Deviation and Handoff Contract
 
 Continue through routine choices that preserve this contract and record them. If evidence contradicts the prompt or a material change exceeds scope, ownership, logic, contract, data, files, or acceptance criteria, stop the affected step and return:
 
@@ -79,15 +54,5 @@ Continue through routine choices that preserve this contract and record them. If
 - conflicting evidence
 - affected files/symbols
 - decision required
-- proposed next prompt change
-
-## Tests and canonical QA handoff
-
-{{constraints_tests}}
-
-- QA is a separate verification-only model/agent with product artifacts read-only and workflow-evidence writes only: {{qa_execution_identity_and_prompt}}
-- Claims QA should independently sample: {{qa_claims_to_rerun}}
-
-## Memory checkpoint and Result Package
-
-{{memory_log_and_handoff_contract}}
+- proposed next Prompt Result version
+- integration artifact and verification evidence

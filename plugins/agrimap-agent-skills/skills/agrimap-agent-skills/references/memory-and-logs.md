@@ -14,7 +14,10 @@ All operational state belongs under `<target-project>/.agrimap-agent/`. A global
 │   ├── YYYY-MM/<task-id>/{brief,analysis,checklists,qa,result}.md
 │   ├── complete/YYYY-MM/<task-id>/...
 │   └── cancelled/YYYY-MM/<task-id>/...
-├── prompts/YYYY-MM/<session-id|context-id|room-id>/<context>.md
+├── prompts/
+│   └── YYYY-MM/<session-id|context-id|room-id>/
+│       ├── history.md
+│       └── <context>-vNNN.md
 ├── instructions/YYYY-MM/<task-id>/<role>.prompt.md
 ├── reports/YYYY-MM/<ddHHmmss>-<context>.md
 ├── logs/YYYY-MM/YYYY-MM-DD.jsonl
@@ -31,16 +34,18 @@ All operational state belongs under `<target-project>/.agrimap-agent/`. A global
 
 This transition is mechanical, not model discretion: `start → current+recent`, `checkpoint → rewrite current+append recent`, `blocked → keep current`, `terminal → finalize recent+report+project note+delete current`.
 
-## Raw prompt contract
+## Raw history and Prompt Result contracts
 
-`prompts/` stores only verbatim requester submissions captured at `UserPromptSubmit`:
+`prompts/YYYY-MM/<conversation-id>/history.md` stores every verbatim requester submission captured at `UserPromptSubmit` for that conversation, without AI answers:
 
 ```text
-2026-07-21T04:46:07.171Z
-Command: <verbatim requester prompt>
+### [2026-07-21 11:46:07]
+<verbatim requester prompt>
 ```
 
-Do not store generated executor prompts, QA prompts, task artifacts, tool output, or model reasoning there. Generated operational instructions go to `instructions/`. Prompt input is never moved when a task closes.
+Versioned model Prompt Results use `prompts/YYYY-MM/<conversation>/<context>-vNNN.md` and follow [prompt.md](prompt.md). V0 has no file; the first finalized model result is V1. Prior versions are immutable, keep their original period, and are never moved when a task closes.
+
+Do not store AI answers, generated executor prompts, QA prompts, task artifacts, tool output, or model reasoning in raw history. Execution-generated operational instructions go to `instructions/`; a one-file Prompt Result may describe Main/Subagent ownership but does not create those role files.
 
 ## Daily JSONL audit schema
 
@@ -89,4 +94,4 @@ Persist confirmed session identity under ignored `runtime/sessions/<session-id>.
 
 ## Retention and migration
 
-Prune `memory/recent` recursively according to the configured 10–30 day retention. Never prune project memory, current memory, tasks, reports, raw prompts, or audit logs through the recent-memory command. Do not bulk-move legacy state automatically; read legacy paths and write only the new format.
+Prune `memory/recent` recursively according to the configured 10–30 day retention. Never prune project memory, current memory, tasks, reports, raw history, Prompt Results, or audit logs through the recent-memory command. Do not bulk-move legacy state automatically; read legacy paths and write only the new format.

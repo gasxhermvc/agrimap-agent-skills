@@ -7,16 +7,16 @@
   },
   "budgets": {
     "direct": {
-      "maxWords": 900,
-      "maxEstimatedTokensHigh": 2400
+      "maxWords": 1250,
+      "maxEstimatedTokensHigh": 3400
     },
     "required": {
-      "maxWords": 3900,
-      "maxEstimatedTokensHigh": 9800
+      "maxWords": 6200,
+      "maxEstimatedTokensHigh": 16000
     },
     "scenario": {
-      "maxWords": 6500,
-      "maxEstimatedTokensHigh": 18000
+      "maxWords": 9000,
+      "maxEstimatedTokensHigh": 24000
     }
   },
   "scenarios": [
@@ -71,6 +71,23 @@
         "analysis-discipline.md",
         "input-and-scope.md",
         "frontend-engineer.md"
+      ]
+    },
+    {
+      "id": "be-callback-matrix-light",
+      "description": "Backend URL and callback work loads the authoritative application matrix",
+      "operation": "be",
+      "depth": "light",
+      "activate": [
+        "application-url-matrix.md"
+      ],
+      "mustLoad": [
+        "goal-rules.md",
+        "passive-capabilities.md",
+        "elicitation.md",
+        "backend-engineer.md",
+        "patterns/backend.md",
+        "application-url-matrix.md"
       ]
     },
     {
@@ -136,11 +153,10 @@
     {
       "id": "refactor-fe-main-light",
       "description": "Normal frontend refactor before golden evidence",
-      "operation": "refactor",
+      "operation": "fe",
       "depth": "light",
       "activate": [
-        "frontend-engineer.md",
-        "patterns/frontend.md"
+        "refactor-modes.md"
       ],
       "mustLoad": [
         "refactor-modes.md",
@@ -149,19 +165,22 @@
       ],
       "budgets": {
         "direct": {
-          "maxWords": 1000,
-          "maxEstimatedTokensHigh": 2800
+          "maxWords": 1250,
+          "maxEstimatedTokensHigh": 3300
+        },
+        "required": {
+          "maxWords": 5400,
+          "maxEstimatedTokensHigh": 13500
         }
       }
     },
     {
       "id": "refactor-fe-main-golden-light",
       "description": "Frontend refactor using one selected current golden architecture entry",
-      "operation": "refactor",
+      "operation": "fe",
       "depth": "light",
       "activate": [
-        "frontend-engineer.md",
-        "patterns/frontend.md"
+        "refactor-modes.md"
       ],
       "select": [
         "patterns/golden/frontend-main/manifest.json",
@@ -178,8 +197,12 @@
       ],
       "budgets": {
         "direct": {
-          "maxWords": 1000,
-          "maxEstimatedTokensHigh": 2800
+          "maxWords": 1250,
+          "maxEstimatedTokensHigh": 3300
+        },
+        "required": {
+          "maxWords": 5400,
+          "maxEstimatedTokensHigh": 13500
         }
       }
     },
@@ -244,21 +267,24 @@
       ],
       "budgets": {
         "scenario": {
-          "maxWords": 7200,
-          "maxEstimatedTokensHigh": 19500
+          "maxWords": 8000,
+          "maxEstimatedTokensHigh": 21000
         }
       }
     },
     {
-      "id": "create-prompt-fe-main-regulated",
+      "id": "prompt-fe-main-light",
       "description": "Frontend prompt generation must carry FE fundamentals into handoffs",
-      "operation": "create-prompt",
-      "depth": "regulated",
+      "operation": "prompt",
+      "depth": "light",
       "activate": [
+        "subagents-and-branches.md",
         "frontend-engineer.md"
       ],
       "mustLoad": [
-        "create-prompt.md",
+        "goal-rules.md",
+        "prompt.md",
+        "passive-capabilities.md",
         "subagents-and-branches.md",
         "model-capability-matrix.yaml",
         "frontend-engineer.md"
@@ -303,11 +329,10 @@
     {
       "id": "refactor-be-request-normalize-light",
       "description": "Backend refactor that consolidates scattered request-value extraction",
-      "operation": "refactor",
+      "operation": "be",
       "depth": "light",
       "activate": [
-        "backend-engineer.md",
-        "patterns/backend.md",
+        "refactor-modes.md",
         "patterns/csharp.md",
         "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md"
       ],

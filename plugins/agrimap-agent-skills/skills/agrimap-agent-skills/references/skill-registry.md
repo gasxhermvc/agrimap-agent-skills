@@ -17,10 +17,14 @@
 | `agm:analysis-discipline` | `analysis-discipline.md` | แยก FACT/INFERENCE/HYPOTHESIS/UNKNOWN |
 | `agm:elicitation` | `elicitation.md` | resolve parameter ที่ขาด |
 | `agm:input-and-scope` | `input-and-scope.md` | normalize inputs/attachments |
+| `agm:goal-rules` | `goal-rules.md` | mandatory Think/Simplicity/Surgical/Goal-Driven discipline |
+| `agm:passive-map` | `assets/passive-skill-map.json` | canonical passive capability routing and authority effects |
+| `agm:passive-capabilities` | `passive-capabilities.md` | passive design/test/refactor/SQL disciplines |
 | `agm:refactor-modes` | `refactor-modes.md` | เลือกโหมด refactor |
 | `agm:memory-and-logs` | `memory-and-logs.md` | schema ของ memory/log |
 | `agm:subagents` | `subagents-and-branches.md` | delegation / workspace mode |
-| `agm:create-prompt` | `create-prompt.md` | สร้าง prompt SoT |
+| `agm:prompt` | `prompt.md` | สร้าง immutable versioned Prompt Result |
+| `agm:url-matrix` | `application-url-matrix.md` | exact FE/BE application and callback URL decisions |
 | `agm:service-ownership` | `service-ownership.md` | งานข้าม service/ownership |
 | `agm:platform-syntax` | `platform-syntax.md` | provider detection / invocation syntax |
 | `agm:skill-registry` | `skill-registry.md` | ทะเบียนนี้เอง |

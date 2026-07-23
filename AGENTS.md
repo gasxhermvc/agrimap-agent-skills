@@ -1,23 +1,28 @@
 # กฎการทำงานของ AGENTS
+
 - กฎข้อบังคับเหล่านี้ Agent / Model ต้องปฎิบัติตามอย่างเคร่งครัดให้ถือเป็นเหตุผลของการตัดสินใจสูงสุดในการทำงาน
-1. หากมีการคุย Requirement และสรุป และปรับ Requirement เดิมวนแบบนี้ไป ต้องมีการจัดเก็บ Requirement เป็น Version ต่างๆ เพื่อให้สามารถย้อนกลับไปดู Requirement เก่า และ ผู้ใช้งานต้องการเก็บรวบรวมชุดคำสั่งที่ใช้ในกระบวนการสร้างงานของ Agent ตั้งแต่ 0 ไปจนถึง 100 อยากรู้ว่า Prompt จะต้องเขียนแบบไหนยังไงจนได้งานครบถ้วน ดังนั้น Agent / Model ต้องทำตาม "การอัปเดต Requirement Version" อย่างเคร่งครัด
-2. เมื่อจบการสร้างงาน/ทำงานของ Requirement Version ใดๆ แล้ว Agent / Model ต้องบันทึก Memory เพื่อบันทึกข้อมูลการเปลี่ยนแปลงของระบบ
+
+1. เมื่อใช้ `agm-prompt` เพื่อคุย สรุป และปรับโจทย์เดิมวนต่อเนื่อง ต้องจัดเก็บผลลัพธ์ที่ Model สรุปแล้วเป็น Prompt Result Version เพื่อย้อนดูคำสั่งที่พร้อมนำไปสั่ง Agent ได้ ห้ามสร้าง Requirement Version หรือ folder `requirements` แยกต่างหาก
+2. เมื่อจบการสร้าง Prompt Result Version ใดๆ แล้ว Agent / Model ต้องบันทึก Memory และ Log ตาม workflow depth โดย `agm-prompt` เป็น light และห้ามสร้าง `tasks/**`
 
 ## การบันทึกชุดคำสั่ง Raw Prompt / Prompt Submit ของผู้ใช้งาน
-1. Agent / Model ต้องบันทึกชุดคำสั่ง Prompt ของผู้ใช้งานทุกรายการที่ผู้ใช้งาน Submit เข้ามา โดยต้องบันทึกเป็น Raw Prompt / Prompt Submit ของผู้ใช้งาน และบันทึกไว้ที่ ./.agrimap-agent/prompts/history/<yyyy-MM-dd>.txt โดย yyyy-MM-dd คือวันที่ผู้ใช้งาน Submit Prompt เข้ามา
+
+1. Agent / Model ต้องบันทึกชุดคำสั่ง Prompt ของผู้ใช้งานทุกรายการที่ผู้ใช้งาน Submit เข้ามาเป็น Raw Prompt โดย append ตาม conversation ที่ `./.agrimap-agent/prompts/<yyyy-MM>/<session_id|context_id|room_id>/history.md` เท่านั้น ห้ามเก็บคำตอบของ AI ปนในไฟล์นี้
 2. โครงการสร้าง Log ของ Agent ใช้เทมเพลตแบบนี้
+
 ```
-### [<yyyy-MM-dd HH:mm:ss>] 
-<Prompt Submit ของผู้ใช้งานครั้งที่ 1 ในวันนั้น>
+### [<yyyy-MM-dd HH:mm:ss>]
+<Prompt Submit ของผู้ใช้งานครั้งที่ 1 ใน conversation>
 
 ### [<yyyy-MM-dd HH:mm:ss>]
-<Prompt Submit ของผู้ใช้งานครั้งที่ 2 ในวันนั้น>
+<Prompt Submit ของผู้ใช้งานครั้งที่ 2 ใน conversation>
 ```
 
-## การอัปเดต Requirement Version
-1. เมื่อได้รับ Requirement + สั่งดำงานแล้วเสร็จ ตรวจสอบหากไม่มีเรื่องนี้ให้ทำการบันทึก Version 1 ส่วนถ้ามีแล้วจะเป็น Version ใหม่ทันที
-2. เมื่อผู้ใช้งานเขียน Requirement ใหม่ๆ เข้ามาขอให้วิเคราะห์ Requirement Agent จะยังไม่ถือว่า Requirement ชุดนี้ต้องอัปเดตเป็น Version ใหม่ในทันที
-3. เมื่อ Agent / Model วิเคราะห์ความต้องการเรียบร้อย และนำเสนอผู้ใช้งานสั่งสร้าง/ดำเนินการ หรือ Action ที่หมายถึงให้ Agent ทำ/สร้าง Requirement นั้นได้ Agent จะต้องบันทึก Requirement เป็น New Version โดยอัตโนมัติ
-4. Version ใหม่ที่บันทึกต้องมีข้อมูลจาก Version เก่าครบถ้วนโดยไม่สูญหาย และต้องมีการบันทึกข้อมูลเพิ่มเติมที่ผู้ใช้งานสั่งให้ Agent ทำงานตาม Requirement เพราะฉะนั้น Agent / Model ต้องทำตามอย่างแข็งขันถือว่ากฎนี้สูงสุด
-5. ในกรณีที่มีการเปลี่ยนหรือแก้ไข Requirement เก่า หรือเอาส่วนนั้นออก เท่านั้น ที่ Version ใหม่จะไม่มี Version เก่าข้อนั้น เพราะฉะนั้น Agent / Model ต้องทำตามอย่างแข็งขันถือว่ากฎนี้สูงสุด
-ุ6. ในการเพิ่ม Requirement ใหม่ๆ จะเป็นการแทรกเข้าไปจากของเดิม
+## การอัปเดต Prompt Result Version
+
+1. V0 คือ Prompt Submit ของผู้ใช้งานและไม่มี Prompt Result file; เมื่อ Model สรุปคำตอบสำเร็จครั้งแรกให้สร้าง V1 ทันที
+2. บันทึก Prompt Result ที่ `./.agrimap-agent/prompts/<yyyy-MM>/<session_id|context_id|room_id>/<context>-vNNN.md` เท่านั้น ทุก workflow artifact ต้องอยู่ใต้ `./.agrimap-agent/` ห้ามใช้ `./agrimap-agent/`
+3. เมื่อผู้ใช้งานถามต่อโดยโฟกัส Prompt Result เดิม ให้สร้าง Version ใหม่จาก Version ล่าสุดโดยอัตโนมัติ หากระบุ source file ชัดเจนให้ใช้ไฟล์นั้นหลังตรวจสอบ family; หากไม่แน่ใจให้หยุด `PROMPT_SOURCE_CONFIRM_REQUIRED` และถามผู้ใช้งาน
+4. Version ใหม่ต้องเก็บข้อมูลเดิมที่ยัง valid ให้ครบ แล้วผสานข้อมูลเพิ่มเติมหรือการตัดสินใจใหม่เข้าไปโดยไม่ overwrite Version เก่า
+5. ตัดหรือเปลี่ยนข้อมูลเดิมได้เฉพาะเมื่อผู้ใช้งานสั่งแก้ เปลี่ยน หรือนำส่วนนั้นออกอย่างชัดเจน
+6. Prompt Result หนึ่ง Version เป็นหนึ่งไฟล์ โดยต้องแยกหน้าที่ Main และ Subagent ให้ชัดเจน; ถ้าไม่มี Subagent ให้ระบุว่า Main รับผิดชอบทั้งหมด

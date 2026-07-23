@@ -334,8 +334,10 @@ async function ensureLayout(root) {
         cancelledPath: ".agrimap-agent/tasks/cancelled/YYYY-MM/<task-id>",
       },
       prompts: {
-        mode: "raw-requester-only",
-        path: ".agrimap-agent/prompts/YYYY-MM/<conversation-id>/<context>.md",
+        mode: "conversation-raw-and-versioned-results",
+        rawHistoryPath: ".agrimap-agent/prompts/YYYY-MM/<conversation-id>/history.md",
+        resultPath: ".agrimap-agent/prompts/YYYY-MM/<conversation-id>/<context>-vNNN.md",
+        aiAnswersInRawHistory: false,
       },
       instructions: { path: ".agrimap-agent/instructions/YYYY-MM/<task-id>" },
       reports: { path: ".agrimap-agent/reports/YYYY-MM/<run-id>-<context>.md" },
@@ -1548,11 +1550,11 @@ async function updateProjectMemory(state, active, status, reportPath) {
   return stateRelative(state, projectPath);
 }
 
-async function writeExecutionReport(state, active, status, files, verification, taskPath = null) {
+async function writeCanonicalExecutionReport(state, active, status, files, verification, taskPath = null) {
   const executionId = active.executionId || active.taskId;
   const config = await workspaceConfig(state);
-  const local = zonedParts(active.startedAt || now(), config.timeZone || DEFAULT_PROJECT_TIME_ZONE);
-  const period = active.period || local.period;
+  const startedLocal = zonedParts(active.startedAt || now(), config.timeZone || DEFAULT_PROJECT_TIME_ZONE);
+  const period = active.period || startedLocal.period;
   const slug = executionSlug(active);
   const reportPath = path.join(state, "reports", period, `${executionId}-${slug}.md`);
   const memoryPaths = activeMemoryPaths(state, active);
@@ -1560,17 +1562,74 @@ async function writeExecutionReport(state, active, status, files, verification, 
   const finishedLocal = zonedParts(finishedAt, config.timeZone || DEFAULT_PROJECT_TIME_ZONE);
   const durationMs = Math.max(0, Date.parse(finishedAt) - Date.parse(active.startedAt || finishedAt));
   const duration = `~${Math.max(1, Math.round(durationMs / 60_000))} minute(s)`;
+  const finalStatus = status === "completed"
+    ? "✅ COMPLETED"
+    : status === "blocked"
+      ? "⚠️ PARTIAL"
+      : "❌ FAILED";
   const terminalBucket = status === "completed" ? "complete" : status === "blocked" ? null : "cancelled";
-  const linkedTask = active.taskId
-    ? terminalBucket ? `tasks/${terminalBucket}/${period}/${active.taskId}` : stateRelative(state, taskPath)
-    : "not-applicable (light workflow)";
-  const dailyLog = `logs/${finishedLocal.period}/${finishedLocal.date}.jsonl`;
-  const fileRows = files.length ? files.map((file) => `| \`${file}\` | Changed or verified by this execution |`).join("\n") : "| — | No product file attribution recorded |";
-  const verificationRows = verification.length ? verification.map((item, index) => `| ${index + 1} | ${item} |`).join("\n") : "| 1 | No verification detail recorded |";
-  const finalLabel = status === "completed" ? "✅ COMPLETED" : status === "blocked" ? "⚠️ BLOCKED" : status === "cancelled" ? "⛔ CANCELLED" : "❌ FAILED";
-  const report = `# Execution Report — ${active.objective}\n\n## Metadata\n\n| Field | Value |\n|---|---|\n| Session ID | ${active.sessionId || "not-recorded"} |\n| Execution ID | ${executionId} |\n| Task ID | ${active.taskId || "not-applicable"} |\n| Workflow depth | ${active.workflowDepth} |\n| Requester | ${active.requestedBy} |\n| Identity source | ${active.identitySource} |\n| Provider | ${active.provider} |\n| Model | ${active.model} |\n| Role / agent | ${active.role} / ${active.agent} |\n| Started At | ${active.startedAt || "not-recorded"} |\n| Finished At | ${finishedAt} |\n| Duration | ${duration} |\n| Final Status | ${finalLabel} |\n\n## Linked Artifacts\n\n| Artifact | Path |\n|---|---|\n| Memory (recent) | \`${stateRelative(state, memoryPaths.recent)}\` |\n| Daily audit log | \`${dailyLog}\` |\n| Task folder | \`${linkedTask}\` |\n| Raw prompt | ${active.promptPath ? `\`${active.promptPath}\`` : "not-recorded"} |\n| Generated instructions | ${active.instructionPath ? `\`${active.instructionPath}\`` : "not-recorded"} |\n| Report (this) | \`${stateRelative(state, reportPath)}\` |\n\n## Objective\n\n${active.objective}\n\n## Files Changed or Verified\n\n| File | Description |\n|---|---|\n${fileRows}\n\n## Issues Found and Resolved\n\n| Severity | Issue | Resolution |\n|---|---|---|\n| — | No unresolved issue recorded in terminal evidence | — |\n\n## Task Files Status\n\n| File | Status |\n|---|---|\n${active.taskId ? "| `brief.md` | recorded |\n| `analysis.md` | recorded |\n| `checklists.md` | recorded |\n| `qa.md` | recorded |\n| `result.md` | recorded |" : "| — | not-applicable for light workflow |"}\n\n## Verification\n\n| # | Evidence |\n|---|---|\n${verificationRows}\n\n## Summary\n\nExecution closed as **${status}**. Raw prompts remained in the prompt archive, generated instructions remained separate, and recent memory stores a concise trace rather than transcripts, raw tool output, or hidden reasoning.\n\n**Final Status: ${finalLabel}**\n\n## Completion Checklist\n\n- [x] Recent memory journal updated\n${status === "completed" ? "- [x] Short completion pointer added to project memory\n" : "- [x] Project memory not promoted because this execution did not complete\n"}- [x] Current memory removed for terminal work\n- [x] Daily JSONL terminal audit event written\n- [x] Raw prompts left immutable in the prompt archive\n${active.taskId ? "- [x] Task folder moved to its terminal bucket\n" : "- [x] Task artifacts correctly omitted for light workflow\n"}`;
+  const taskFolder = active.taskId
+    ? `\`.agrimap-agent/${terminalBucket ? `tasks/${terminalBucket}/${period}/${active.taskId}/` : `${stateRelative(state, taskPath)}/`}\``
+    : "not-applicable (light workflow; no tasks/**)";
+  const promptSource = active.promptPath
+    ? `\`.agrimap-agent/${String(active.promptPath).replace(/^\.agrimap-agent[\\/]/, "").replace(/\\/g, "/")}\``
+    : "not-recorded";
+  const taskArtifacts = ["brief.md", "analysis.md", "checklists.md", "qa.md", "result.md"];
+  const taskStatusRows = active.taskId
+    ? (await Promise.all(taskArtifacts.map(async (fileName) => {
+        const present = taskPath ? await exists(path.join(taskPath, fileName)) : false;
+        return `| \`${fileName}\` | ${present ? "✅" : "⏳"} | ${present ? "recorded" : "not recorded at terminal report time"} |`;
+      }))).join("\n")
+    : taskArtifacts.map((fileName) => `| \`${fileName}\` | ➖ | not applicable for light workflow |`).join("\n");
+  const modifiedBlocks = files.length
+    ? files.map((file) => `### \`${file}\`\n\n| Change Type | Detail |\n|---|---|\n| REPLACED | Changed or verified by terminal execution evidence |`).join("\n\n")
+    : "### —\n\n| Change Type | Detail |\n|---|---|\n| — | No modified-file attribution recorded |";
+  const verificationSummary = verification.length
+    ? `Verification recorded: ${verification.join("; ")}.`
+    : "No executable verification detail was recorded; the report does not invent one.";
+  const summary = status === "completed"
+    ? `The authorized objective completed and its terminal evidence was recorded. ${verificationSummary} Unrelated logic and requester-owned changes remained outside scope.`
+    : `The execution closed as ${status} without claiming completion. ${verificationSummary} Remaining work is preserved in terminal evidence rather than hidden or inferred.`;
+  const completionChecklist = [
+    active.taskId ? "- [x] `result.md` terminal state checked" : "- [x] `result.md` correctly not applicable for light workflow",
+    `- [x] Recent memory updated at \`.agrimap-agent/${stateRelative(state, memoryPaths.recent)}\``,
+    "- [x] Short terminal outcome promoted to `.agrimap-agent/memory/project.md`",
+    `- [x] Current memory removed at terminal close: \`.agrimap-agent/${stateRelative(state, memoryPaths.current)}\``,
+    `- [x] Daily terminal audit event written under \`.agrimap-agent/logs/${finishedLocal.period}/${finishedLocal.date}.jsonl\``,
+    `- [x] Prompt source retained immutably: ${promptSource}`,
+    active.taskId
+      ? `- [x] Task terminal destination recorded: ${taskFolder}`
+      : "- [x] Task folder correctly omitted for light workflow",
+  ].join("\n");
+  const report = await renderAssetTemplate("execution-report.md", {
+    TASK_TITLE: active.objective,
+    SESSION_ID: active.sessionId || "not-recorded",
+    TASK_ID: active.taskId || "not-applicable (light workflow)",
+    PROVIDER: active.provider || "unknown",
+    MODEL: active.model || "unknown",
+    MODE: `${active.operation || "unspecified"} / workflow_depth=${active.workflowDepth}`,
+    STARTED_AT: `${startedLocal.date} ${startedLocal.hour}:${startedLocal.minute}:${startedLocal.second}`,
+    FINISHED_AT: `${finishedLocal.date} ${finishedLocal.hour}:${finishedLocal.minute}:${finishedLocal.second}`,
+    DURATION: duration,
+    FINAL_STATUS: finalStatus,
+    RECENT_MEMORY_PATH: `.agrimap-agent/${stateRelative(state, memoryPaths.recent)}`,
+    TASK_FOLDER_PATH: taskFolder,
+    PROMPT_SOURCE_PATH: promptSource,
+    REPORT_PATH: `.agrimap-agent/${stateRelative(state, reportPath)}`,
+    OBJECTIVES: `1. ${active.objective}`,
+    FILES_READ_ROWS: "| — | Read-file attribution was not captured; no list was inferred |",
+    FILES_GENERATED_ROWS: "| — | Generated-file attribution was not captured separately |",
+    FILES_MODIFIED_BLOCKS: modifiedBlocks,
+    ISSUES_ROWS: status === "completed"
+      ? "| — | — | No unresolved terminal issue recorded | — |"
+      : `| HIGH | — | Execution closed as ${status} | See terminal audit reason and recent memory |`,
+    TASK_STATUS_ROWS: taskStatusRows,
+    SUMMARY: summary,
+    COMPLETION_CHECKLIST: completionChecklist,
+  });
+  if (/\{\{[A-Z_]+\}\}/.test(report)) throw new Error("Execution report template contains an unresolved placeholder.");
   await mkdir(path.dirname(reportPath), { recursive: true });
-  await writeFile(reportPath, `${report.trimEnd()}\n`, "utf8");
+  await writeFile(reportPath, report, "utf8");
   return reportPath;
 }
 
@@ -1623,7 +1682,7 @@ async function complete(root, args) {
     verification,
   });
   const memoryPaths = await appendRecentTerminal(state, active, "completed", "Completion gate passed.");
-  const reportPath = await writeExecutionReport(state, active, "completed", files, verification, taskPath);
+  const reportPath = await writeCanonicalExecutionReport(state, active, "completed", files, verification, taskPath);
   const projectMemory = await updateProjectMemory(state, active, "completed", reportPath);
   const archivedTaskPath = await moveTaskToTerminal(state, active, "complete");
   await rm(memoryPaths.current, { force: true });
@@ -1686,7 +1745,7 @@ async function closeTask(root, args) {
   if (status === "blocked") {
     return { ok: true, executionId, taskId: active.taskId, status, complete: false, remainsCurrent: true, currentMemory: stateRelative(state, memoryPaths.current), recentMemory: stateRelative(state, memoryPaths.recent) };
   }
-  const reportPath = await writeExecutionReport(state, active, status, files, [], taskPath);
+  const reportPath = await writeCanonicalExecutionReport(state, active, status, files, [], taskPath);
   const archivedTaskPath = await moveTaskToTerminal(state, active, "cancelled");
   await rm(memoryPaths.current, { force: true });
   await rm(activeMatch.activePath, { force: true });

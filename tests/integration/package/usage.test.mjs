@@ -135,9 +135,8 @@ test("C# and request-value contracts route through every backend operation", asy
     "architect",
     "review",
     "be",
-    "refactor",
     "qa",
-    "create-prompt",
+    "prompt",
     "execute",
   ];
   for (const operation of backendOperations) {

@@ -99,21 +99,26 @@ function zonedParts(timestamp = new Date().toISOString(), timeZone = "Asia/Bangk
     hourCycle: "h23",
   }).formatToParts(new Date(timestamp));
   const value = Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
-  return { period: `${value.year}-${value.month}`, runId: `${value.day}${value.hour}${value.minute}${value.second}` };
+  return {
+    period: `${value.year}-${value.month}`,
+    date: `${value.year}-${value.month}-${value.day}`,
+    time: `${value.hour}:${value.minute}:${value.second}`,
+    runId: `${value.day}${value.hour}${value.minute}${value.second}`,
+  };
 }
 
-async function archiveRawPrompt(stateRoot, config, input, conversationId) {
+async function archiveRawPrompt(stateRoot, config, input) {
   const prompt = typeof input.prompt === "string" ? input.prompt : "";
   const eventName = input.hook_event_name || input.hookEventName || "";
   if (eventName !== "UserPromptSubmit" || !prompt) return null;
   const timestamp = new Date().toISOString();
   const local = zonedParts(timestamp, config?.timeZone || "Asia/Bangkok");
-  const conversation = safeSessionId(conversationId || input.context_id || input.contextId || "unscoped") || "unscoped";
-  const suppliedContext = safeSessionId(input.context_id || input.contextId || input.room_id || input.roomId || input.turn_id || input.turnId);
-  const context = suppliedContext || `${local.runId}-${fingerprint(prompt).slice(0, 10)}`;
-  const promptPath = path.join(stateRoot, "prompts", local.period, conversation, `${context}.md`);
+  const conversationId = safeSessionId(
+    input.session_id || input.sessionId || input.conversation_id || input.conversationId || input.context_id || input.contextId || input.room_id || input.roomId,
+  ) || "unscoped";
+  const promptPath = path.join(stateRoot, "prompts", local.period, conversationId, "history.md");
   await mkdir(path.dirname(promptPath), { recursive: true });
-  await appendFile(promptPath, `${timestamp}\nCommand: ${prompt}\n\n---\n`, "utf8");
+  await appendFile(promptPath, `### [${local.date} ${local.time}]\n${prompt}\n\n`, "utf8");
   return path.relative(stateRoot, promptPath).replace(/\\/g, "/");
 }
 
@@ -228,9 +233,9 @@ if (!activation.active) {
   process.exit(0);
 }
 
-const archivedPromptPath = await archiveRawPrompt(stateRoot, activationConfig, input, effectiveSessionId);
+const archivedPromptPath = await archiveRawPrompt(stateRoot, activationConfig, input);
 if (archivedPromptPath && activeTask && effectiveSessionId) {
-  activeTask.promptPath = archivedPromptPath;
+  activeTask.rawPromptHistoryPath = archivedPromptPath;
   await writeJson(path.join(stateRoot, "runtime", "active", `${effectiveSessionId}.json`), activeTask);
 }
 
@@ -251,7 +256,7 @@ const currentMemoryRelative = activeTask?.currentMemoryPath
 const currentTaskMemory = currentMemoryRelative
   ? await readText(path.join(stateRoot, currentMemoryRelative))
   : "";
-const { promptPath: _promptPath, ...activeTaskForFingerprint } = activeTask || {};
+const { promptPath: _promptPath, rawPromptHistoryPath: _rawPromptHistoryPath, ...activeTaskForFingerprint } = activeTask || {};
 const memoryFingerprint = fingerprint(JSON.stringify({
   projectMemory,
   activeTask: activeTaskForFingerprint,
@@ -336,7 +341,7 @@ if (mode !== "task") {
     "- For a generated agm alias, read exactly lifecycle-core.md and its operations/<operation>.md entrypoint; do not preload the glossary or routing umbrella. A missing/corrupt compact route is PACKAGE_ENTRYPOINT_MISSING.",
     "- Do not add permission gates. Discuss only material logic/contract/data/architecture trade-offs.",
     "- Select light|standard|regulated, identify the requester, and start execution state before substantive work. Light writes memory/logs without tasks/**; standard and regulated also write the five tracked task artifacts.",
-    "- Raw requester prompts belong only under .agrimap-agent/prompts/YYYY-MM/<conversation>/<context>.md. Generated executor/QA instructions belong under .agrimap-agent/instructions/, never prompts/.",
+    "- Raw requester submits contain no AI answers and belong only in .agrimap-agent/prompts/YYYY-MM/<conversation>/history.md. Versioned Prompt Results belong in .agrimap-agent/prompts/YYYY-MM/<conversation>/<context>-vNNN.md; generated execution-only role instructions belong under .agrimap-agent/instructions/.",
     "- Reopen project memory on demand and update current execution memory only at defined milestones; do not inject unrelated project memory into the execution.",
   );
   if (currentTaskMemory) context.push("\nCurrent tracked-task memory:\n", currentTaskMemory);

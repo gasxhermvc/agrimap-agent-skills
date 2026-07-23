@@ -14,7 +14,7 @@ const backendPattern = await read("skills/agrimap-agent-skills/references/patter
 const backendDiscipline = await read("skills/agrimap-agent-skills/references/backend-engineer.md");
 const frontendPattern = await read("skills/agrimap-agent-skills/references/patterns/frontend.md");
 const frontendDiscipline = await read("skills/agrimap-agent-skills/references/frontend-engineer.md");
-const promptPolicy = await read("skills/agrimap-agent-skills/references/create-prompt.md");
+const promptPolicy = await read("skills/agrimap-agent-skills/references/prompt.md");
 const delegationPolicy = await read("skills/agrimap-agent-skills/references/subagents-and-branches.md");
 const passiveCapabilities = await read("skills/agrimap-agent-skills/references/passive-capabilities.md");
 const lifecycle = await read("skills/agrimap-agent-skills/references/lifecycle-core.md");
@@ -28,10 +28,10 @@ const modes = [
 ];
 
 test("SQL refactor exposes all five modes instead of a recommendation-only extra turn", () => {
-  const operation = operations.operations.find((item) => item.operation === "refactor");
-  const contract = [operation.requiredInputs.join("\n"), operation.instructions.join("\n"), elicitation, refactorModes].join("\n");
+  const operation = operations.operations.find((item) => item.operation === "sql");
+  const contract = [operation.actions.map((item) => item.name).join("\n"), operation.instructions.join("\n"), elicitation, refactorModes].join("\n");
   for (const mode of modes) assert.match(contract, new RegExp(mode));
-  assert.match(operation.instructions.join("\n"), /show all five modes with one recommendation/i);
+  assert.match(operation.instructions.join("\n"), /all five modes.*one recommendation/i);
   assert.match(elicitation, /ตอบเลขหรือ enum/);
 });
 
@@ -61,12 +61,16 @@ test("SQL explain is evidence-labelled and cannot execute or edit", () => {
     assert.ok(passiveCapabilities.includes(marker), `SQL explain marker missing: ${marker}`);
 });
 
-test("one public refactor routes FE, BE, and SQL while split aliases are absent", () => {
-  const refactor = operations.operations.find((item) => item.operation === "refactor");
-  assert.deepEqual(refactor.requiredInputs.slice(0, 1), ["target=fe|be|sql"]);
-  for (const target of ["fe", "be", "sql"])
-    assert.ok(refactor.conditionalReferences.some((item) => item.when === `target=${target}`));
-  for (const name of ["agm-refactor-fe", "agm-refactor-be", "agm-refactor-sql"])
+test("domain refactor actions replace all standalone refactor aliases", () => {
+  for (const target of ["fe", "be", "sql"]) {
+    const operation = operations.operations.find((item) => item.operation === target);
+    const refactor = operation.actions.find((item) => item.name === "refactor");
+    assert.equal(refactor.mode, "product-write");
+    assert.equal(refactor.activation, "explicit");
+    assert.deepEqual(refactor.depths, ["light", "standard", "regulated"]);
+    assert.ok(operation.conditionalReferences.some((item) => item.when === "action=refactor" && item.path === "refactor-modes.md"));
+  }
+  for (const name of ["agm-refactor", "agm-refactor-fe", "agm-refactor-be", "agm-refactor-sql"])
     assert.equal(operations.operations.some((item) => item.name === name), false);
 });
 
@@ -104,8 +108,9 @@ test("SQL writers install lazily only on command-not-found and fail closed when 
 });
 
 test("unified SQL refactor loads the complete command owner and proves format coverage", () => {
-  const operation = operations.operations.find((item) => item.operation === "refactor");
-  assert.ok(operation.conditionalReferences.some((item) => item.when === "target=sql" && item.path === "patterns/sql.md"));
+  const operation = operations.operations.find((item) => item.operation === "sql");
+  assert.ok(operation.references.some((item) => item.path === "patterns/sql.md"));
+  assert.ok(operation.actions.some((item) => item.name === "refactor"));
   for (const marker of [
     "sql-contract-preflight.mjs --target-kind sql-table|sql-procedure --object <OBJECT>",
     'sqlfluff format --exclude-rules "CP02, LT01, RF06" --dialect tsql <FILE>.sql',
@@ -121,18 +126,13 @@ test("unified SQL refactor loads the complete command owner and proves format co
 
 test("compact pattern references keep their canonical owners co-loaded", () => {
   const pairs = [
-    ["create-prompt", ["create-prompt.md", "subagents-and-branches.md"]],
-    ["execute", ["create-prompt.md", "subagents-and-branches.md"]],
+    ["prompt", ["prompt.md"]],
+    ["execute", ["prompt.md", "subagents-and-branches.md"]],
   ];
   for (const [name, required] of pairs) {
     const operation = operations.operations.find((item) => item.operation === name);
     const routed = operation.references.map((item) => item.path);
     for (const path of required) assert.ok(routed.includes(path), `${name} must load ${path}`);
-  }
-
-  const refactor = operations.operations.find((item) => item.operation === "refactor");
-  for (const required of ["backend-engineer.md", "patterns/backend.md", "frontend-engineer.md", "patterns/frontend.md"]) {
-    assert.ok(refactor.conditionalReferences.some((item) => item.path === required), `refactor must route ${required}`);
   }
 
   assert.match(backendPattern, /Apply \[backend-engineer\.md\].*unchanged/);
@@ -146,7 +146,8 @@ test("compact pattern references keep their canonical owners co-loaded", () => {
   for (const marker of ["Ask the owner only when the signals", "Structure over logic", "Reuse-first decision", "Reuse index"])
     assert.ok(frontendDiscipline.includes(marker), `frontend owner missing: ${marker}`);
 
-  assert.match(promptPolicy, /exact \[Workspace-need contract\]/);
+  assert.match(promptPolicy, /## Main Assignment/);
+  assert.match(promptPolicy, /## Subagent Assignments/);
   for (const marker of ["at most five active agents", "isolation: worktree", "required uncommitted parent state"])
     assert.ok(delegationPolicy.includes(marker), `delegation owner missing: ${marker}`);
 });

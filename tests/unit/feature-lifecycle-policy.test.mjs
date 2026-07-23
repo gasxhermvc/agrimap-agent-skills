@@ -28,10 +28,10 @@ test("light is artifactless while tracked depths complete the canonical five fil
 
 test("removed aliases stay absent and unit tests are a passive deterministic decision", () => {
   const names = operations.operations.map((item) => item.name);
-  for (const removed of ["agm-create-feature", "agm-create-unit-test", "agm-refactor-fe", "agm-refactor-be", "agm-refactor-sql"]) {
+  for (const removed of ["agm-create-feature", "agm-create-unit-test", "agm-refactor", "agm-refactor-fe", "agm-refactor-be", "agm-refactor-sql", "agm-create-prompt"]) {
     assert.equal(names.includes(removed), false);
   }
-  for (const kept of ["agm-analyze", "agm-design", "agm-fe", "agm-be", "agm-sql", "agm-refactor"]) {
+  for (const kept of ["agm-analyze", "agm-design", "agm-fe", "agm-be", "agm-sql", "agm-prompt"]) {
     assert.equal(names.includes(kept), true);
   }
   assert.match(passive, /`required`, `recommended`, or `not_applicable`/);

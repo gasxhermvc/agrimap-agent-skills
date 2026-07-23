@@ -1,13 +1,17 @@
-# Passive domain capabilities
+# Passive capability catalog
 
-Passive capabilities are composable reasoning disciplines, not standalone write operations. They may activate inside a domain action or `agm-create-prompt`, but they never grant product-write authority, select a write action, or create product files by themselves.
+`assets/passive-skill-map.json` is the machine-readable routing source. This file owns the human discipline details. Passive capabilities are not public aliases: they may constrain or advise an operation, but never grant product-write authority, select a write action, or create product files by themselves.
+
+## Goal Rules
+
+The mandatory `goal-rules` capability is owned by [goal-rules.md](goal-rules.md). Every mapped operation loads it before substantive reasoning or product writes.
 
 ## Design
 
 - Inspect current behavior and evidence before proposing a design.
 - Define actors, entry points, states, transitions, validation, failure/recovery, accessibility where applicable, and measurable acceptance.
 - Label current facts separately from proposed behavior and unresolved owner decisions.
-- `agm-fe`, `agm-be`, `agm-sql`, and `agm-create-prompt` may use this discipline automatically.
+- `agm-fe`, `agm-be`, `agm-sql`, and `agm-prompt` may use this discipline automatically.
 
 ## Passive FE/BE/refactor test decision
 
@@ -19,6 +23,13 @@ Passive capabilities are composable reasoning disciplines, not standalone write 
 - Passive activation never grants write authority. Analyze, review, diagnose, design, SQL explain, and any other product-read-only action may classify/recommend tests but never create them.
 - Explicit `action=test`, an unambiguous request to create tests, or a `required` decision inside an already-authorized product-write implementation grants test write intent. If behaviors are already named, create only those; otherwise create the smallest risk-complete set.
 - Keep test naming, placement, framework, and public-contract expectations consistent with repository evidence.
+
+## Refactor guard
+
+- Activate only after explicit `action=refactor` or unambiguous refactor intent has selected `agm-fe`, `agm-be`, or `agm-sql`.
+- Load [refactor-modes.md](refactor-modes.md), require exactly one mode, and record the logic-preservation boundary before editing.
+- If the mode is ambiguous, present all five modes with one recommendation and stop before editing.
+- This guard cannot initiate a refactor, convert read intent into write intent, or broaden file scope.
 
 ## SQL explain
 

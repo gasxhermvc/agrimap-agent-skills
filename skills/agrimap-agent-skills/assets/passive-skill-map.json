@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "capabilities": [
+    {
+      "id": "goal-rules",
+      "reference": "goal-rules.md",
+      "activation": "mandatory",
+      "operations": ["analyze", "architect", "be", "design", "diagnose", "fe", "sql", "review", "simulate", "execute", "plan", "qa", "prompt"],
+      "actions": ["*"],
+      "authorityEffect": "constraint-only",
+      "grantsProductWrite": false,
+      "requiredInputs": ["objective", "scope", "logic impact", "acceptance evidence"],
+      "evidenceOutput": ["resolved boundary", "measurable completion", "material ambiguity stop when needed"],
+      "conflicts": "Higher-priority repository and requester constraints remain authoritative; this capability may narrow but never expand authority."
+    },
+    {
+      "id": "refactor-guard",
+      "reference": "refactor-modes.md",
+      "activation": "when refactor intent is explicit or unambiguous",
+      "operations": ["fe", "be", "sql"],
+      "actions": ["refactor"],
+      "authorityEffect": "requires exactly one refactor mode before editing",
+      "grantsProductWrite": false,
+      "requiredInputs": ["target domain", "refactor mode", "behavior to preserve", "allowed logic impact"],
+      "evidenceOutput": ["selected mode", "preservation boundary", "verification evidence"],
+      "conflicts": "An ambiguous mode stops before editing; strict-preserve-logic overrides convenience cleanup."
+    },
+    {
+      "id": "test-decision",
+      "reference": "passive-capabilities.md#passive-febe-refactor-test-decision",
+      "activation": "during FE/BE analyze, design, create, edit, refactor and relevant prompt planning",
+      "operations": ["fe", "be", "prompt"],
+      "actions": ["analyze", "design", "create", "edit", "refactor", "prompt"],
+      "authorityEffect": "classifies test need without independently authorizing test writes",
+      "grantsProductWrite": false,
+      "requiredInputs": ["behavior boundary", "risk", "existing harness evidence"],
+      "evidenceOutput": ["required|recommended|not_applicable", "reason", "proposed coverage"],
+      "conflicts": "A read-only operation may recommend but never create tests."
+    },
+    {
+      "id": "design-discipline",
+      "reference": "passive-capabilities.md#design",
+      "activation": "when design reasoning is needed inside an eligible operation",
+      "operations": ["analyze", "architect", "be", "design", "diagnose", "fe", "sql", "review", "simulate", "plan", "prompt"],
+      "actions": ["analyze", "design", "prompt"],
+      "authorityEffect": "reasoning-only",
+      "grantsProductWrite": false,
+      "requiredInputs": ["current evidence", "actors or consumers", "acceptance boundary"],
+      "evidenceOutput": ["current-state facts", "proposed behavior", "unresolved owner decisions"],
+      "conflicts": "Proposed design never overrides repository facts or an unresolved decision-owner choice."
+    },
+    {
+      "id": "sql-explain",
+      "reference": "passive-capabilities.md#sql-explain",
+      "activation": "explicit SQL explain intent or passive explanation needed during SQL analysis",
+      "operations": ["sql"],
+      "actions": ["analyze", "explain"],
+      "authorityEffect": "product-read-only",
+      "grantsProductWrite": false,
+      "requiredInputs": ["SQL text or pointed SQL object", "available schema and caller evidence"],
+      "evidenceOutput": ["FACT|INFERENCE|UNKNOWN explanation", "side effects", "risks"],
+      "conflicts": "A modification request routes to explicit action=edit or action=refactor; explain never edits or executes SQL."
+    }
+  ]
+}

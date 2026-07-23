@@ -28,9 +28,12 @@ export async function completion(harness) {
   assert.match(await readFile(path.join(state, activeA.recentMemoryPath), "utf8"), /· completed · Completion gate passed/);
   assert.match(await readFile(path.join(state, "memory", "project.md"), "utf8"), /execution `01010003`/);
   const reportA = await readFile(path.join(state, completedA.report), "utf8");
+  assert.match(reportA, /^# Execution Log —/);
   assert.match(reportA, /Final Status: ✅ COMPLETED/);
-  assert.match(reportA, /Daily audit log/);
+  assert.match(reportA, /Memory \(recent\)/);
   assert.match(reportA, /Task Files Status/);
+  assert.match(reportA, /Appendix — Task File Mini-Templates/);
+  assert.doesNotMatch(reportA, /\{\{[A-Z_]+\}\}/);
   assert.equal((await readTaskLog("01010003")).at(-1).event, "completed");
 
   const activeB = JSON.parse(await readFile(path.join(state, "runtime", "active", "session-b.json"), "utf8"));
@@ -42,7 +45,7 @@ export async function completion(harness) {
   assert.equal(cancelled.archivedTask, `tasks/cancelled/${activeB.period}/01010004`);
   await assert.rejects(readFile(path.join(state, activeB.currentMemoryPath), "utf8"), { code: "ENOENT" });
   assert.doesNotMatch(await readFile(path.join(state, "memory", "project.md"), "utf8"), /execution `01010004`/);
-  assert.match(await readFile(path.join(state, cancelled.report), "utf8"), /Final Status: ⛔ CANCELLED/);
+  assert.match(await readFile(path.join(state, cancelled.report), "utf8"), /Final Status: ❌ FAILED/);
 
   run(workspaceScript, ["identify", "--cwd", temp, "--session", "session-standard", "--owner", "Carol", "--model", "gpt-5.6-sol", "--provider", "codex"]);
   const standard = run(workspaceScript, ["start", "--cwd", temp, "--session", "session-standard", "--execution", "01010005", "--operation", "refactor", "--depth", "standard", "--title", "Standard tracked closure", "--requester-authority", "owner", "--decision-owner", "Carol", "--authority-evidence", "confirmed in test"]);

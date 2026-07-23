@@ -13,6 +13,7 @@
       "example": "$agm-analyze depth=light target_files=src/orders.ts objective=\"Explain duplicate requests; do not edit\"",
       "instructions": ["Inspect the full target and affected callers before conclusions. Database-linked conclusions require actual project code, the applicable db-schema, and representative local examples/data shapes; otherwise label the result preliminary and list the missing evidence without guessing or connecting to a database.", "Return CLI-readable plain Markdown in this order: Scope, Evidence, Findings, Impacts, Options, Recommendation, Unknowns. Use short bullets, no wide tables or raw JSON/YAML dumps, and never edit product artifacts."],
       "references": [
+        { "path": "goal-rules.md", "why": "mandatory Think/Simplicity/Surgical/Goal-Driven discipline" },
         { "path": "analysis-discipline.md", "why": "evidence labels and reasoning quality" },
         { "path": "input-and-scope.md", "why": "target and input coverage" }
       ],
@@ -20,7 +21,8 @@
         { "when": "target_kind is fe-main or fe-library", "path": "frontend-engineer.md", "why": "frontend analysis fundamentals" },
         { "when": "target_kind is be-main or be-library", "path": "backend-engineer.md", "why": "backend analysis fundamentals including request-value normalization" },
         { "when": "the backend target contains C#", "path": "patterns/csharp.md", "why": "project-wide C# shape, naming, boundary, and code examples" },
-        { "when": "the backend target reads cookie, header, query, form, JSON body, or device ID", "path": "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md", "why": "exact normalize API and compatibility behavior" }
+        { "when": "the backend target reads cookie, header, query, form, JSON body, or device ID", "path": "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md", "why": "exact normalize API and compatibility behavior" },
+        { "when": "FE/BE URL, domain, redirect, or callback logic is in scope", "path": "application-url-matrix.md", "why": "authoritative environment-specific URL selection" }
       ]
     },
     {
@@ -35,6 +37,7 @@
       "example": "$agm-diagnose depth=light symptom=\"Save returns 500\" target_files=src/orders.ts implementation=false",
       "instructions": ["Reproduce or trace the symptom, separate causes from correlations, and test bounded hypotheses.", "Return the proven root cause, evidence, affected path, and proposed fix; do not apply the fix."],
       "references": [
+        { "path": "goal-rules.md", "why": "mandatory Think/Simplicity/Surgical/Goal-Driven discipline" },
         { "path": "analysis-discipline.md", "why": "hypothesis and evidence discipline" },
         { "path": "input-and-scope.md", "why": "symptom and target coverage" }
       ],
@@ -42,7 +45,8 @@
         { "when": "target_kind is fe-main or fe-library", "path": "frontend-engineer.md", "why": "frontend diagnosis fundamentals" },
         { "when": "target_kind is be-main or be-library", "path": "backend-engineer.md", "why": "backend diagnosis fundamentals including request-value normalization" },
         { "when": "the backend target contains C#", "path": "patterns/csharp.md", "why": "project-wide C# behavior and style baseline" },
-        { "when": "the backend symptom may involve cookie, header, query, form, JSON body, or device-ID resolution", "path": "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md", "why": "expected extraction, normalization, and precedence" }
+        { "when": "the backend symptom may involve cookie, header, query, form, JSON body, or device-ID resolution", "path": "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md", "why": "expected extraction, normalization, and precedence" },
+        { "when": "FE/BE URL, domain, redirect, or callback logic may contribute to the symptom", "path": "application-url-matrix.md", "why": "authoritative environment-specific URL behavior" }
       ]
     },
     {
@@ -57,13 +61,15 @@
       "example": "$agm-simulate depth=light scenario=\"Retry after timeout\" inputs=timeout,retry-count",
       "instructions": ["Model the initial state, transitions, branches, failure modes, and observables.", "Label assumptions and confidence; do not present a simulation as measured runtime fact."],
       "references": [
+        { "path": "goal-rules.md", "why": "mandatory Think/Simplicity/Surgical/Goal-Driven discipline" },
         { "path": "analysis-discipline.md", "why": "assumption and confidence labels" }
       ],
       "conditionalReferences": [
         { "when": "target_kind is fe-main or fe-library", "path": "frontend-engineer.md", "why": "frontend state and observable fundamentals" },
         { "when": "target_kind is be-main or be-library", "path": "backend-engineer.md", "why": "backend boundary and runtime fundamentals" },
         { "when": "the backend scenario contains C#", "path": "patterns/csharp.md", "why": "project-wide C# behavior and style baseline" },
-        { "when": "the backend scenario involves cookie, header, query, form, JSON body, or device-ID resolution", "path": "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md", "why": "request-value transition and precedence behavior" }
+        { "when": "the backend scenario involves cookie, header, query, form, JSON body, or device-ID resolution", "path": "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md", "why": "request-value transition and precedence behavior" },
+        { "when": "the scenario includes an application URL, domain, redirect, or callback", "path": "application-url-matrix.md", "why": "authoritative environment-specific transitions" }
       ]
     },
     {
@@ -78,6 +84,7 @@
       "example": "$agm-plan depth=light objective=\"Add order cancellation\" target_files=src/orders.ts",
       "instructions": ["Reverse-engineer current behavior, dependencies, callers, tests, and integration order before planning.", "Each step names target, action, reason, verification, and decision-owner gate; do not implement."],
       "references": [
+        { "path": "goal-rules.md", "why": "mandatory Think/Simplicity/Surgical/Goal-Driven discipline" },
         { "path": "analysis-discipline.md", "why": "evidence-backed plan assumptions" },
         { "path": "input-and-scope.md", "why": "scope ledger" }
       ],
@@ -85,7 +92,8 @@
         { "when": "target_kind is fe-main or fe-library", "path": "frontend-engineer.md", "why": "frontend execution-plan fundamentals" },
         { "when": "target_kind is be-main or be-library", "path": "backend-engineer.md", "why": "backend execution-plan fundamentals" },
         { "when": "the backend plan contains C#", "path": "patterns/csharp.md", "why": "project-wide C# implementation baseline" },
-        { "when": "the backend plan touches cookie, header, query, form, JSON body, or device-ID resolution", "path": "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md", "why": "request-value API and precedence plan" }
+        { "when": "the backend plan touches cookie, header, query, form, JSON body, or device-ID resolution", "path": "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md", "why": "request-value API and precedence plan" },
+        { "when": "the plan includes FE/BE URL, domain, redirect, or callback logic", "path": "application-url-matrix.md", "why": "authoritative environment-specific plan inputs" }
       ]
     },
     {
@@ -100,6 +108,7 @@
       "example": "$agm-design depth=light target=architecture objective=\"Design ownership and migration for order status\"",
       "instructions": ["Resolve exactly one target discipline before inspection, then define actors, boundaries, data/contract flow, states, transitions, validation, failure/recovery, migration, and measurable acceptance as applicable.", "Use only the matching FE, BE, SQL, or architecture references below; remain product-read-only and do not implement."],
       "references": [
+        { "path": "goal-rules.md", "why": "mandatory Think/Simplicity/Surgical/Goal-Driven discipline" },
         { "path": "analysis-discipline.md", "why": "facts versus proposed design" },
         { "path": "input-and-scope.md", "why": "design reference coverage" }
       ],
@@ -109,7 +118,8 @@
         { "when": "the backend design contains C#", "path": "patterns/csharp.md", "why": "project-wide C# contract and boundary examples" },
         { "when": "the backend design includes cookie, header, query, form, JSON body, or device-ID resolution", "path": "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md", "why": "request-value resolution contract" },
         { "when": "target=sql", "path": "patterns/sql.md", "why": "SQL schema, result, transaction, and deployment design discipline" },
-        { "when": "target=architecture", "path": "service-ownership.md", "why": "canonical service/data ownership and architecture boundaries" }
+        { "when": "target=architecture", "path": "service-ownership.md", "why": "canonical service/data ownership and architecture boundaries" },
+        { "when": "target is FE or BE and URL, domain, redirect, or callback logic is in scope", "path": "application-url-matrix.md", "why": "authoritative environment-specific design values" }
       ]
     },
     {
@@ -124,6 +134,7 @@
       "example": "$agm-architect requested_by=Billy objective=\"Choose ownership boundary for order status\"",
       "instructions": ["Map ownership, contracts, data flow, runtime/deployment effects, alternatives, migration, rollback, and reversible decisions.", "Produce a proposed decision record; only recorded authority may approve it."],
       "references": [
+        { "path": "goal-rules.md", "why": "mandatory Think/Simplicity/Surgical/Goal-Driven discipline" },
         { "path": "analysis-discipline.md", "why": "architecture evidence and counterarguments" },
         { "path": "service-ownership.md", "why": "canonical service and data ownership" }
       ],
@@ -131,7 +142,8 @@
         { "when": "target_kind is fe-main or fe-library", "path": "frontend-engineer.md", "why": "frontend architecture fundamentals" },
         { "when": "target_kind is be-main or be-library", "path": "backend-engineer.md", "why": "backend architecture fundamentals" },
         { "when": "the backend architecture contains C#", "path": "patterns/csharp.md", "why": "project-wide C# structure baseline" },
-        { "when": "the backend architecture includes cookie, header, query, form, JSON body, or device-ID resolution", "path": "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md", "why": "request-value ownership and precedence contract" }
+        { "when": "the backend architecture includes cookie, header, query, form, JSON body, or device-ID resolution", "path": "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md", "why": "request-value ownership and precedence contract" },
+        { "when": "the architecture includes FE/BE URL, domain, redirect, or callback ownership", "path": "application-url-matrix.md", "why": "authoritative environment-specific boundary values" }
       ]
     },
     {
@@ -146,6 +158,7 @@
       "example": "$agm-review depth=light target_files=src/orders.ts review_scope=correctness,regression,tests",
       "instructions": ["Review correctness, regressions, contracts/data, maintainability, relevant performance, and tests in that order.", "Report actionable findings by severity with file/line, evidence, and impact; do not fix them."],
       "references": [
+        { "path": "goal-rules.md", "why": "mandatory Think/Simplicity/Surgical/Goal-Driven discipline" },
         { "path": "analysis-discipline.md", "why": "finding evidence and severity" }
       ],
       "conditionalReferences": [
@@ -153,7 +166,8 @@
         { "when": "target_kind is fe-main or fe-library", "path": "frontend-engineer.md", "why": "frontend review fundamentals" },
         { "when": "target_kind is be-main or be-library", "path": "backend-engineer.md", "why": "backend review fundamentals" },
         { "when": "the backend review contains C#", "path": "patterns/csharp.md", "why": "project-wide C# review baseline" },
-        { "when": "the backend review touches cookie, header, query, form, JSON body, or device-ID resolution", "path": "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md", "why": "request-value correctness and precedence review" }
+        { "when": "the backend review touches cookie, header, query, form, JSON body, or device-ID resolution", "path": "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md", "why": "request-value correctness and precedence review" },
+        { "when": "the review touches FE/BE URL, domain, redirect, or callback logic", "path": "application-url-matrix.md", "why": "authoritative expected URL values" }
       ]
     },
     {
@@ -175,7 +189,7 @@
       "name": "agm-fe",
       "operation": "fe",
       "depth": { "default": "light", "allowed": ["light", "standard", "regulated"] },
-      "description": "Analyze, design, create, edit, or explicitly test frontend work through one domain façade",
+      "description": "Analyze, design, create, edit, refactor, or explicitly test frontend work through one domain façade",
       "mode": "action-routed",
       "deliverable": "action-specific frontend analysis, design, bounded implementation, or selected tests",
       "requiredInputs": ["one action or unambiguous natural-language intent", "an objective or pointed frontend target"],
@@ -186,21 +200,27 @@
         { "name": "design", "mode": "product-read-only", "activation": "explicit-or-passive", "depths": ["light", "standard", "regulated"], "purpose": "Define frontend flow, states, accessibility, validation, and acceptance without editing" },
         { "name": "create", "mode": "product-write", "activation": "explicit", "depths": ["light"], "purpose": "Create a bounded new frontend slice" },
         { "name": "edit", "mode": "product-write", "activation": "explicit", "depths": ["light"], "purpose": "Modify a bounded existing frontend slice" },
+        { "name": "refactor", "mode": "product-write", "activation": "explicit", "depths": ["light", "standard", "regulated"], "purpose": "Refactor frontend code under exactly one behavior mode and a proven preservation boundary" },
         { "name": "test", "mode": "product-write", "activation": "explicit", "depths": ["light"], "purpose": "Create explicitly requested or selected frontend tests after passive test advice" }
       ],
-      "instructions": ["Resolve exactly one action before inspection. Explicit action= wins; otherwise infer only from unambiguous verbs and report the resolved action. Ask one short question when create versus edit or read versus write remains ambiguous.", "For analyze/design, never edit product files. For create/edit/test, show the bounded slice, stay within light limits, and route broader work to agm-create-prompt before any product write.", "Run the passive test advisor during analyze, design, create, and edit. Suggest prioritized coverage but never create tests unless action=test or the requester explicitly asked to create tests."],
+      "instructions": ["Resolve exactly one action before inspection. Explicit action= wins; otherwise infer only from unambiguous verbs and report the resolved action. Ask one short question when create, edit, refactor, or read versus write remains ambiguous.", "For analyze/design, never edit product files. For create/edit/test, show the bounded slice, stay within light limits, and route broader work to agm-prompt before any product write.", "For action=refactor, require exactly one mode before editing, preserve the declared logic boundary, and stop with all five modes plus one recommendation when ambiguous.", "Run the passive test advisor during analyze, design, create, edit, and refactor. Suggest prioritized coverage but never create tests unless action=test, the requester explicitly asked, or required regression coverage is already inside authorized product-write scope."],
       "references": [
+        { "path": "goal-rules.md", "why": "mandatory Think/Simplicity/Surgical/Goal-Driven discipline" },
         { "path": "passive-capabilities.md", "why": "passive design and test-advisor boundaries" },
         { "path": "elicitation.md", "why": "action, scope, and propose-first resolution" },
         { "path": "frontend-engineer.md", "why": "frontend phase discipline" },
         { "path": "patterns/frontend.md", "why": "current frontend contract" }
+      ],
+      "conditionalReferences": [
+        { "when": "action=refactor", "path": "refactor-modes.md", "why": "exact refactor behavior and logic-change boundary" },
+        { "when": "URL, domain, redirect, or callback logic is in scope", "path": "application-url-matrix.md", "why": "authoritative environment-specific URL values" }
       ]
     },
     {
       "name": "agm-be",
       "operation": "be",
       "depth": { "default": "light", "allowed": ["light", "standard", "regulated"] },
-      "description": "Analyze, design, create, edit, or explicitly test backend work through one domain façade",
+      "description": "Analyze, design, create, edit, refactor, or explicitly test backend work through one domain façade",
       "mode": "action-routed",
       "deliverable": "action-specific backend analysis, design, bounded implementation, or selected tests",
       "requiredInputs": ["one action or unambiguous natural-language intent", "an objective or pointed backend target"],
@@ -211,25 +231,29 @@
         { "name": "design", "mode": "product-read-only", "activation": "explicit-or-passive", "depths": ["light", "standard", "regulated"], "purpose": "Define backend boundaries, flow, validation, failure behavior, and acceptance without editing" },
         { "name": "create", "mode": "product-write", "activation": "explicit", "depths": ["light"], "purpose": "Create a bounded new backend slice" },
         { "name": "edit", "mode": "product-write", "activation": "explicit", "depths": ["light"], "purpose": "Modify a bounded existing backend slice" },
+        { "name": "refactor", "mode": "product-write", "activation": "explicit", "depths": ["light", "standard", "regulated"], "purpose": "Refactor backend code under exactly one behavior mode and a proven preservation boundary" },
         { "name": "test", "mode": "product-write", "activation": "explicit", "depths": ["light"], "purpose": "Create explicitly requested or selected backend tests after passive test advice" }
       ],
-      "instructions": ["Resolve exactly one action before inspection. Explicit action= wins; otherwise infer only from unambiguous verbs and report the resolved action. Ask one short question when create versus edit or read versus write remains ambiguous.", "For analyze/design, never edit product files. For create/edit/test, show the bounded slice, stay within light limits, and route broader work to agm-create-prompt before any product write.", "Run the passive test advisor during analyze, design, create, and edit. Suggest prioritized coverage but never create tests unless action=test or the requester explicitly asked to create tests."],
+      "instructions": ["Resolve exactly one action before inspection. Explicit action= wins; otherwise infer only from unambiguous verbs and report the resolved action. Ask one short question when create, edit, refactor, or read versus write remains ambiguous.", "For analyze/design, never edit product files. For create/edit/test, show the bounded slice, stay within light limits, and route broader work to agm-prompt before any product write.", "For action=refactor, require exactly one mode before editing, preserve the declared logic boundary, and stop with all five modes plus one recommendation when ambiguous.", "Run the passive test advisor during analyze, design, create, edit, and refactor. Suggest prioritized coverage but never create tests unless action=test, the requester explicitly asked, or required regression coverage is already inside authorized product-write scope."],
       "references": [
+        { "path": "goal-rules.md", "why": "mandatory Think/Simplicity/Surgical/Goal-Driven discipline" },
         { "path": "passive-capabilities.md", "why": "passive design and test-advisor boundaries" },
         { "path": "elicitation.md", "why": "action, scope, and propose-first resolution" },
         { "path": "backend-engineer.md", "why": "backend phase and profile discipline" },
         { "path": "patterns/backend.md", "why": "current backend contract" }
       ],
       "conditionalReferences": [
+        { "when": "action=refactor", "path": "refactor-modes.md", "why": "exact refactor behavior and logic-change boundary" },
         { "when": "the backend target contains C#", "path": "patterns/csharp.md", "why": "project-wide C# baseline" },
-        { "when": "the target reads cookie, header, query, form, JSON body, or device ID", "path": "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md", "why": "request-value behavior and compatibility" }
+        { "when": "the target reads cookie, header, query, form, JSON body, or device ID", "path": "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md", "why": "request-value behavior and compatibility" },
+        { "when": "URL, domain, redirect, or callback logic is in scope", "path": "application-url-matrix.md", "why": "authoritative environment-specific URL values" }
       ]
     },
     {
       "name": "agm-sql",
       "operation": "sql",
       "depth": { "default": "light", "allowed": ["light", "standard", "regulated"] },
-      "description": "Analyze, design, create, edit, or explain SQL work through one domain façade",
+      "description": "Analyze, design, create, edit, refactor, or explain SQL work through one domain façade",
       "mode": "action-routed",
       "deliverable": "action-specific SQL analysis, design, explanation, or bounded SQL implementation",
       "requiredInputs": ["one action or unambiguous natural-language intent", "an objective or pointed SQL target"],
@@ -240,38 +264,18 @@
         { "name": "design", "mode": "product-read-only", "activation": "explicit-or-passive", "depths": ["light", "standard", "regulated"], "purpose": "Define SQL objects, data flow, result and error contracts, deployment, and acceptance without editing" },
         { "name": "create", "mode": "product-write", "activation": "explicit", "depths": ["light"], "purpose": "Create a bounded new SQL object or slice" },
         { "name": "edit", "mode": "product-write", "activation": "explicit", "depths": ["light"], "purpose": "Modify a bounded existing SQL object or slice" },
+        { "name": "refactor", "mode": "product-write", "activation": "explicit", "depths": ["light", "standard", "regulated"], "purpose": "Refactor SQL under exactly one behavior mode while preserving declared results, transactions, side effects, errors, and deployment behavior" },
         { "name": "explain", "mode": "product-read-only", "activation": "explicit-or-passive", "depths": ["light", "standard", "regulated"], "purpose": "Explain SQL purpose, contracts, reads/writes, flow, transactions, errors, assumptions, and risks without execution or edits" }
       ],
-      "instructions": ["Resolve exactly one action before inspection. Explicit action= wins; otherwise infer only from unambiguous verbs and report the resolved action. Ask one short question when create versus edit or read versus write remains ambiguous.", "For analyze/design/explain, never execute SQL, connect to a database, or edit product files. Explain uses FACT, INFERENCE, and UNKNOWN and routes requested modifications to edit.", "For create/edit, show the bounded slice, stay within light limits, load applicable schema/caller evidence, and route broader work to agm-create-prompt before any product write."],
+      "instructions": ["Resolve exactly one action before inspection. Explicit action= wins; otherwise infer only from unambiguous verbs and report the resolved action. Ask one short question when create, edit, refactor, or read versus write remains ambiguous.", "For analyze/design/explain, never execute SQL, connect to a database, or edit product files. Explain uses FACT, INFERENCE, and UNKNOWN and routes requested modifications to edit.", "For create/edit, show the bounded slice, stay within light limits, load applicable schema/caller evidence, and route broader work to agm-prompt before any product write.", "For action=refactor, require exactly one mode before editing; when ambiguous, stop and show all five modes with one recommendation. Preserve result sets, transactions, side effects, error mapping, and deployment idempotency unless recorded authority and the selected mode explicitly allow a change, then format and validate every declared changed SQL path."],
       "references": [
+        { "path": "goal-rules.md", "why": "mandatory Think/Simplicity/Surgical/Goal-Driven discipline" },
         { "path": "passive-capabilities.md", "why": "passive design and SQL explain boundaries" },
         { "path": "elicitation.md", "why": "action and scope resolution" },
         { "path": "patterns/sql.md", "why": "current SQL contract, formatting, and validation" }
-      ]
-    },
-    {
-      "name": "agm-refactor",
-      "operation": "refactor",
-      "depth": { "default": "light", "allowed": ["light", "standard", "regulated"] },
-      "description": "Refactor FE, BE, or SQL through one target-routed command with an explicit behavior mode",
-      "mode": "product-write",
-      "deliverable": "bounded target-specific changes with preserved or explicitly authorized behavior and proportional verification",
-      "requiredInputs": ["target=fe|be|sql", "target files or objective", "refactor_mode"],
-      "conditionalInputs": ["backend_profile for be-main", "decision-owner approval for logic, contract, data, or result-shape change"],
-      "example": "$agm-refactor target=sql refactor_mode=performance-preserve-behavior target_files=sql/usp_Order_Search.sql",
-      "instructions": ["Resolve exactly one target discipline and one refactor mode before editing; when mode is ambiguous, show all five modes with one recommendation.", "Dispatch to only the matching FE, BE, or SQL discipline. Preserve behavior except where the selected mode and recorded authority explicitly allow a change.", "For SQL, preserve result sets, transactions, side effects, error mapping, and deployment idempotency, then format and validate every declared changed SQL path."],
-      "references": [
-        { "path": "refactor-modes.md", "why": "allowed behavior-change boundary" },
-        { "path": "elicitation.md", "why": "target and mode resolution" }
       ],
       "conditionalReferences": [
-        { "when": "target=fe", "path": "frontend-engineer.md", "why": "frontend refactor discipline" },
-        { "when": "target=fe", "path": "patterns/frontend.md", "why": "current frontend contract" },
-        { "when": "target=be", "path": "backend-engineer.md", "why": "backend refactor discipline" },
-        { "when": "target=be", "path": "patterns/backend.md", "why": "current backend contract" },
-        { "when": "the backend target contains C#", "path": "patterns/csharp.md", "why": "project-wide C# refactor baseline" },
-        { "when": "the backend refactor touches request values or device-ID resolution", "path": "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md", "why": "request-value behavior and precedence" },
-        { "when": "target=sql", "path": "patterns/sql.md", "why": "current SQL refactor, formatting, and validation contract" }
+        { "when": "action=refactor", "path": "refactor-modes.md", "why": "exact refactor behavior and logic-change boundary" }
       ]
     },
     {
@@ -286,6 +290,7 @@
       "example": "$agm-qa depth=light qa_mode=light artifact=\"integrated workspace\"",
       "instructions": ["Default to depth=light and qa_mode=light; a provider/model, SQL/BE/FE target, regulated implementation, or large diff never selects full by itself.", "Apply qa-and-done.md, keep product artifacts read-only, and use only read-only inspection plus read-only AgriMap script paths. Never format SQL, install SQLFluff, or connect to LocalDB, dbserver, SQL Server, or another runtime service.", "The only product-command exceptions are dotnet build for an existing BE project when compile evidence is necessary, and npm run start:agrimap:development for FE only at qa_mode=full when startup evidence is explicitly necessary; do not run other product commands.", "Return only canonical status, evidence, commands actually run, and limitations."],
       "references": [
+        { "path": "goal-rules.md", "why": "mandatory Think/Simplicity/Surgical/Goal-Driven discipline" },
         { "path": "qa-and-done.md", "why": "single QA, correction, and completion policy" }
       ],
       "conditionalReferences": [
@@ -293,32 +298,35 @@
         { "when": "target_kind is fe-main or fe-library", "path": "frontend-engineer.md", "why": "frontend QA fundamentals" },
         { "when": "target_kind is be-main or be-library", "path": "backend-engineer.md", "why": "backend QA fundamentals including request-value normalization" },
         { "when": "the backend artifact contains C#", "path": "patterns/csharp.md", "why": "project-wide C# QA baseline" },
-        { "when": "BE work reads or refactors cookie, header, query, form, JSON body, or device-ID resolution", "path": "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md", "why": "request-value QA behavior matrix for main/library code" }
+        { "when": "BE work reads or refactors cookie, header, query, form, JSON body, or device-ID resolution", "path": "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md", "why": "request-value QA behavior matrix for main/library code" },
+        { "when": "FE/BE URL, domain, redirect, or callback logic is under verification", "path": "application-url-matrix.md", "why": "authoritative expected URL values" }
       ]
     },
     {
-      "name": "agm-create-prompt",
-      "operation": "create-prompt",
-      "depth": { "default": "regulated", "allowed": ["regulated"] },
-      "description": "Create provider-specific Leader, executor, and QA prompts",
+      "name": "agm-prompt",
+      "operation": "prompt",
+      "depth": { "default": "light", "allowed": ["light"] },
+      "description": "Analyze and refine requester intent into one immutable versioned Prompt Result with explicit Main and Subagent ownership",
       "mode": "workflow-write-only",
-      "deliverable": "tracked brief.md and acceptance checklists.md plus .agrimap-agent/instructions/YYYY-MM/<task-id>/<role>.prompt.md; no implementation, qa.md, or result.md",
-      "requiredInputs": ["objective", "provider"],
-      "conditionalInputs": ["target_kind/backend_profile for target-specific work", "decision-owner approval before execution"],
-      "example": "$agm-create-prompt requested_by=Billy provider=codex objective=\"Delegate cancel-order implementation\"",
-      "instructions": ["Own the tracked feature contract: run staged elicitation, write the approved brief.md and acceptance checklists.md, build one execution SoT per task under instructions/, and create separate Leader/executor/QA instructions when implementation is delegated.", "Generation ends in draft and a non-terminal scope-decision checkpoint; never execute the generated instruction, create qa.md, create result.md, or complete the implementation task in this operation."],
+      "deliverable": ".agrimap-agent/prompts/YYYY-MM/<conversation-id>/<context>-vNNN.md plus light memory/log/report evidence; never tasks/** or separate role files",
+      "requiredInputs": ["objective or prompt text", "conversation/session/context identity"],
+      "conditionalInputs": ["explicit source Prompt Result path for revision", "owner confirmation when implicit source selection is ambiguous", "target_kind/backend_profile for target-specific work"],
+      "example": "$agm-prompt objective=\"Prepare a complete cancel-order implementation prompt\" context=cancel-order",
+      "instructions": ["Treat requester input as V0 only. The first finalized model result creates immutable V1; every focused continuation creates the next immutable version without overwriting prior files.", "Create exactly one Prompt Package file per version. State Main ownership and either explicit Subagent assignments or explicit none, including files/contracts, forbidden overlap, model profile, verification, and handoff.", "Use an explicit source path after validation. Without one, continue only when exactly one credible prompt family exists in the same conversation/context; otherwise stop PROMPT_SOURCE_CONFIRM_REQUIRED.", "Remain workflow-write-only and product-read-only. Never create tasks/**, execute the Prompt Result, create separate role instructions, or store model answers/tool output/hidden reasoning as raw history."],
       "references": [
-        { "path": "create-prompt.md", "why": "prompt lifecycle and provider rendering" },
+        { "path": "goal-rules.md", "why": "mandatory Think/Simplicity/Surgical/Goal-Driven discipline" },
+        { "path": "prompt.md", "why": "immutable Prompt Result lifecycle, source resolution, and package sections" },
         { "path": "passive-capabilities.md", "why": "passive design discipline used while shaping the approved brief and acceptance" },
-        { "path": "subagents-and-branches.md", "why": "delegation, visibility, and integration" },
         { "path": "model-capability-matrix.yaml", "why": "capability-profile routing labels" }
       ],
       "conditionalReferences": [
+        { "when": "the Prompt Result defines Subagent assignments", "path": "subagents-and-branches.md", "why": "Main/Subagent ownership, visibility, and integration boundaries" },
         { "when": "target_kind is fe-main or fe-library", "path": "frontend-engineer.md", "why": "frontend fundamentals that every generated handoff must carry" },
         { "when": "target_kind is be-main or be-library", "path": "backend-engineer.md", "why": "backend fundamentals that every generated handoff must carry" },
         { "when": "the backend handoff contains C#", "path": "patterns/csharp.md", "why": "project-wide C# rules that every generated handoff must carry" },
         { "when": "the backend handoff touches cookie, header, query, form, JSON body, or device-ID resolution", "path": "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md", "why": "request-value rules that every generated handoff must carry" },
-        { "when": "target_kind is sql-table, sql-procedure, or sql-table-and-procedure", "path": "patterns/sql.md", "why": "SQL fundamentals that every generated handoff must carry" }
+        { "when": "target_kind is sql-table, sql-procedure, or sql-table-and-procedure", "path": "patterns/sql.md", "why": "SQL fundamentals that every generated handoff must carry" },
+        { "when": "FE/BE URL, domain, redirect, or callback logic is in scope", "path": "application-url-matrix.md", "why": "authoritative environment-specific Prompt Result inputs" }
       ]
     },
     {
@@ -333,14 +341,16 @@
       "example": "$agm-exec requested_by=Billy prompt=.agrimap-agent/instructions/YYYY-MM/<task-id>/executor.prompt.md",
       "instructions": ["Require prompt_status=owner-approved and execute its ordered steps as the task source of truth.", "Stop and report structured deviation evidence when a material change exceeds scope; return the Result Package and integration artifact.", "Own implementation only: update the acceptance checklist and record integration evidence, but do not create qa.md or result.md; QA and final Leader closure are later phases."],
       "references": [
-        { "path": "create-prompt.md", "why": "prompt SoT and deviation contract" },
+        { "path": "goal-rules.md", "why": "mandatory Think/Simplicity/Surgical/Goal-Driven discipline" },
+        { "path": "prompt.md", "why": "Prompt Result source of truth and deviation contract" },
         { "path": "subagents-and-branches.md", "why": "native activity, workspace, and integration contract" },
         { "path": "qa-and-done.md", "why": "regulated QA and completion source" }
       ],
       "conditionalReferences": [
         { "when": "the approved prompt targets C# backend work", "path": "backend-engineer.md", "why": "backend discipline carried into execution" },
         { "when": "the approved prompt targets C# backend work", "path": "patterns/csharp.md", "why": "project-wide C# execution baseline" },
-        { "when": "the approved backend prompt touches cookie, header, query, form, JSON body, or device-ID resolution", "path": "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md", "why": "request-value execution contract" }
+        { "when": "the approved backend prompt touches cookie, header, query, form, JSON body, or device-ID resolution", "path": "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md", "why": "request-value execution contract" },
+        { "when": "the approved Prompt Result touches FE/BE URL, domain, redirect, or callback logic", "path": "application-url-matrix.md", "why": "authoritative environment-specific execution values" }
       ]
     }
   ]
