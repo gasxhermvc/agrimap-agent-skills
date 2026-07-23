@@ -3,8 +3,8 @@
 import { execFileSync } from "node:child_process";
 import {
   appendFile,
-  copyFile,
   mkdir,
+  open,
   readFile,
   readdir,
   rename,
@@ -26,9 +26,12 @@ import {
 import { isLogEvent, logEventError, MILESTONE_TYPES, QA_FAILED_EVENT } from "./log-events.mjs";
 import { loadTaskArtifactSchema } from "./task-artifact-schema.mjs";
 
-const AUDIT_SCHEMA_VERSION = 3;
-const SUPPORTED_AUDIT_SCHEMA_VERSIONS = new Set([1, 2, AUDIT_SCHEMA_VERSION]);
+const AUDIT_SCHEMA_VERSION = 4;
+const SUPPORTED_AUDIT_SCHEMA_VERSIONS = new Set([1, 2, 3, AUDIT_SCHEMA_VERSION]);
 const TERMINAL_AUDIT_EVENTS = new Set([QA_FAILED_EVENT, "blocked", "cancelled", "completed"]);
+const TASK_WORKFLOW_DEPTHS = new Set(["standard", "regulated"]);
+const LOG_TYPES = new Set(["request", "action", "decision", "verification", "result", "error"]);
+const DEFAULT_PROJECT_TIME_ZONE = "Asia/Bangkok";
 const CHECKPOINT_FIELD_BUDGETS = Object.freeze({
   summary: 240,
   reason: 400,
@@ -130,6 +133,127 @@ function now() {
   return new Date().toISOString();
 }
 
+function zonedParts(timestamp = now(), timeZone = DEFAULT_PROJECT_TIME_ZONE) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date(timestamp));
+  const value = Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
+  return {
+    year: value.year,
+    month: value.month,
+    day: value.day,
+    hour: value.hour,
+    minute: value.minute,
+    second: value.second,
+    period: `${value.year}-${value.month}`,
+    date: `${value.year}-${value.month}-${value.day}`,
+    runId: `${value.day}${value.hour}${value.minute}${value.second}`,
+  };
+}
+
+async function workspaceConfig(state) {
+  return readJson(path.join(state, "config.json")).catch(() => ({}));
+}
+
+function stateRelative(state, filePath) {
+  return path.relative(state, filePath).replace(/\\/g, "/");
+}
+
+function executionSlug(active = {}) {
+  return taskSubjectSlug(active.slug || active.objective || active.operation || "work") || "work";
+}
+
+function activeMemoryPaths(state, active = {}) {
+  const executionId = safeTaskId(active.executionId || active.taskId);
+  const period = String(active.period || "").trim();
+  const slug = executionSlug(active);
+  const current = active.currentMemoryPath
+    ? path.join(state, active.currentMemoryPath)
+    : period && executionId
+      ? path.join(state, "memory", "current", period, `${executionId}-${slug}.md`)
+      : path.join(state, "memory", "current", `${executionId}.md`);
+  const recent = active.recentMemoryPath
+    ? path.join(state, active.recentMemoryPath)
+    : period && executionId
+      ? path.join(state, "memory", "recent", period, `${executionId}-${slug}.md`)
+      : path.join(state, "memory", "recent", `${executionId}.md`);
+  return { current, recent };
+}
+
+async function findExecutionMemoryPath(state, tier, executionId, period, explicitPath = "") {
+  if (explicitPath) {
+    const explicit = path.join(state, explicitPath);
+    if (await exists(explicit)) return explicit;
+  }
+  if (period) {
+    const directory = path.join(state, "memory", tier, period);
+    const match = (await readdir(directory).catch(() => []))
+      .filter((name) => name === `${executionId}.md` || (name.startsWith(`${executionId}-`) && name.endsWith(".md")))
+      .sort()[0];
+    if (match) return path.join(directory, match);
+  }
+  const legacy = path.join(state, "memory", tier, `${executionId}.md`);
+  return await exists(legacy) ? legacy : null;
+}
+
+async function findTaskPath(state, taskId, active = {}) {
+  if (!taskId) return null;
+  if (active.taskPath) {
+    const explicit = path.join(state, active.taskPath);
+    if (await exists(explicit)) return explicit;
+  }
+  const period = String(active.period || "").trim();
+  const candidates = [
+    ...(period ? [
+      path.join(state, "tasks", period, taskId),
+      path.join(state, "tasks", "complete", period, taskId),
+      path.join(state, "tasks", "cancelled", period, taskId),
+    ] : []),
+    path.join(state, "tasks", taskId),
+  ];
+  for (const candidate of candidates) if (await exists(candidate)) return candidate;
+  for (const bucket of ["", "complete", "cancelled"]) {
+    const root = bucket ? path.join(state, "tasks", bucket) : path.join(state, "tasks");
+    for (const entry of await readdir(root, { withFileTypes: true }).catch(() => [])) {
+      if (!entry.isDirectory() || !/^\d{4}-\d{2}$/.test(entry.name)) continue;
+      const candidate = path.join(root, entry.name, taskId);
+      if (await exists(candidate)) return candidate;
+    }
+  }
+  return null;
+}
+
+async function reserveExecutionId(state, preferredId, timestamp, timeZone) {
+  const parts = zonedParts(timestamp, timeZone);
+  const executionId = safeTaskId(preferredId || parts.runId);
+  const reservation = path.join(state, "runtime", "reservations", parts.period, executionId);
+  try {
+    await mkdir(reservation, { recursive: false });
+  } catch (error) {
+    if (error?.code === "ENOENT") {
+      await mkdir(path.dirname(reservation), { recursive: true });
+      try {
+        await mkdir(reservation, { recursive: false });
+      } catch (nested) {
+        if (nested?.code === "EEXIST") return { ok: false, code: "RUN_ID_COLLISION", executionId, period: parts.period };
+        throw nested;
+      }
+    } else if (error?.code === "EEXIST") {
+      return { ok: false, code: "RUN_ID_COLLISION", executionId, period: parts.period };
+    } else {
+      throw error;
+    }
+  }
+  return { ok: true, executionId, period: parts.period, localDate: parts.date, reservation };
+}
+
 function confirmationHours(value) {
   return Math.min(168, Math.max(1, Number(value) || DEFAULT_CONFIRMATION_HOURS));
 }
@@ -159,9 +283,14 @@ async function ensureLayout(root) {
     "memory/current",
     "memory/recent",
     "prompts",
+    "instructions",
+    "reports",
     "runtime/active",
     "runtime/sessions",
     "tasks",
+    "tasks/complete",
+    "tasks/cancelled",
+    "runtime/reservations",
   ];
   await Promise.all(directories.map((directory) => mkdir(path.join(state, directory), { recursive: true })));
 
@@ -171,16 +300,18 @@ async function ensureLayout(root) {
   }
 
   const configPath = path.join(state, "config.json");
-  if (!(await exists(configPath))) {
-    await writeJson(configPath, {
-      schemaVersion: 1,
+  const existingConfig = await readJson(configPath).catch(() => ({}));
+  const nextConfig = {
+      ...existingConfig,
+      schemaVersion: 2,
       stateScope: "target-project",
       installDirectoryWrites: false,
       aiGateway: "disabled",
-      retentionDays: 30,
+      retentionDays: Number(existingConfig.retentionDays) || 30,
       trackConciseLogs: true,
+      timeZone: existingConfig.timeZone || DEFAULT_PROJECT_TIME_ZONE,
       activation: {
-        auto: false,
+        auto: existingConfig.activation?.auto === true,
       },
       identity: {
         mode: "per-session",
@@ -190,19 +321,30 @@ async function ensureLayout(root) {
       },
       memory: {
         projectPath: ".agrimap-agent/memory/project.md",
-        currentTaskPath: ".agrimap-agent/memory/current/<task-id>.md",
-        recentPath: ".agrimap-agent/memory/recent",
+        currentTaskPath: ".agrimap-agent/memory/current/YYYY-MM/<run-id>-<slug>.md",
+        recentPath: ".agrimap-agent/memory/recent/YYYY-MM/<run-id>-<slug>.md",
       },
       logs: {
-        mode: "per-task",
-        path: ".agrimap-agent/logs/YYYY-MM/<task-id>.jsonl",
+        mode: "daily",
+        path: ".agrimap-agent/logs/YYYY-MM/YYYY-MM-DD.jsonl",
       },
+      tasks: {
+        activePath: ".agrimap-agent/tasks/YYYY-MM/<task-id>",
+        completePath: ".agrimap-agent/tasks/complete/YYYY-MM/<task-id>",
+        cancelledPath: ".agrimap-agent/tasks/cancelled/YYYY-MM/<task-id>",
+      },
+      prompts: {
+        mode: "raw-requester-only",
+        path: ".agrimap-agent/prompts/YYYY-MM/<conversation-id>/<context>.md",
+      },
+      instructions: { path: ".agrimap-agent/instructions/YYYY-MM/<task-id>" },
+      reports: { path: ".agrimap-agent/reports/YYYY-MM/<run-id>-<context>.md" },
       skip: {
         directories: [".git", "bin", "obj", "node_modules", "dist", "coverage"],
         extensions: [".dll", ".exe", ".pdb", ".so", ".dylib", ".class"],
       },
-    });
-  }
+    };
+  if (JSON.stringify(existingConfig) !== JSON.stringify(nextConfig)) await writeJson(configPath, nextConfig);
 
   const memoryPath = path.join(state, "memory", "project.md");
   if (!(await exists(memoryPath))) {
@@ -235,16 +377,6 @@ async function ensureLayout(root) {
     if (!(await exists(readmePath))) await writeFile(readmePath, readme, "utf8");
   }
   return state;
-}
-
-async function archivePrompts(state, taskId) {
-  const source = path.join(state, "prompts", taskId);
-  if (!(await exists(source))) return { moved: false, reason: "no-prompts" };
-  const destination = path.join(state, "prompts", "complete", taskId);
-  if (await exists(destination)) return { moved: false, reason: "destination-exists", destination: `prompts/complete/${taskId}` };
-  await mkdir(path.dirname(destination), { recursive: true });
-  await rename(source, destination);
-  return { moved: true, destination: `prompts/complete/${taskId}` };
 }
 
 function sessionIdentityPath(state, sessionId) {
@@ -361,16 +493,58 @@ function gitAuditSnapshot(root) {
   };
 }
 
-function auditEventIssues(event) {
+function auditSchemaVersion(event) {
+  return Number(event?.schema_version ?? event?.schemaVersion);
+}
+
+function normalizeAuditEvent(event = {}) {
+  if (auditSchemaVersion(event) >= 4 || Object.hasOwn(event, "execution_id")) {
+    return {
+      schemaVersion: auditSchemaVersion(event),
+      timestamp: event.timestamp,
+      executionId: event.execution_id,
+      taskId: event.task_id ?? null,
+      requestedBy: event.requester,
+      requesterId: event.requester_id ?? null,
+      identitySource: event.identity_source,
+      model: event.model,
+      modelLabel: event.model_label ?? "not-configured",
+      role: event.role,
+      agent: event.agent,
+      provider: event.provider,
+      workflowDepth: event.workflow_depth,
+      event: event.event,
+      milestone: event.milestone,
+      logType: event.log_type,
+      summary: event.message,
+      message: event.message,
+      reason: event.reason,
+      request: event.request,
+      files: event.files,
+      verification: event.verification,
+      gitHead: event.git_head ?? null,
+      gitDirty: event.git_dirty ?? null,
+    };
+  }
+  return { ...event, executionId: event.executionId || event.taskId, logType: event.logType || null };
+}
+
+function auditEventIssues(rawEvent) {
   const issues = [];
-  const schemaVersion = event.schemaVersion;
+  const schemaVersion = auditSchemaVersion(rawEvent);
   if (!SUPPORTED_AUDIT_SCHEMA_VERSIONS.has(schemaVersion)) {
-    issues.push({ field: "schemaVersion", reason: "unsupported" });
+    issues.push({ field: schemaVersion >= 4 ? "schema_version" : "schemaVersion", reason: "unsupported" });
+  }
+  const event = normalizeAuditEvent(rawEvent);
+  if (schemaVersion >= 4) {
+    const requiredFields = ["timestamp", "executionId", "requestedBy", "identitySource", "model", "role", "agent", "provider", "workflowDepth", "event", "logType", "message", "reason"];
+    for (const field of requiredFields) if (!String(event[field] || "").trim()) issues.push({ field, reason: "missing" });
+    if (event.workflowDepth !== "light" && !String(event.taskId || "").trim()) issues.push({ field: "task_id", reason: "required-for-tracked-depth" });
+    if (event.workflowDepth === "light" && event.taskId !== null) issues.push({ field: "task_id", reason: "must-be-null-for-light" });
+    if (!LOG_TYPES.has(event.logType)) issues.push({ field: "log_type", reason: "invalid" });
   }
   const requiredFields = ["timestamp", "taskId", "requestedBy", "identitySource", "model", "role", "agent", "provider", "event", "summary", "reason"];
-  for (const field of requiredFields) {
-    if (!String(event[field] || "").trim()) issues.push({ field, reason: "missing" });
-  }
+  if (schemaVersion < 4) for (const field of requiredFields) if (!String(event[field] || "").trim()) issues.push({ field, reason: "missing" });
   if (!Number.isFinite(Date.parse(event.timestamp)) || new Date(event.timestamp).toISOString() !== event.timestamp) {
     issues.push({ field: "timestamp", reason: "must-be-iso-utc" });
   }
@@ -401,8 +575,10 @@ function auditEventIssues(event) {
     }
   }
   if (!Array.isArray(event.verification)) issues.push({ field: "verification", reason: "must-be-array" });
-  if (schemaVersion >= 2 && !Object.hasOwn(event, "gitHead")) issues.push({ field: "gitHead", reason: "missing" });
-  if (schemaVersion >= 2 && !Object.hasOwn(event, "gitDirty")) issues.push({ field: "gitDirty", reason: "missing" });
+  if (schemaVersion >= 2 && schemaVersion < 4 && !Object.hasOwn(rawEvent, "gitHead")) issues.push({ field: "gitHead", reason: "missing" });
+  if (schemaVersion >= 2 && schemaVersion < 4 && !Object.hasOwn(rawEvent, "gitDirty")) issues.push({ field: "gitDirty", reason: "missing" });
+  if (schemaVersion >= 4 && !Object.hasOwn(rawEvent, "git_head")) issues.push({ field: "git_head", reason: "missing" });
+  if (schemaVersion >= 4 && !Object.hasOwn(rawEvent, "git_dirty")) issues.push({ field: "git_dirty", reason: "missing" });
   if (event.gitHead !== null && event.gitHead !== undefined && !/^[0-9a-f]{40,64}$/i.test(String(event.gitHead))) {
     issues.push({ field: "gitHead", reason: "invalid" });
   }
@@ -421,7 +597,39 @@ async function appendLog(state, event) {
   const { machine: _machine, osUser: _osUser, ...trackableEvent } = event;
   const timestamp = now();
   const gitSnapshot = gitAuditSnapshot(path.dirname(state));
-  const record = { ...trackableEvent, schemaVersion: AUDIT_SCHEMA_VERSION, timestamp, ...gitSnapshot };
+  const config = await workspaceConfig(state);
+  const local = zonedParts(timestamp, config.timeZone || DEFAULT_PROJECT_TIME_ZONE);
+  const logType = trackableEvent.logType
+    || (trackableEvent.event === "created" ? "request"
+      : trackableEvent.event === "decision" ? "decision"
+        : trackableEvent.event === "verified" ? "verification"
+          : TERMINAL_AUDIT_EVENTS.has(trackableEvent.event) ? "result"
+            : trackableEvent.event === "qa-finding" ? "error" : "action");
+  const record = {
+    schema_version: AUDIT_SCHEMA_VERSION,
+    timestamp,
+    execution_id: trackableEvent.executionId || trackableEvent.taskId,
+    task_id: trackableEvent.workflowDepth === "light" ? null : trackableEvent.taskId,
+    workflow_depth: trackableEvent.workflowDepth,
+    requester: trackableEvent.requestedBy,
+    requester_id: trackableEvent.requesterId ?? null,
+    identity_source: trackableEvent.identitySource,
+    model: trackableEvent.model,
+    model_label: trackableEvent.modelLabel || "not-configured",
+    role: trackableEvent.role,
+    agent: trackableEvent.agent,
+    provider: trackableEvent.provider,
+    event: trackableEvent.event,
+    ...(trackableEvent.milestone ? { milestone: trackableEvent.milestone } : {}),
+    log_type: logType,
+    message: trackableEvent.summary,
+    reason: trackableEvent.reason,
+    ...(trackableEvent.request ? { request: trackableEvent.request } : {}),
+    files: trackableEvent.files || [],
+    verification: trackableEvent.verification || [],
+    git_head: gitSnapshot.gitHead,
+    git_dirty: gitSnapshot.gitDirty,
+  };
   const issues = auditEventIssues(record);
   if (issues.length > 0) {
     const error = new TypeError(`Audit event is incomplete: ${issues.map((issue) => `${issue.field}:${issue.reason}`).join(", ")}`);
@@ -429,14 +637,28 @@ async function appendLog(state, event) {
     error.issues = issues;
     throw error;
   }
-  const month = timestamp.slice(0, 7);
-  const directory = path.join(state, "logs", month);
+  const directory = path.join(state, "logs", local.period);
   await mkdir(directory, { recursive: true });
-  await appendFile(
-    path.join(directory, `${String(event.taskId || "unscoped").replace(/[^a-zA-Z0-9._-]+/g, "-")}.jsonl`),
-    `${JSON.stringify(record)}\n`,
-    "utf8",
-  );
+  const logPath = path.join(directory, `${local.date}.jsonl`);
+  const lockPath = `${logPath}.lock`;
+  let lock = null;
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    try {
+      lock = await open(lockPath, "wx");
+      break;
+    } catch (error) {
+      if (error?.code !== "EEXIST") throw error;
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+  }
+  if (!lock) throw new Error(`Could not acquire daily audit log lock: ${stateRelative(state, lockPath)}`);
+  try {
+    await appendFile(logPath, `${JSON.stringify(record)}\n`, "utf8");
+  } finally {
+    await lock.close();
+    await rm(lockPath, { force: true });
+  }
+  return stateRelative(state, logPath);
 }
 
 async function init(root, args) {
@@ -463,6 +685,7 @@ async function init(root, args) {
 async function start(root, args) {
   const operation = String(args.operation || "task").trim().toLowerCase();
   const state = await ensureLayout(root);
+  const config = await workspaceConfig(state);
   const workflowDepth = String(args.depth || args["workflow-depth"] || "regulated").trim().toLowerCase();
   if (!TRACKED_WORKFLOW_DEPTHS.has(workflowDepth)) {
     return { ok: false, code: "INVALID_WORKFLOW_DEPTH", message: "--depth must be light, standard, or regulated when starting task state." };
@@ -501,18 +724,34 @@ async function start(root, args) {
     return { ok: false, activeTask: await readJson(activePath), message: "This session already has an active task." };
   }
 
-  const taskId = safeTaskId(args.task || defaultTaskId(operation, args.subject || objective));
-  if (!taskId) return { ok: false, message: "Task ID is empty after normalization." };
-  const taskPath = path.join(state, "tasks", taskId);
-  if (await exists(taskPath)) {
+  const startedAt = now();
+  const reservation = await reserveExecutionId(
+    state,
+    args.execution || args["execution-id"] || args.task,
+    startedAt,
+    config.timeZone || DEFAULT_PROJECT_TIME_ZONE,
+  );
+  if (!reservation.ok) {
+    return {
+      ok: false,
+      ...reservation,
+      message: "The project-local ddHHmmss execution ID is already reserved. Retry with a new second; never merge two runs.",
+    };
+  }
+  const executionId = reservation.executionId;
+  const taskId = TASK_WORKFLOW_DEPTHS.has(workflowDepth) ? executionId : null;
+  const slug = taskSubjectSlug(args.subject || objective) || operation || "work";
+  const taskPath = taskId ? path.join(state, "tasks", reservation.period, taskId) : null;
+  if (taskId && await findTaskPath(state, taskId)) {
+    await rm(reservation.reservation, { recursive: true, force: true });
     return {
       ok: false,
       code: "TASK_ID_EXISTS",
       taskId,
-      message: "This task ID already has tracked artifacts. Use a new task ID so requester and request history cannot be mixed.",
+      message: "This task ID already has tracked artifacts. Retry with a new execution ID so requester and request history cannot be mixed.",
     };
   }
-  await mkdir(path.join(taskPath, "handoffs"), { recursive: true });
+  if (taskPath) await mkdir(taskPath, { recursive: true });
 
   const scaffoldReplacements = {
     "brief.md": {
@@ -532,20 +771,40 @@ async function start(root, args) {
       operation,
       workflow_depth: workflowDepth,
       objective,
+      scope: String(args.scope || objective).trim(),
+      non_goals: String(args.nonGoals || args["non-goals"] || "No additional work outside the stated objective.").trim(),
+      target_kind: String(args.targetKind || args["target-kind"] || "general").trim(),
+      backend_profile: String(args.backendProfile || args["backend-profile"] || "not-applicable").trim(),
+      logic_impact: String(args.logicImpact || args["logic-impact"] || "authorized-by-request").trim(),
+      workspace_mode: String(args.workspaceMode || args["workspace-mode"] || "current-worktree").trim(),
+      integration_owner: String(args.integrationOwner || args["integration-owner"] || requestedBy).trim(),
+      branch_name: String(args.branch || "current").trim(),
+      file_ownership: String(args.fileOwnership || args["file-ownership"] || "Leader owns the files required by the approved scope.").trim(),
+      input_manifest: String(args.inputs || objective).trim(),
+      approved_decisions: String(args.decisions || "Execute only the approved objective and preserve unrelated behavior.").trim(),
+      service_ids_from_canonical_ownership_file_or_not_applicable: String(args.services || "Not applicable.").trim(),
+      open_concerns: String(args.concerns || "None recorded at task start.").trim(),
     },
-    "checklist.md": {},
+    "checklists.md": { task_id: taskId },
   };
-  for (const artifactName of taskArtifactSchema.scaffoldOrder || []) {
-    const requiredForDepths = taskArtifactSchema.artifacts?.[artifactName]?.requiredForDepths || [];
-    if (!requiredForDepths.includes(workflowDepth)) continue;
-    const artifactPath = path.join(taskPath, artifactName);
-    if (!(await exists(artifactPath))) {
-      await writeFile(artifactPath, await renderTaskArtifact(artifactName, scaffoldReplacements[artifactName] || {}), "utf8");
+  if (taskPath) {
+    for (const artifactName of taskArtifactSchema.scaffoldOrder || []) {
+      const requiredForDepths = taskArtifactSchema.artifacts?.[artifactName]?.requiredForDepths || [];
+      if (!requiredForDepths.includes(workflowDepth)) continue;
+      const artifactPath = path.join(taskPath, artifactName);
+      if (!(await exists(artifactPath))) {
+        await writeFile(artifactPath, await renderTaskArtifact(artifactName, scaffoldReplacements[artifactName] || {}), "utf8");
+      }
     }
   }
 
   const active = {
+    executionId,
+    runId: executionId,
     taskId,
+    period: reservation.period,
+    localDate: reservation.localDate,
+    slug,
     operation,
     workflowDepth,
     objective,
@@ -557,15 +816,27 @@ async function start(root, args) {
     decisionOwner: scaffoldReplacements["brief.md"].decision_owner_or_not_required,
     authorityEvidence: scaffoldReplacements["brief.md"].authority_evidence_or_not_required,
     ...execution,
-    startedAt: now(),
+    startedAt,
+    taskPath: taskPath ? stateRelative(state, taskPath) : null,
+    currentMemoryPath: `memory/current/${reservation.period}/${executionId}-${slug}.md`,
+    recentMemoryPath: `memory/recent/${reservation.period}/${executionId}-${slug}.md`,
   };
   await writeJson(activePath, active);
+  const memoryPaths = activeMemoryPaths(state, active);
+  await mkdir(path.dirname(memoryPaths.current), { recursive: true });
+  await mkdir(path.dirname(memoryPaths.recent), { recursive: true });
   await writeFile(
-    path.join(state, "memory", "current", `${taskId}.md`),
-    `# Current task memory\n\n- Task: \`${taskId}\`\n- Workflow depth: \`${workflowDepth}\`\n- Requested by: ${requestedBy}\n- Requester authority: \`${scaffoldReplacements["brief.md"].requester_authority}\`\n- Decision owner: ${scaffoldReplacements["brief.md"].decision_owner_or_not_required}\n- Request: ${objective}\n- Model label: \`${execution.modelLabel}\`\n- Actual model: \`${execution.model}\`\n- Role: \`${execution.role}\`\n- Agent: \`${execution.agent}\`\n- Provider: \`${execution.provider}\`\n- Status: started\n- Operation: \`${operation}\`\n- Last milestone: ${now()}\n- Summary: ${objective}\n`,
+    memoryPaths.current,
+    `# Current execution memory\n\n- Execution ID: \`${executionId}\`\n- Task ID: ${taskId ? `\`${taskId}\`` : "not-applicable"}\n- Workflow depth: \`${workflowDepth}\`\n- Requested by: ${requestedBy}\n- Requester authority: \`${scaffoldReplacements["brief.md"].requester_authority}\`\n- Decision owner: ${scaffoldReplacements["brief.md"].decision_owner_or_not_required}\n- Request: ${objective}\n- Model label: \`${execution.modelLabel}\`\n- Actual model: \`${execution.model}\`\n- Role: \`${execution.role}\`\n- Agent: \`${execution.agent}\`\n- Provider: \`${execution.provider}\`\n- Status: started\n- Operation: \`${operation}\`\n- Last milestone: ${startedAt}\n- Summary: ${objective}\n- Next action: execute the authorized scope or record a terminal/blocked state\n`,
+    "utf8",
+  );
+  await writeFile(
+    memoryPaths.recent,
+    `# Recent execution journal\n\n- Execution ID: \`${executionId}\`\n- Task ID: ${taskId ? `\`${taskId}\`` : "not-applicable"}\n- Workflow depth: \`${workflowDepth}\`\n- Requested by: ${requestedBy}\n- Request: ${objective}\n- Source status: current and valid at ${startedAt}\n\n## Events\n\n- ${startedAt} · started · ${objective}\n`,
     "utf8",
   );
   await appendLog(state, {
+    executionId,
     taskId,
     requestedBy,
     requesterId: confirmedIdentity.requesterId,
@@ -604,10 +875,10 @@ function compactVerification(values) {
 }
 
 async function checkpoint(root, args) {
-  const taskId = safeTaskId(args.task);
+  const executionId = safeTaskId(args.execution || args["execution-id"] || args.task);
   const rawSummary = String(args.summary || "").trim();
   const summary = compactCheckpointText(rawSummary, CHECKPOINT_FIELD_BUDGETS.summary);
-  if (!taskId || !rawSummary) return { ok: false, message: "--task and --summary are required." };
+  if (!executionId || !rawSummary) return { ok: false, message: "--execution (or compatibility --task) and --summary are required." };
   const event = String(args.event || "changed").trim();
   if (!isLogEvent(event)) return logEventError(event);
   if (event === "created" || TERMINAL_AUDIT_EVENTS.has(event)) {
@@ -637,19 +908,24 @@ async function checkpoint(root, args) {
     };
   }
   const state = await ensureLayout(root);
-  const taskPath = path.join(state, "tasks", taskId);
-  if (await exists(path.join(taskPath, "result.md"))) {
+  const activeMatch = await findActiveForTask(state, executionId, safeSessionId(args.session));
+  if (activeMatch?.ambiguous) return activeTaskAmbiguityError(executionId, activeMatch.matches);
+  if (!activeMatch?.active) return { ok: false, code: "ACTIVE_EXECUTION_NOT_FOUND", message: "No active execution matches this ID/session." };
+  const active = activeMatch.active;
+  const taskId = active.taskId || null;
+  const taskPath = taskId ? await findTaskPath(state, taskId, active) : null;
+  if (taskPath && await exists(path.join(taskPath, "result.md"))) {
     return {
       ok: false,
       code: "PREMATURE_RESULT_ARTIFACT",
       message: "result.md is closure-only and must be written after implementation, verification, and applicable QA checkpoints.",
     };
   }
-  if (
+  if (taskPath && (
     ["changed", "decision"].includes(event)
     && await exists(path.join(taskPath, "qa.md"))
-    && await countTaskEvents(state, taskId, "qa-finding") === 0
-  ) {
+    && await countTaskEvents(state, executionId, "qa-finding") === 0
+  )) {
     return {
       ok: false,
       code: "PREMATURE_QA_ARTIFACT",
@@ -664,7 +940,7 @@ async function checkpoint(root, args) {
         message: "qa-finding is verification-only evidence and must not claim changed product files.",
       };
     }
-    if (await countTaskEvents(state, taskId, "qa-finding") >= 1) {
+    if (await countTaskEvents(state, executionId, "qa-finding") >= 1) {
       return {
         ok: false,
         code: "QA_CORRECTION_LIMIT",
@@ -673,34 +949,38 @@ async function checkpoint(root, args) {
     }
   }
 
-  const activeMatch = await findActiveForTask(state, taskId, safeSessionId(args.session));
-  if (activeMatch?.ambiguous) return activeTaskAmbiguityError(taskId, activeMatch.matches);
-  const taskIdentity = await taskAuditIdentity(taskPath);
-  const requestedBy = activeMatch?.active?.requestedBy || taskIdentity.requestedBy || await resolveRequester(state, args);
+  const taskIdentity = taskPath ? await taskAuditIdentity(taskPath) : {};
+  const requestedBy = active.requestedBy || taskIdentity.requestedBy || await resolveRequester(state, args);
   if (!requestedBy) return { ok: false, needsRequester: true, message: "Requester is missing from the session and task brief." };
 
-  const execution = executionIdentity(args, activeMatch?.active || {});
-  const requesterId = activeMatch?.active?.requesterId || taskIdentity.requesterId || null;
-  const identitySource = activeMatch?.active?.identitySource || taskIdentity.identitySource || "legacy-migrated";
-  const request = activeMatch?.active?.objective || taskIdentity.request || null;
+  const execution = executionIdentity(args, active);
+  const requesterId = active.requesterId || taskIdentity.requesterId || null;
+  const identitySource = active.identitySource || taskIdentity.identitySource || "legacy-migrated";
+  const request = active.objective || taskIdentity.request || null;
   const rawVerification = listValue(args.verification);
   const verification = compactVerification(rawVerification);
   const rawReason = String(args.reason || "Durable milestone checkpoint.");
   const reason = compactCheckpointText(rawReason, CHECKPOINT_FIELD_BUDGETS.reason);
   const rawConcerns = String(args.concerns || "None recorded.");
   const concerns = compactCheckpointText(rawConcerns, CHECKPOINT_FIELD_BUDGETS.concerns);
-  await writeFile(
-    path.join(state, "memory", "current", `${taskId}.md`),
-    `# Current task memory\n\n- Task: \`${taskId}\`\n- Workflow depth: \`${activeMatch?.active?.workflowDepth || taskIdentity.workflowDepth || "regulated"}\`\n- Requested by: ${requestedBy}\n- Request: ${request || "Not recorded (legacy task)"}\n- Model label: \`${execution.modelLabel}\`\n- Actual model: \`${execution.model}\`\n- Role: \`${execution.role}\`\n- Agent: \`${execution.agent}\`\n- Provider: \`${execution.provider}\`\n- Status: ${args.status || "in-progress"}\n- Last milestone: \`${milestone}\` at ${now()}\n- Summary: ${summary}\n- Reason: ${reason}\n- Files: ${files.length ? files.map((file) => `\`${file}\``).join(", ") : "None"}\n- Verification: ${verification.length ? verification.join("; ") : "Not yet run"}\n- Concerns: ${concerns}\n`,
-    "utf8",
-  );
+  const timestamp = now();
+  const memoryPaths = activeMemoryPaths(state, active);
+  await mkdir(path.dirname(memoryPaths.current), { recursive: true });
+  await mkdir(path.dirname(memoryPaths.recent), { recursive: true });
+  await writeFile(memoryPaths.current,
+    `# Current execution memory\n\n- Execution ID: \`${executionId}\`\n- Task ID: ${taskId ? `\`${taskId}\`` : "not-applicable"}\n- Workflow depth: \`${active.workflowDepth || taskIdentity.workflowDepth || "regulated"}\`\n- Requested by: ${requestedBy}\n- Request: ${request || "Not recorded (legacy task)"}\n- Model label: \`${execution.modelLabel}\`\n- Actual model: \`${execution.model}\`\n- Role: \`${execution.role}\`\n- Agent: \`${execution.agent}\`\n- Provider: \`${execution.provider}\`\n- Status: ${args.status || "in-progress"}\n- Last milestone: \`${milestone}\` at ${timestamp}\n- Summary: ${summary}\n- Reason: ${reason}\n- Files: ${files.length ? files.map((file) => `\`${file}\``).join(", ") : "None"}\n- Verification: ${verification.length ? verification.join("; ") : "Not yet run"}\n- Concerns: ${concerns}\n- Next action: ${String(args.next || "Continue the active execution or record a terminal state.").trim()}\n`, "utf8");
+  if (!(await exists(memoryPaths.recent))) {
+    await writeFile(memoryPaths.recent, `# Recent execution journal\n\n- Execution ID: \`${executionId}\`\n- Task ID: ${taskId ? `\`${taskId}\`` : "not-applicable"}\n- Workflow depth: \`${active.workflowDepth}\`\n- Requested by: ${requestedBy}\n- Request: ${request}\n\n## Events\n`, "utf8");
+  }
+  await appendFile(memoryPaths.recent, `\n- ${timestamp} · ${event}/${milestone} · ${summary}\n`, "utf8");
   await appendLog(state, {
+    executionId,
     taskId,
     requestedBy,
     requesterId,
     identitySource,
     ...execution,
-    workflowDepth: activeMatch?.active?.workflowDepth || taskIdentity.workflowDepth || "regulated",
+    workflowDepth: active.workflowDepth || taskIdentity.workflowDepth || "regulated",
     event,
     milestone,
     summary,
@@ -716,7 +996,7 @@ async function checkpoint(root, args) {
     verificationItemsTruncated: rawVerification.slice(0, verification.length)
       .filter((item, index) => item.trim().replace(/\s+/g, " ") !== verification[index]).length,
   };
-  return { ok: true, taskId, milestone, requestedBy, requesterId, identitySource, ...execution, memory: `memory/current/${taskId}.md`, compaction };
+  return { ok: true, executionId, taskId, milestone, requestedBy, requesterId, identitySource, ...execution, memory: stateRelative(state, memoryPaths.current), recent: stateRelative(state, memoryPaths.recent), compaction };
 }
 
 async function filesUnder(directory) {
@@ -729,18 +1009,19 @@ async function filesUnder(directory) {
   return files;
 }
 
-async function countTaskEvents(state, taskId, eventName) {
+async function countTaskEvents(state, executionId, eventName) {
   let count = 0;
   const logFiles = (await filesUnder(path.join(state, "logs"))).filter((file) => file.endsWith(".jsonl"));
   for (const file of logFiles) {
     for (const line of (await readFile(file, "utf8")).split(/\r?\n/).filter(Boolean)) {
       try {
-        const entry = JSON.parse(line);
+        const raw = JSON.parse(line);
+        const entry = normalizeAuditEvent(raw);
         if (
-          entry.taskId === taskId
+          (entry.executionId === executionId || entry.taskId === executionId)
           && entry.event === eventName
-          && SUPPORTED_AUDIT_SCHEMA_VERSIONS.has(entry.schemaVersion)
-          && auditEventIssues(entry).length === 0
+          && SUPPORTED_AUDIT_SCHEMA_VERSIONS.has(auditSchemaVersion(raw))
+          && auditEventIssues(raw).length === 0
         ) count += 1;
       } catch {
         // Invalid audit lines remain diagnostic and never consume the correction allowance.
@@ -750,19 +1031,20 @@ async function countTaskEvents(state, taskId, eventName) {
   return count;
 }
 
-async function recordedTaskFiles(state, taskId) {
+async function recordedTaskFiles(state, executionId) {
   const recorded = new Set();
   const logFiles = (await filesUnder(path.join(state, "logs"))).filter((file) => file.endsWith(".jsonl"));
   for (const file of logFiles) {
     for (const line of (await readFile(file, "utf8")).split(/\r?\n/).filter(Boolean)) {
       try {
-        const event = JSON.parse(line);
-        const versioned = SUPPORTED_AUDIT_SCHEMA_VERSIONS.has(event.schemaVersion);
+        const raw = JSON.parse(line);
+        const event = normalizeAuditEvent(raw);
+        const versioned = SUPPORTED_AUDIT_SCHEMA_VERSIONS.has(auditSchemaVersion(raw));
         if (
-          event.taskId !== taskId
+          event.executionId !== executionId && event.taskId !== executionId
           || !versioned
           || TERMINAL_AUDIT_EVENTS.has(event.event)
-          || auditEventIssues(event).length > 0
+          || auditEventIssues(raw).length > 0
         ) continue;
         for (const changedFile of event.files) {
           const normalized = typeof changedFile === "string" ? changedFile.trim() : "";
@@ -774,6 +1056,29 @@ async function recordedTaskFiles(state, taskId) {
     }
   }
   return [...recorded];
+}
+
+async function auditEvidenceForExecution(state, executionId) {
+  const events = [];
+  const failures = [];
+  const logFiles = (await filesUnder(path.join(state, "logs"))).filter((file) => file.endsWith(".jsonl"));
+  for (const file of logFiles) {
+    const source = stateRelative(state, file);
+    const lines = (await readFile(file, "utf8")).split(/\r?\n/).filter(Boolean);
+    for (let index = 0; index < lines.length; index += 1) {
+      try {
+        const raw = JSON.parse(lines[index]);
+        const event = normalizeAuditEvent(raw);
+        if (event.executionId !== executionId && event.taskId !== executionId) continue;
+        const issues = auditEventIssues(raw);
+        for (const issue of issues) failures.push({ source, line: index + 1, ...issue });
+        if (issues.length === 0) events.push({ ...event, source, line: index + 1 });
+      } catch {
+        // Daily log lines unrelated to this execution cannot be attributed without valid JSON.
+      }
+    }
+  }
+  return { events, failures };
 }
 
 function auditStorageStatus(root, logFiles) {
@@ -926,8 +1231,9 @@ async function priorPassedQaRuns(state, currentTaskId, coverageKey) {
   for (const file of logFiles) {
     for (const line of (await readFile(file, "utf8")).split(/\r?\n/).filter(Boolean)) {
       try {
-        const event = JSON.parse(line);
-        if (event.taskId === currentTaskId || event.event !== "completed" || auditEventIssues(event).length > 0) continue;
+        const raw = JSON.parse(line);
+        const event = normalizeAuditEvent(raw);
+        if (event.taskId === currentTaskId || event.event !== "completed" || auditEventIssues(raw).length > 0) continue;
         const timestamp = Date.parse(event.timestamp);
         if (Number.isFinite(timestamp) && timestamp > (completedAt.get(event.taskId) || 0)) completedAt.set(event.taskId, timestamp);
       } catch {
@@ -938,7 +1244,8 @@ async function priorPassedQaRuns(state, currentTaskId, coverageKey) {
 
   const runs = [];
   for (const [taskId, timestamp] of completedAt) {
-    const qa = await readFile(path.join(state, "tasks", taskId, "qa.md"), "utf8").catch(() => "");
+    const priorPath = await findTaskPath(state, taskId);
+    const qa = priorPath ? await readFile(path.join(priorPath, "qa.md"), "utf8").catch(() => "") : "";
     if (plainMarkdownValue(markdownField(qa, "Status")).toLowerCase() !== "passed") continue;
     if (plainMarkdownValue(markdownField(qa, "Coverage key")).toLowerCase() !== normalizedCoverageKey) continue;
     const recordedMode = plainMarkdownValue(markdownField(qa, "QA mode")).toLowerCase();
@@ -951,15 +1258,43 @@ async function priorPassedQaRuns(state, currentTaskId, coverageKey) {
 
 async function validate(root, args) {
   const state = path.join(root, ".agrimap-agent");
-  const taskId = safeTaskId(args.task);
-  if (!taskId) return { ok: false, message: "--task is required." };
-  const taskPath = path.join(state, "tasks", taskId);
+  const executionId = safeTaskId(args.execution || args["execution-id"] || args.task);
+  if (!executionId) return { ok: false, message: "--execution (or compatibility --task) is required." };
+  const activeMatch = await findActiveForTask(state, executionId, safeSessionId(args.session));
+  if (activeMatch?.ambiguous) return activeTaskAmbiguityError(executionId, activeMatch.matches);
+  const active = activeMatch?.active || {};
+  const taskId = active.taskId || (String(args.depth || args["workflow-depth"] || "").toLowerCase() === "light" ? null : executionId);
+  const taskPath = taskId ? await findTaskPath(state, taskId, active) : null;
   const artifactDefinitions = taskArtifactSchema.artifacts || {};
-  const briefPreview = await readFile(path.join(taskPath, "brief.md"), "utf8").catch(() => "");
-  const workflowDepth = String(args.depth || args["workflow-depth"] || optionalMarkdownField(briefPreview, "Workflow depth") || "regulated").toLowerCase();
+  const briefPreview = taskPath ? await readFile(path.join(taskPath, "brief.md"), "utf8").catch(() => "") : "";
+  const workflowDepth = String(args.depth || args["workflow-depth"] || active.workflowDepth || optionalMarkdownField(briefPreview, "Workflow depth") || "regulated").toLowerCase();
   if (!TRACKED_WORKFLOW_DEPTHS.has(workflowDepth)) {
-    return { ok: false, taskId, workflowDepth, contentFailures: [{ file: "brief.md", field: "Workflow depth", reason: "invalid-enum" }] };
+    return { ok: false, executionId, taskId, workflowDepth, contentFailures: [{ file: "brief.md", field: "Workflow depth", reason: "invalid-enum" }] };
   }
+  const evidence = await auditEvidenceForExecution(state, executionId);
+  const created = evidence.events.find((event) => event.event === "created" && eventRequest(event));
+  const memoryPaths = activeMemoryPaths(state, { ...active, executionId, taskId });
+  const memoryRecorded = await exists(memoryPaths.current) || await exists(memoryPaths.recent);
+  if (workflowDepth === "light") {
+    const leakedTaskPath = await findTaskPath(state, executionId, active);
+    const contentFailures = [];
+    if (taskId !== null) contentFailures.push({ field: "task_id", reason: "light-must-not-have-task-id" });
+    if (leakedTaskPath) contentFailures.push({ field: "task-directory", reason: "light-must-not-create-task-artifacts" });
+    return {
+      ok: contentFailures.length === 0 && evidence.failures.length === 0 && Boolean(created) && memoryRecorded,
+      executionId,
+      taskId: null,
+      workflowDepth,
+      taskArtifacts: "not-applicable",
+      contentFailures,
+      auditFailures: evidence.failures,
+      taskLogged: evidence.events.length > 0,
+      createdRequestRecorded: Boolean(created),
+      requesterRecorded: Boolean(created?.requestedBy || active.requestedBy),
+      memoryRecorded,
+    };
+  }
+  if (!taskPath) return { ok: false, executionId, taskId, workflowDepth, missing: ["task-directory"], contentFailures: [] };
   const required = Object.entries(artifactDefinitions)
     .filter(([, definition]) => definition.requiredForCompletion && (definition.requiredForDepths || []).includes(workflowDepth))
     .map(([file]) => file);
@@ -973,7 +1308,7 @@ async function validate(root, args) {
     artifacts[file] = await readFile(path.join(taskPath, file), "utf8").catch(() => "");
   }
   const brief = artifacts["brief.md"] || "";
-  const checklist = artifacts["checklist.md"] || "";
+  const checklist = artifacts["checklists.md"] || artifacts["checklist.md"] || "";
   const qa = artifacts["qa.md"] || "";
   const result = artifacts["result.md"] || "";
   const placeholderFailures = [];
@@ -1108,32 +1443,12 @@ async function validate(root, args) {
     contentFailures.push({ file: "result.md", field: rules.deliveryBoundaryField, reason: "requires-full-qa" });
   }
 
-  const memoryRecorded = await exists(path.join(state, "memory", "current", `${taskId}.md`))
-    || await exists(path.join(state, "memory", "recent", `${taskId}.md`));
-  const logFiles = (await filesUnder(path.join(state, "logs"))).filter((file) => file.endsWith(".jsonl"));
-  let taskLogged = false;
-  let createdRequestRecorded = false;
-  const auditFailures = [];
-  for (const file of logFiles) {
-    const lines = (await readFile(file, "utf8")).split(/\r?\n/).filter(Boolean);
-    const source = path.relative(root, file).replace(/\\/g, "/");
-    const belongsToTask = path.basename(file) === `${taskId}.jsonl`;
-    for (let lineNumber = 0; lineNumber < lines.length; lineNumber += 1) {
-      const line = lines[lineNumber];
-      try {
-        const event = JSON.parse(line);
-        if (event.taskId !== taskId) continue;
-        if (event.requestedBy) taskLogged = true;
-        if (event.event === "created" && eventRequest(event)) createdRequestRecorded = true;
-        if (Number(event.schemaVersion) >= 1) {
-          for (const issue of auditEventIssues(event)) auditFailures.push({ source, line: lineNumber + 1, ...issue });
-          if (requestedBy && event.requestedBy && requestedBy !== event.requestedBy) {
-            auditFailures.push({ source, line: lineNumber + 1, field: "requestedBy", reason: "task-brief-mismatch" });
-          }
-        }
-      } catch {
-        if (belongsToTask) auditFailures.push({ source, line: lineNumber + 1, field: "json", reason: "invalid" });
-      }
+  const taskLogged = evidence.events.some((event) => Boolean(event.requestedBy));
+  const createdRequestRecorded = Boolean(created);
+  const auditFailures = [...evidence.failures];
+  for (const event of evidence.events) {
+    if (requestedBy && event.requestedBy && requestedBy !== event.requestedBy) {
+      auditFailures.push({ source: event.source, line: event.line, field: "requestedBy", reason: "task-brief-mismatch" });
     }
   }
 
@@ -1148,6 +1463,7 @@ async function validate(root, args) {
       && auditFailures.length === 0
       && Boolean(requestedBy)
       && memoryRecorded,
+    executionId,
     taskId,
     missing,
     unchecked,
@@ -1175,7 +1491,7 @@ async function findActiveForTask(state, taskId, sessionId) {
     const activePath = activeTaskPath(state, sessionId);
     if (await exists(activePath)) {
       const active = await readJson(activePath);
-      if (active.taskId === taskId) return { active, activePath };
+      if (active.taskId === taskId || active.executionId === taskId) return { active, activePath };
     }
     return null;
   }
@@ -1185,7 +1501,7 @@ async function findActiveForTask(state, taskId, sessionId) {
     if (!file.endsWith(".json")) continue;
     const candidatePath = path.join(activeDirectory, file);
     const candidate = await readJson(candidatePath).catch(() => null);
-    if (candidate?.taskId === taskId) matches.push({ active: candidate, activePath: candidatePath });
+    if (candidate?.taskId === taskId || candidate?.executionId === taskId) matches.push({ active: candidate, activePath: candidatePath });
   }
   if (matches.length === 0) return null;
   if (matches.length === 1) return matches[0];
@@ -1207,112 +1523,185 @@ function activeTaskAmbiguityError(taskId, matches) {
   };
 }
 
+async function appendRecentTerminal(state, active, status, summary) {
+  const memoryPaths = activeMemoryPaths(state, active);
+  await mkdir(path.dirname(memoryPaths.recent), { recursive: true });
+  if (!(await exists(memoryPaths.recent))) {
+    await writeFile(memoryPaths.recent, `# Recent execution journal\n\n- Execution ID: \`${active.executionId || active.taskId}\`\n- Task ID: ${active.taskId ? `\`${active.taskId}\`` : "not-applicable"}\n- Workflow depth: \`${active.workflowDepth}\`\n- Requested by: ${active.requestedBy}\n- Request: ${active.objective}\n\n## Events\n`, "utf8");
+  }
+  const current = await readFile(memoryPaths.recent, "utf8");
+  if (!current.includes(` · ${status} · ${summary}`)) {
+    await appendFile(memoryPaths.recent, `\n- ${now()} · ${status} · ${summary}\n`, "utf8");
+  }
+  return memoryPaths;
+}
+
+async function updateProjectMemory(state, active, status, reportPath) {
+  const projectPath = path.join(state, "memory", "project.md");
+  const executionId = active.executionId || active.taskId;
+  const date = zonedParts(now(), (await workspaceConfig(state)).timeZone || DEFAULT_PROJECT_TIME_ZONE).date;
+  const line = `- ${date} · ${status} · ${active.objective} (execution \`${executionId}\`; report \`${stateRelative(state, reportPath)}\`)`;
+  let content = await readFile(projectPath, "utf8").catch(() => "# Project memory\n\n## Completed work\n");
+  if (!content.includes("## Completed work")) content = `${content.trimEnd()}\n\n## Completed work\n`;
+  if (!content.includes(`execution \`${executionId}\``)) content = `${content.trimEnd()}\n${line}\n`;
+  await writeFile(projectPath, content, "utf8");
+  return stateRelative(state, projectPath);
+}
+
+async function writeExecutionReport(state, active, status, files, verification, taskPath = null) {
+  const executionId = active.executionId || active.taskId;
+  const config = await workspaceConfig(state);
+  const local = zonedParts(active.startedAt || now(), config.timeZone || DEFAULT_PROJECT_TIME_ZONE);
+  const period = active.period || local.period;
+  const slug = executionSlug(active);
+  const reportPath = path.join(state, "reports", period, `${executionId}-${slug}.md`);
+  const memoryPaths = activeMemoryPaths(state, active);
+  const finishedAt = now();
+  const finishedLocal = zonedParts(finishedAt, config.timeZone || DEFAULT_PROJECT_TIME_ZONE);
+  const durationMs = Math.max(0, Date.parse(finishedAt) - Date.parse(active.startedAt || finishedAt));
+  const duration = `~${Math.max(1, Math.round(durationMs / 60_000))} minute(s)`;
+  const terminalBucket = status === "completed" ? "complete" : status === "blocked" ? null : "cancelled";
+  const linkedTask = active.taskId
+    ? terminalBucket ? `tasks/${terminalBucket}/${period}/${active.taskId}` : stateRelative(state, taskPath)
+    : "not-applicable (light workflow)";
+  const dailyLog = `logs/${finishedLocal.period}/${finishedLocal.date}.jsonl`;
+  const fileRows = files.length ? files.map((file) => `| \`${file}\` | Changed or verified by this execution |`).join("\n") : "| — | No product file attribution recorded |";
+  const verificationRows = verification.length ? verification.map((item, index) => `| ${index + 1} | ${item} |`).join("\n") : "| 1 | No verification detail recorded |";
+  const finalLabel = status === "completed" ? "✅ COMPLETED" : status === "blocked" ? "⚠️ BLOCKED" : status === "cancelled" ? "⛔ CANCELLED" : "❌ FAILED";
+  const report = `# Execution Report — ${active.objective}\n\n## Metadata\n\n| Field | Value |\n|---|---|\n| Session ID | ${active.sessionId || "not-recorded"} |\n| Execution ID | ${executionId} |\n| Task ID | ${active.taskId || "not-applicable"} |\n| Workflow depth | ${active.workflowDepth} |\n| Requester | ${active.requestedBy} |\n| Identity source | ${active.identitySource} |\n| Provider | ${active.provider} |\n| Model | ${active.model} |\n| Role / agent | ${active.role} / ${active.agent} |\n| Started At | ${active.startedAt || "not-recorded"} |\n| Finished At | ${finishedAt} |\n| Duration | ${duration} |\n| Final Status | ${finalLabel} |\n\n## Linked Artifacts\n\n| Artifact | Path |\n|---|---|\n| Memory (recent) | \`${stateRelative(state, memoryPaths.recent)}\` |\n| Daily audit log | \`${dailyLog}\` |\n| Task folder | \`${linkedTask}\` |\n| Raw prompt | ${active.promptPath ? `\`${active.promptPath}\`` : "not-recorded"} |\n| Generated instructions | ${active.instructionPath ? `\`${active.instructionPath}\`` : "not-recorded"} |\n| Report (this) | \`${stateRelative(state, reportPath)}\` |\n\n## Objective\n\n${active.objective}\n\n## Files Changed or Verified\n\n| File | Description |\n|---|---|\n${fileRows}\n\n## Issues Found and Resolved\n\n| Severity | Issue | Resolution |\n|---|---|---|\n| — | No unresolved issue recorded in terminal evidence | — |\n\n## Task Files Status\n\n| File | Status |\n|---|---|\n${active.taskId ? "| `brief.md` | recorded |\n| `analysis.md` | recorded |\n| `checklists.md` | recorded |\n| `qa.md` | recorded |\n| `result.md` | recorded |" : "| — | not-applicable for light workflow |"}\n\n## Verification\n\n| # | Evidence |\n|---|---|\n${verificationRows}\n\n## Summary\n\nExecution closed as **${status}**. Raw prompts remained in the prompt archive, generated instructions remained separate, and recent memory stores a concise trace rather than transcripts, raw tool output, or hidden reasoning.\n\n**Final Status: ${finalLabel}**\n\n## Completion Checklist\n\n- [x] Recent memory journal updated\n${status === "completed" ? "- [x] Short completion pointer added to project memory\n" : "- [x] Project memory not promoted because this execution did not complete\n"}- [x] Current memory removed for terminal work\n- [x] Daily JSONL terminal audit event written\n- [x] Raw prompts left immutable in the prompt archive\n${active.taskId ? "- [x] Task folder moved to its terminal bucket\n" : "- [x] Task artifacts correctly omitted for light workflow\n"}`;
+  await mkdir(path.dirname(reportPath), { recursive: true });
+  await writeFile(reportPath, `${report.trimEnd()}\n`, "utf8");
+  return reportPath;
+}
+
+async function moveTaskToTerminal(state, active, bucket) {
+  if (!active.taskId) return null;
+  const source = await findTaskPath(state, active.taskId, active);
+  if (!source) return null;
+  const config = await workspaceConfig(state);
+  const period = active.period || zonedParts(active.startedAt || now(), config.timeZone || DEFAULT_PROJECT_TIME_ZONE).period;
+  const destination = path.join(state, "tasks", bucket, period, active.taskId);
+  if (path.resolve(source) === path.resolve(destination)) return destination;
+  if (await exists(destination)) throw new Error(`Terminal task destination already exists: ${stateRelative(state, destination)}`);
+  await mkdir(path.dirname(destination), { recursive: true });
+  await rename(source, destination);
+  return destination;
+}
+
 async function complete(root, args) {
-  const taskId = safeTaskId(args.task);
-  const validation = await validate(root, { ...args, task: taskId });
+  const executionId = safeTaskId(args.execution || args["execution-id"] || args.task);
+  const validation = await validate(root, { ...args, execution: executionId });
   if (!validation.ok) return validation;
-
   const state = path.join(root, ".agrimap-agent");
-  const taskPath = path.join(state, "tasks", taskId);
-  const activeMatch = await findActiveForTask(state, taskId, safeSessionId(args.session));
-  if (activeMatch?.ambiguous) return activeTaskAmbiguityError(taskId, activeMatch.matches);
-  const taskIdentity = await taskAuditIdentity(taskPath);
-  const requestedBy = activeMatch?.active?.requestedBy || taskIdentity.requestedBy;
-  const execution = executionIdentity(args, activeMatch?.active || {});
-  const files = await recordedTaskFiles(state, taskId);
-
-  await copyFile(path.join(taskPath, "result.md"), path.join(state, "memory", "recent", `${taskId}.md`));
-  await rm(path.join(state, "memory", "current", `${taskId}.md`), { force: true });
-  if (activeMatch) await rm(activeMatch.activePath, { force: true });
-  const prompts = await archivePrompts(state, taskId);
-  await appendLog(state, {
-    taskId,
+  const activeMatch = await findActiveForTask(state, executionId, safeSessionId(args.session));
+  if (activeMatch?.ambiguous) return activeTaskAmbiguityError(executionId, activeMatch.matches);
+  if (!activeMatch?.active) return { ok: false, code: "ACTIVE_EXECUTION_NOT_FOUND", message: "Completion requires active execution state." };
+  const active = { ...activeMatch.active, executionId, taskId: validation.taskId, workflowDepth: validation.workflowDepth };
+  const taskPath = active.taskId ? await findTaskPath(state, active.taskId, active) : null;
+  const taskIdentity = taskPath ? await taskAuditIdentity(taskPath) : {};
+  const requestedBy = active.requestedBy || taskIdentity.requestedBy;
+  const execution = executionIdentity(args, active);
+  const files = await recordedTaskFiles(state, executionId);
+  const verification = ["agm-workspace validate: passed"];
+  const priorTerminal = (await auditEvidenceForExecution(state, executionId)).events.some((event) => event.event === "completed");
+  if (!priorTerminal) await appendLog(state, {
+    executionId,
+    taskId: active.taskId,
     requestedBy,
-    requesterId: activeMatch?.active?.requesterId || taskIdentity.requesterId || null,
-    identitySource: activeMatch?.active?.identitySource || taskIdentity.identitySource || "legacy-migrated",
+    requesterId: active.requesterId || taskIdentity.requesterId || null,
+    identitySource: active.identitySource || taskIdentity.identitySource || "legacy-migrated",
     ...execution,
-    workflowDepth: validation.workflowDepth,
+    workflowDepth: active.workflowDepth,
     event: "completed",
-    summary: "Task passed its completion gate.",
-    reason: validation.workflowDepth === "regulated"
-      ? "Checklist, regulated QA, memory, and milestone logs are complete."
-      : "Checklist, proportional verification, memory, and milestone logs are complete.",
+    summary: "Execution passed its completion gate.",
+    reason: active.workflowDepth === "regulated"
+      ? "Tracked artifacts, regulated QA, memory, and audit evidence are complete."
+      : active.workflowDepth === "standard"
+        ? "Tracked artifacts, proportional QA, memory, and audit evidence are complete."
+        : "Artifactless light execution has memory and audit evidence.",
     files,
-    verification: prompts.moved
-      ? ["agm-workspace validate: passed", `prompts archived: ${prompts.destination}`]
-      : ["agm-workspace validate: passed"],
+    verification,
   });
-  return { ok: true, taskId, requestedBy, archived: `memory/recent/${taskId}.md`, prompts };
+  const memoryPaths = await appendRecentTerminal(state, active, "completed", "Completion gate passed.");
+  const reportPath = await writeExecutionReport(state, active, "completed", files, verification, taskPath);
+  const projectMemory = await updateProjectMemory(state, active, "completed", reportPath);
+  const archivedTaskPath = await moveTaskToTerminal(state, active, "complete");
+  await rm(memoryPaths.current, { force: true });
+  await rm(activeMatch.activePath, { force: true });
+  return {
+    ok: true,
+    executionId,
+    taskId: active.taskId,
+    requestedBy,
+    recentMemory: stateRelative(state, memoryPaths.recent),
+    projectMemory,
+    report: stateRelative(state, reportPath),
+    archivedTask: archivedTaskPath ? stateRelative(state, archivedTaskPath) : null,
+    promptsMoved: false,
+  };
 }
 
 async function closeTask(root, args) {
-  const taskId = safeTaskId(args.task);
+  const executionId = safeTaskId(args.execution || args["execution-id"] || args.task);
   const status = String(args.status || "").trim();
   const allowed = new Set([QA_FAILED_EVENT, "blocked", "cancelled"]);
-  if (!taskId || !allowed.has(status)) {
-    return { ok: false, message: `--task and --status ${QA_FAILED_EVENT}|blocked|cancelled are required.` };
-  }
-
-  const state = path.join(root, ".agrimap-agent");
-  const taskPath = path.join(state, "tasks", taskId);
-  const resultPath = path.join(taskPath, "result.md");
-  if (!(await exists(resultPath))) return { ok: false, message: "result.md is required before closing a non-complete task." };
-
-  const qaPath = path.join(taskPath, "qa.md");
+  if (!executionId || !allowed.has(status)) return { ok: false, message: `--execution (or compatibility --task) and --status ${QA_FAILED_EVENT}|blocked|cancelled are required.` };
+  const state = await ensureLayout(root);
+  const activeMatch = await findActiveForTask(state, executionId, safeSessionId(args.session));
+  if (activeMatch?.ambiguous) return activeTaskAmbiguityError(executionId, activeMatch.matches);
+  if (!activeMatch?.active) return { ok: false, code: "ACTIVE_EXECUTION_NOT_FOUND", message: "No active execution matches this ID/session." };
+  const active = { ...activeMatch.active, executionId, taskId: activeMatch.active.taskId || null };
+  const taskPath = active.taskId ? await findTaskPath(state, active.taskId, active) : null;
+  const taskIdentity = taskPath ? await taskAuditIdentity(taskPath) : {};
+  const requestedBy = active.requestedBy || taskIdentity.requestedBy;
+  if (!requestedBy) return { ok: false, needsRequester: true, message: "Requester is missing from active state and the task brief." };
   if (status === QA_FAILED_EVENT) {
-    const qa = await readFile(qaPath, "utf8").catch(() => "");
-    const result = await readFile(resultPath, "utf8");
     const nextPrompt = String(args.nextPrompt || args["next-prompt"] || "").trim();
     const nextPromptPath = nextPrompt ? path.resolve(root, nextPrompt) : "";
-    const promptsRoot = path.resolve(state, "prompts");
+    const promptsRoot = path.resolve(state, "instructions");
     const promptRelative = nextPromptPath ? path.relative(promptsRoot, nextPromptPath) : "";
-    if (!/^\s*(?:-\s*)?Status:\s*failed\s*$/im.test(qa)) {
-      return { ok: false, message: `qa.md must record Status: failed before closing as ${QA_FAILED_EVENT}.` };
-    }
-    if (!new RegExp(`Outcome:\\s*\`?${QA_FAILED_EVENT}\`?`, "i").test(result)) {
-      return { ok: false, message: `result.md must record Outcome: ${QA_FAILED_EVENT}.` };
-    }
     if (!nextPromptPath || promptRelative.startsWith("..") || path.isAbsolute(promptRelative) || !(await exists(nextPromptPath))) {
-      return { ok: false, message: "--next-prompt must point to an existing file under .agrimap-agent/prompts/." };
+      return { ok: false, message: "--next-prompt must point to an existing generated instruction under .agrimap-agent/instructions/." };
     }
   }
-
-  const activeMatch = await findActiveForTask(state, taskId, safeSessionId(args.session));
-  if (activeMatch?.ambiguous) return activeTaskAmbiguityError(taskId, activeMatch.matches);
-  const taskIdentity = await taskAuditIdentity(taskPath);
-  const requestedBy = activeMatch?.active?.requestedBy || taskIdentity.requestedBy;
-  if (!requestedBy) return { ok: false, needsRequester: true, message: "Requester is missing from the task brief." };
-  const execution = executionIdentity(args, activeMatch?.active || {});
-  const files = await recordedTaskFiles(state, taskId);
-
-  await copyFile(resultPath, path.join(state, "memory", "recent", `${taskId}.md`));
-  await rm(path.join(state, "memory", "current", `${taskId}.md`), { force: true });
-  if (activeMatch) await rm(activeMatch.activePath, { force: true });
-  const prompts = await archivePrompts(state, taskId);
-  await appendLog(state, {
-    taskId,
+  const execution = executionIdentity(args, active);
+  const files = await recordedTaskFiles(state, executionId);
+  const reason = String(args.reason || (status === "blocked" ? "Execution is paused and remains current." : "Closed without claiming completion.")).trim();
+  const priorTerminal = (await auditEvidenceForExecution(state, executionId)).events.some((event) => event.event === status);
+  if (!priorTerminal) await appendLog(state, {
+    executionId,
+    taskId: active.taskId,
     requestedBy,
-    requesterId: activeMatch?.active?.requesterId || taskIdentity.requesterId || null,
-    identitySource: activeMatch?.active?.identitySource || taskIdentity.identitySource || "legacy-migrated",
+    requesterId: active.requesterId || taskIdentity.requesterId || null,
+    identitySource: active.identitySource || taskIdentity.identitySource || "legacy-migrated",
     ...execution,
-    workflowDepth: activeMatch?.active?.workflowDepth || taskIdentity.workflowDepth || "regulated",
+    workflowDepth: active.workflowDepth || taskIdentity.workflowDepth || "regulated",
     event: status,
-    summary: `Task closed as ${status}; it did not pass the completion gate.`,
-    reason: String(args.reason || "Closed without claiming completion."),
+    summary: status === "blocked" ? "Execution is blocked and remains active." : `Execution closed as ${status}.`,
+    reason,
     files,
-    verification: [
-      ...(status === QA_FAILED_EVENT ? [`QA failed; next prompt: ${args.nextPrompt || args["next-prompt"]}`] : []),
-      ...(prompts.moved ? [`prompts archived: ${prompts.destination}`] : []),
-    ],
+    verification: status === QA_FAILED_EVENT ? [`Next instruction: ${args.nextPrompt || args["next-prompt"]}`] : [],
   });
+  const memoryPaths = await appendRecentTerminal(state, active, status, reason);
+  if (status === "blocked") {
+    return { ok: true, executionId, taskId: active.taskId, status, complete: false, remainsCurrent: true, currentMemory: stateRelative(state, memoryPaths.current), recentMemory: stateRelative(state, memoryPaths.recent) };
+  }
+  const reportPath = await writeExecutionReport(state, active, status, files, [], taskPath);
+  const archivedTaskPath = await moveTaskToTerminal(state, active, "cancelled");
+  await rm(memoryPaths.current, { force: true });
+  await rm(activeMatch.activePath, { force: true });
   return {
     ok: true,
-    taskId,
+    executionId,
+    taskId: active.taskId,
     requestedBy,
     status,
     complete: false,
-    archived: `memory/recent/${taskId}.md`,
-    prompts,
+    recentMemory: stateRelative(state, memoryPaths.recent),
+    projectMemory: null,
+    report: stateRelative(state, reportPath),
+    archivedTask: archivedTaskPath ? stateRelative(state, archivedTaskPath) : null,
+    promptsMoved: false,
     nextPrompt: status === QA_FAILED_EVENT ? args.nextPrompt || args["next-prompt"] : null,
   };
 }
@@ -1385,20 +1774,22 @@ async function history(root, args) {
     for (let index = 0; index < lines.length; index += 1) {
       if (!lines[index].trim()) continue;
       try {
-        const event = JSON.parse(lines[index]);
-        const timestampMs = Date.parse(event.timestamp);
+        const raw = JSON.parse(lines[index]);
+        const timestampMs = Date.parse(raw.timestamp);
         if (!Number.isFinite(timestampMs)) {
           invalidLines.push({ source, line: index + 1, reason: "invalid-or-missing-timestamp" });
           continue;
         }
-        const versioned = Object.hasOwn(event, "schemaVersion");
+        const schemaVersion = auditSchemaVersion(raw);
+        const versioned = Object.hasOwn(raw, "schema_version") || Object.hasOwn(raw, "schemaVersion");
         if (versioned) {
-          const issues = auditEventIssues(event);
+          const issues = auditEventIssues(raw);
           for (const issue of issues) {
             invalidLines.push({ source, line: index + 1, reason: `audit-${issue.field}-${issue.reason}` });
           }
           if (issues.length > 0) continue;
         }
+        const event = versioned ? normalizeAuditEvent(raw) : raw;
         allEvents.push({
           ...event,
           source,
@@ -1419,7 +1810,7 @@ async function history(root, args) {
     if (toExclusiveMs !== null && event.timestampMs >= toExclusiveMs) return false;
     if (requesterFilter && String(event.requestedBy || "").localeCompare(requesterFilter, undefined, { sensitivity: "accent" }) !== 0) return false;
     if (requesterIdFilter && String(event.requesterId || "") !== requesterIdFilter) return false;
-    if (taskFilter && event.taskId !== taskFilter) return false;
+    if (taskFilter && event.taskId !== taskFilter && event.executionId !== taskFilter) return false;
     if (eventFilter && event.event !== eventFilter) return false;
     return true;
   });
@@ -1434,22 +1825,24 @@ async function history(root, args) {
       requestedBy,
       requesterIds: new Set(),
       eventCount: 0,
+      executionIds: new Set(),
       taskIds: new Set(),
       firstAt: event.timestampUtc,
       lastAt: event.timestampUtc,
     };
     if (event.requesterId) entry.requesterIds.add(event.requesterId);
     entry.eventCount += 1;
+    if (event.executionId || event.taskId) entry.executionIds.add(event.executionId || event.taskId);
     if (event.taskId) entry.taskIds.add(event.taskId);
     entry.lastAt = event.timestampUtc;
     requesterMap.set(key, entry);
   }
 
-  const taskIds = [...new Set(filtered.map((event) => event.taskId).filter(Boolean))];
+  const executionIds = [...new Set(filtered.map((event) => event.executionId || event.taskId).filter(Boolean))];
   const tasks = [];
-  for (const taskId of taskIds) {
-    const matching = filtered.filter((event) => event.taskId === taskId);
-    const completeHistory = allEvents.filter((event) => event.taskId === taskId);
+  for (const executionId of executionIds) {
+    const matching = filtered.filter((event) => (event.executionId || event.taskId) === executionId);
+    const completeHistory = allEvents.filter((event) => (event.executionId || event.taskId) === executionId);
     const versionedHistory = completeHistory.filter((event) => event.evidenceLevel === "versioned-workflow-log");
     const legacyHistory = completeHistory.filter((event) => event.evidenceLevel === "legacy-unverified");
     const attributionHistory = versionedHistory.filter((event) => !TERMINAL_AUDIT_EVENTS.has(event.event));
@@ -1478,23 +1871,33 @@ async function history(root, args) {
       existing.lastAt = event.timestampUtc;
       executorMap.set(key, existing);
     }
-    const taskPath = path.join(state, "tasks", taskId);
-    const briefIdentity = await taskAuditIdentity(taskPath);
+    const taskId = created?.taskId || matching.find((event) => event.taskId)?.taskId || null;
+    const activeMatch = await findActiveForTask(state, executionId);
+    const taskPath = taskId ? await findTaskPath(state, taskId, activeMatch?.active || {}) : null;
+    const briefIdentity = taskPath ? await taskAuditIdentity(taskPath) : {};
+    const period = activeMatch?.active?.period || zonedParts(created?.timestamp || now()).period;
+    const currentMemory = await findExecutionMemoryPath(state, "current", executionId, period, activeMatch?.active?.currentMemoryPath);
+    const recentMemory = await findExecutionMemoryPath(state, "recent", executionId, period, activeMatch?.active?.recentMemoryPath);
+    const reportFiles = (await filesUnder(path.join(state, "reports", period))).filter((file) => path.basename(file).startsWith(`${executionId}-`) && file.endsWith(".md"));
     const artifactCandidates = {
-      brief: path.join(taskPath, "brief.md"),
-      checklist: path.join(taskPath, "checklist.md"),
-      qa: path.join(taskPath, "qa.md"),
-      result: path.join(taskPath, "result.md"),
-      currentMemory: path.join(state, "memory", "current", `${taskId}.md`),
-      recentMemory: path.join(state, "memory", "recent", `${taskId}.md`),
+      brief: taskPath ? path.join(taskPath, "brief.md") : null,
+      analysis: taskPath ? path.join(taskPath, "analysis.md") : null,
+      checklists: taskPath ? path.join(taskPath, "checklists.md") : null,
+      qa: taskPath ? path.join(taskPath, "qa.md") : null,
+      result: taskPath ? path.join(taskPath, "result.md") : null,
+      currentMemory,
+      recentMemory,
+      report: reportFiles[0] || null,
     };
     const artifacts = {};
     for (const [name, file] of Object.entries(artifactCandidates)) {
-      artifacts[name] = await exists(file) ? path.relative(root, file).replace(/\\/g, "/") : null;
+      artifacts[name] = file && await exists(file) ? path.relative(root, file).replace(/\\/g, "/") : null;
     }
     artifacts.logSources = [...new Set(completeHistory.map((event) => event.source))];
     tasks.push({
+      executionId,
       taskId,
+      workflowDepth: created?.workflowDepth || matching[0]?.workflowDepth || null,
       requestedBy: created?.requestedBy || briefIdentity.requestedBy || null,
       requesterId: created?.requesterId || briefIdentity.requesterId || null,
       identitySource: created?.identitySource || briefIdentity.identitySource || null,
@@ -1548,6 +1951,7 @@ async function history(root, args) {
     count: events.length,
     requesters: [...requesterMap.values()].map((entry) => ({
       ...entry,
+      executionIds: [...entry.executionIds],
       requesterIds: [...entry.requesterIds],
       taskIds: [...entry.taskIds],
     })),
@@ -1613,12 +2017,11 @@ async function prune(root) {
   const recent = path.join(state, "memory", "recent");
   const threshold = Date.now() - retentionDays * 86_400_000;
   const removed = [];
-  for (const file of await readdir(recent).catch(() => [])) {
-    const filePath = path.join(recent, file);
+  for (const filePath of await filesUnder(recent)) {
     const details = await stat(filePath);
     if (details.isFile() && details.mtimeMs < threshold) {
       await rm(filePath, { force: true });
-      removed.push(file);
+      removed.push(stateRelative(state, filePath));
     }
   }
   return { ok: true, pruned: true, retentionDays, removed, logsPreserved: true };

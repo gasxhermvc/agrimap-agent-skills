@@ -6,7 +6,7 @@
 - Workflow depth: default `light`; allowed `light`, `regulated`
 - Mode: `verification-only`
 - Purpose: Verify an artifact under a product-read-only, execution-restricted QA contract.
-- Deliverable: direct QA evidence at light; .agrimap-agent/tasks/<task-id>/qa.md only at regulated
+- Deliverable: direct QA evidence at light without tasks/**; tracked qa.md only at regulated
 
 ## Inputs and help
 

@@ -1,45 +1,58 @@
-# Workflow depth core
+# Workflow lifecycle core
 
-Read this with exactly one generated `operations/<operation>.md`. Do not preload another operation, the router, or glossary. Missing input is `PACKAGE_ENTRYPOINT_MISSING`.
+Read this file with exactly one generated `operations/<operation>.md`. A missing compact route is `PACKAGE_ENTRYPOINT_MISSING`.
 
-## Select one depth
+## Select `workflow_depth`
 
-Use only a depth allowed by the operation:
+- `light`: bounded direct or product-read-only work, one execution context, no regulated trigger. It creates memory and daily audit events but **must not create anything under `tasks/**`**.
+- `standard`: resumable tracked work that needs the five task artifacts but no regulated boundary.
+- `regulated`: tracked work involving separate assurance, public/cross-service contracts, security/access, persisted-data decisions, shared generators/registries, destructive action, material owner decisions, or commit/publish/release.
 
-- `light`: bounded direct work; at most three product artifacts, one writer/contract, no delegation or regulated trigger. Durable task, memory, and log evidence is still mandatory.
-- `standard`: resumable non-regulated work needing attribution or multiple milestones.
-- `regulated`: separate QA/delegation, public/cross-service contracts, unresolved/material persisted-data decisions, security/access, shared registries/generators, destructive action, material owner decisions, or commit/publish/release.
+Help and history remain light diagnostics and do not start a new lifecycle merely to answer a query. Other operations start execution state before substantive work. Promote before the next product write; never demote active state.
 
-Help and history are always `light`. Any other read-only query remains `light` unless broader coordination or verification requires promotion. Every activated operation is tracked; promote before the next product write and never demote active state.
+`workflow_depth` and `qa_mode` are separate. Use `qa_mode=not-applicable|light|full`; regulated work selects light or full assurance according to [qa-and-done.md](qa-and-done.md).
 
-`agm-qa` starts `depth=light qa_mode=light`. Target type, size, data relevance, prior regulated work, or provider never promotes it. Regulated QA requires tracked/release QA, correction re-QA, or the third passed-light tracked closure. Explicit full QA without tracking may stay `depth=light qa_mode=full`.
+For `action-routed` operations, resolve one action before target inspection. `analyze`, `design`, and SQL `explain` are product-read-only. `create`, `edit`, and explicit FE/BE `test` are product-write. Passive capability activation never grants write authority.
 
-`agm-create-feature` is a special bounded-write operation and is always `light`. It still writes the mandatory task, memory, and log evidence. If scope would promote, stop before product writes and route the whole task to `agm-create-prompt`.
+## Persistence by depth
 
-For an `action-routed` domain operation, resolve exactly one action before target inspection. The action-level mode overrides the façade label: `analyze`, `design`, and SQL `explain` are product-read-only; `create`, `edit`, and explicit FE/BE `test` are product-write. Passive activation never grants write authority. Direct domain writes are `light`; route broader execution to `agm-create-prompt` before product writes.
+Every started execution writes:
 
-## Execute the selected depth
+- `memory/current/YYYY-MM/<ddHHmmss>-<slug>.md` while work is active;
+- `memory/recent/YYYY-MM/<ddHHmmss>-<slug>.md` as a concise execution journal;
+- `logs/YYYY-MM/YYYY-MM-DD.jsonl` created, milestone, and terminal events.
 
-- `light`: identify the requester, start with `--depth light`, create concise task artifacts, update current memory, append created/milestone/terminal logs, use one agent, avoid separate QA, and keep the result compact.
-- `standard`: identify the requester, start with `--depth standard`, emit one compact receipt, maintain phase-owned artifacts and memory, and log milestones only. Omit `qa.md`; write `result.md` at closure with QA not-applicable.
-- `regulated`: start with `--depth regulated`, maintain phase-owned artifacts, load [glossary.md](glossary.md), delegate only when useful, and apply [qa-and-done.md](qa-and-done.md) before closure.
+Only `standard|regulated` write `tasks/YYYY-MM/<task-id>/`, where `task_id=ddHHmmss` and the completion set is exactly:
 
-The full artifact set is a completion set, not a start scaffold. Every depth starts with `brief.md` and `checklist.md`; QA writes `qa.md` only when required after implementation; the Leader writes `result.md` last after verification and applicable QA. Never pre-create empty QA or result files.
+1. `brief.md`
+2. `analysis.md`
+3. `checklists.md`
+4. `qa.md`
+5. `result.md`
+
+Start scaffolds only `brief.md` and `checklists.md`. Analysis is written after inspection, QA during verification, and result last. On success move the folder to `tasks/complete/YYYY-MM/<task-id>/`; on cancellation or terminal QA failure move it to `tasks/cancelled/YYYY-MM/<task-id>/`. A blocked execution stays active and keeps current memory.
+
+## Terminal lifecycle
+
+On completion:
+
+1. append the terminal daily JSONL event;
+2. finalize recent memory;
+3. write `reports/YYYY-MM/<ddHHmmss>-<context>.md`;
+4. append one short dated pointer to `memory/project.md`;
+5. remove the matching current-memory file;
+6. move tracked task artifacts to `tasks/complete/`.
+
+Raw requester prompts are immutable input evidence under `prompts/YYYY-MM/<conversation-id>/<context>.md`; completion never moves or rewrites them. Generated executor/QA instructions belong under `instructions/YYYY-MM/<task-id>/`.
 
 ## Milestone checkpoints
 
-`start` owns creation and `complete|close` owns termination. Append one checkpoint only after:
+`start` owns `created`; `complete|close` owns terminal events. Checkpoint only an authorized scope decision, behaviorally complete acceptance slice, delegated integration, or verification gate whose outcome changed. Do not checkpoint reads, tools, individual files, planning chatter, unchanged retries, liveness, transcripts, or raw outputs.
 
-1. an authorized scope/decision change;
-2. a behaviorally complete acceptance slice, not a file/tool/atomic subtask;
-3. delegated integration; or
-4. a verification gate whose outcome changed.
+## Boundaries
 
-Do not checkpoint reads, diagnostics, individual files/tools, unchanged retries, conversation, liveness, or planning. Combine one milestone's files/tests in one event.
-
-## Common boundaries
-
-- Obey operation `Mode`, or the resolved action-level mode for `action-routed`; product-read-only never edits product artifacts.
+- Memory excludes transcripts, raw tool output, every prompt invocation, hidden chain-of-thought, and facts without a valid source.
+- Tasks exclude permanent cross-task knowledge, raw telemetry, copied prompt templates, and project-wide changelogs.
+- Logs are not project documentation, startup memory, prompt storage, or a human narrative report.
+- Obey the operation mode: product-read-only never edits product artifacts.
 - Stop for unresolved material authority or unsafe/irreversible action.
-- Load only routed references and one matching FE/BE/SQL pattern.
-- Report consequential assumptions, changed files, verification, and concerns without copying this policy.

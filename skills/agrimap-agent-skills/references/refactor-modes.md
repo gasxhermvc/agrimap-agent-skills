@@ -26,7 +26,7 @@ Change only the logic required to eliminate a proven defect. Capture the failing
 
 ## Required refactor brief
 
-Write the brief to `.agrimap-agent/tasks/<task-id>/refactor-brief.md` using [refactor-brief.md](../assets/templates/refactor-brief.md) before changing code. Record:
+For standard/regulated refactors, record this discipline in canonical `.agrimap-agent/tasks/YYYY-MM/<task-id>/analysis.md` before changing code. Light refactors create no task artifact. Record:
 
 - `mode`
 - `objective`

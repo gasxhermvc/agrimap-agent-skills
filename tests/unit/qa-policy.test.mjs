@@ -36,9 +36,10 @@ test("QA defaults, escalation, and executable tools are provider-neutral and clo
     "provider, and model capability never select `full`",
   ]) assert.ok(qaPolicy.includes(marker), `QA policy missing: ${marker}`);
 
-  assert.match(lifecycle, /`agm-qa` starts `depth=light qa_mode=light`/);
+  assert.match(lifecycle, /`workflow_depth` and `qa_mode` are separate/);
+  assert.match(lifecycle, /light.*must not create anything under `tasks\/\*\*`/s);
   assert.match(modelMatrix, /Model capability and provider affect assignment only; they never change workflow depth, QA mode, allowed tools/);
-  assert.deepEqual(taskSchema.artifacts["qa.md"].requiredFields.find((field) => field.label === "QA mode").enum, ["light", "full"]);
+  assert.deepEqual(taskSchema.artifacts["qa.md"].requiredFields.find((field) => field.label === "QA mode").enum, ["not-applicable", "light", "full"]);
   assert.equal(taskSchema.qaFullTriggers.some((trigger) => /public contract|data behavior|generated-code/i.test(trigger)), false);
 });
 

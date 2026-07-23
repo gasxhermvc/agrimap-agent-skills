@@ -19,11 +19,14 @@ const skillRoot = path.join(root, "skills", "agrimap-agent-skills");
 test("task artifact schema owns scaffold, completion fields, templates, and generated docs", async () => {
   const schema = await loadTaskArtifactSchema(skillRoot);
   assert.deepEqual(taskArtifactSchemaIssues(schema), []);
-  assert.equal(schema.schemaVersion, 4);
+  assert.equal(schema.schemaVersion, 5);
   assert.deepEqual(schema.phaseOrder, ["contract", "verification", "closure"]);
-  assert.deepEqual(schema.scaffoldOrder, ["brief.md", "checklist.md"]);
+  assert.deepEqual(schema.scaffoldOrder, ["brief.md", "checklists.md"]);
   assert.deepEqual(schema.workflowDepths, ["light", "standard", "regulated"]);
-  assert.deepEqual(schema.artifacts["qa.md"].requiredForDepths, ["regulated"]);
+  assert.deepEqual(schema.artifactlessDepths, ["light"]);
+  assert.deepEqual(schema.artifacts["brief.md"].requiredForDepths, ["standard", "regulated"]);
+  assert.deepEqual(schema.artifacts["analysis.md"].requiredForDepths, ["standard", "regulated"]);
+  assert.deepEqual(schema.artifacts["qa.md"].requiredForDepths, ["standard", "regulated"]);
   assert.equal(schema.artifacts["result.md"].requiredSections.includes("Outstanding items"), true);
   assert.equal(schema.artifacts["brief.md"].writePhase, "contract");
   assert.equal(schema.artifacts["brief.md"].scaffoldAtStart, true);
@@ -44,7 +47,7 @@ test("task artifact schema owns scaffold, completion fields, templates, and gene
   assert.match(generated, /`qa\.md`/);
   assert.match(generated, /Required depths/);
   assert.match(generated, /Write phase \/ owner/);
-  assert.match(generated, /result\.md` is closure-only/);
+  assert.match(generated, /`result\.md` are phase-owned completion artifacts/);
   assert.match(generated, /`standard`/);
   assert.match(generated, /`regulated`/);
   assert.match(generated, /`Outstanding items`/);

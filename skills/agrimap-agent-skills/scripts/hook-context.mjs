@@ -2,7 +2,7 @@
 
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { parseCliArgs } from "./cli-args.mjs";
 import { normalizeIdentity } from "./identity.mjs";
@@ -85,6 +85,36 @@ function safeSessionId(value) {
     .replace(/[^a-zA-Z0-9._-]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 120);
+}
+
+function zonedParts(timestamp = new Date().toISOString(), timeZone = "Asia/Bangkok") {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date(timestamp));
+  const value = Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
+  return { period: `${value.year}-${value.month}`, runId: `${value.day}${value.hour}${value.minute}${value.second}` };
+}
+
+async function archiveRawPrompt(stateRoot, config, input, conversationId) {
+  const prompt = typeof input.prompt === "string" ? input.prompt : "";
+  const eventName = input.hook_event_name || input.hookEventName || "";
+  if (eventName !== "UserPromptSubmit" || !prompt) return null;
+  const timestamp = new Date().toISOString();
+  const local = zonedParts(timestamp, config?.timeZone || "Asia/Bangkok");
+  const conversation = safeSessionId(conversationId || input.context_id || input.contextId || "unscoped") || "unscoped";
+  const suppliedContext = safeSessionId(input.context_id || input.contextId || input.room_id || input.roomId || input.turn_id || input.turnId);
+  const context = suppliedContext || `${local.runId}-${fingerprint(prompt).slice(0, 10)}`;
+  const promptPath = path.join(stateRoot, "prompts", local.period, conversation, `${context}.md`);
+  await mkdir(path.dirname(promptPath), { recursive: true });
+  await appendFile(promptPath, `${timestamp}\nCommand: ${prompt}\n\n---\n`, "utf8");
+  return path.relative(stateRoot, promptPath).replace(/\\/g, "/");
 }
 
 async function readJson(filePath) {
@@ -198,6 +228,12 @@ if (!activation.active) {
   process.exit(0);
 }
 
+const archivedPromptPath = await archiveRawPrompt(stateRoot, activationConfig, input, effectiveSessionId);
+if (archivedPromptPath && activeTask && effectiveSessionId) {
+  activeTask.promptPath = archivedPromptPath;
+  await writeJson(path.join(stateRoot, "runtime", "active", `${effectiveSessionId}.json`), activeTask);
+}
+
 const rawIdentity = effectiveSessionId
   ? await readJson(path.join(stateRoot, "runtime", "sessions", `${effectiveSessionId}.json`))
   : null;
@@ -210,12 +246,15 @@ const execution = {
 };
 const suggestedRequester = confirmedIdentity ? null : gitRequesterSuggestion(cwd);
 const projectMemory = await readText(path.join(stateRoot, "memory", "project.md"));
-const currentTaskMemory = activeTask?.taskId
-  ? await readText(path.join(stateRoot, "memory", "current", `${activeTask.taskId}.md`))
+const currentMemoryRelative = activeTask?.currentMemoryPath
+  || (activeTask?.taskId ? `memory/current/${activeTask.taskId}.md` : "");
+const currentTaskMemory = currentMemoryRelative
+  ? await readText(path.join(stateRoot, currentMemoryRelative))
   : "";
+const { promptPath: _promptPath, ...activeTaskForFingerprint } = activeTask || {};
 const memoryFingerprint = fingerprint(JSON.stringify({
   projectMemory,
-  activeTask,
+  activeTask: activeTaskForFingerprint,
   currentTaskMemory,
 }));
 const hookStatePath = effectiveSessionId && (projectMemory || identity || activeTask)
@@ -233,7 +272,7 @@ if (mode === "task") {
     context.push(
       identity?.expired
         ? `AgriMap: requester confirmation expired (last: ${identity.requestedBy}). Reconfirm the human before starting any operation so task, memory, and log attribution remain durable.`
-        : "AgriMap: requester is not persisted. Identify the human before starting any operation; light, standard, and regulated work all require task, memory, and log attribution.",
+        : "AgriMap: requester is not persisted. Identify the human before starting any operation; every depth requires memory and audit attribution, while only standard/regulated create task artifacts.",
     );
   }
   if (activeTask && previousHookState && previousHookState.memoryFingerprint !== memoryFingerprint) {
@@ -259,7 +298,7 @@ context.push(
     ? `- Confirmed session requester: ${confirmedIdentity.requestedBy}; valid until ${confirmedIdentity.expiresAt}.`
     : identity?.expired
       ? `- Requester confirmation expired. Last confirmed requester was ${identity.requestedBy}; reconfirm before starting any operation.`
-      : "- Session requester is unknown. Resolve it before starting the operation; every depth persists concise task, memory, and log evidence.",
+      : "- Session requester is unknown. Resolve it before starting the operation; every depth persists concise memory/log evidence and tracked depths also persist task artifacts.",
   taskRequester
     ? `- Active task requested by: ${taskRequester}; immutable task attribution comes from its tracked brief and created log event.`
     : "- No active task requester is recorded for this session.",
@@ -270,14 +309,14 @@ context.push(
   suggestedRequester
     ? `- Unconfirmed Git-name suggestion: ${suggestedRequester}. Ask the human to confirm it; never attribute work automatically from this value.`
     : "- Do not substitute machine, OS, or Git identity for explicit human confirmation.",
-  "- Workflow depth changes coordination, detail, and QA only. Every activated operation must create task artifacts, current memory, and created/milestone/terminal audit events.",
+  "- Workflow depth controls persistence: light creates no tasks/** artifacts; standard and regulated create tracked task artifacts. Every depth creates current/recent memory and daily created/milestone/terminal audit events.",
   "- For audit/history questions, run agm-workspace.mjs history with person/date/task filters; inspect attributionSemantics, auditStorage, invalidLines, and returned brief/result/QA/memory paths. Distinguish requester, workflow executor, claimed files, and Git author; never answer from conversational recall alone.",
   "- Durable project memory is .agrimap-agent/memory/project.md; reopen it when context was compacted or current project facts are needed.",
 );
 }
 
-if (mode !== "task" && activeTask?.taskId) {
-  context.push(`- Active task: ${activeTask.taskId} (${activeTask.operation || "unspecified"}) — pending work carried over; reconcile or close it before starting unrelated work.`);
+if (mode !== "task" && (activeTask?.executionId || activeTask?.taskId)) {
+  context.push(`- Active execution: ${activeTask.executionId || activeTask.taskId}${activeTask.taskId ? `; task ${activeTask.taskId}` : "; light/artifactless"} (${activeTask.operation || "unspecified"}) — pending work carried over; reconcile or close it before starting unrelated work.`);
 }
 
 if (mode === "subagent") {
@@ -296,8 +335,9 @@ if (mode !== "task") {
   context.push(
     "- For a generated agm alias, read exactly lifecycle-core.md and its operations/<operation>.md entrypoint; do not preload the glossary or routing umbrella. A missing/corrupt compact route is PACKAGE_ENTRYPOINT_MISSING.",
     "- Do not add permission gates. Discuss only material logic/contract/data/architecture trade-offs.",
-    "- Select light|standard|regulated, identify the requester, and start tracked state before substantive work. Every depth writes concise task artifacts, memory, and logs; light skips only delegation and separate QA.",
-    "- Reopen project memory on demand and update current task memory only at defined milestones; do not inject unrelated project memory into the task.",
+    "- Select light|standard|regulated, identify the requester, and start execution state before substantive work. Light writes memory/logs without tasks/**; standard and regulated also write the five tracked task artifacts.",
+    "- Raw requester prompts belong only under .agrimap-agent/prompts/YYYY-MM/<conversation>/<context>.md. Generated executor/QA instructions belong under .agrimap-agent/instructions/, never prompts/.",
+    "- Reopen project memory on demand and update current execution memory only at defined milestones; do not inject unrelated project memory into the execution.",
   );
   if (currentTaskMemory) context.push("\nCurrent tracked-task memory:\n", currentTaskMemory);
 }

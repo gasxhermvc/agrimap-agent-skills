@@ -12,7 +12,7 @@
 
 - Required: approved prompt path or resumable task_id.
 - Conditional: decision-owner choice when a material deviation exceeds the approved prompt.
-- Minimal example: `$agm-exec requested_by=Billy prompt=.agrimap-agent/prompts/<task-id>/executor.prompt.md`
+- Minimal example: `$agm-exec requested_by=Billy prompt=.agrimap-agent/instructions/YYYY-MM/<task-id>/executor.prompt.md`
 
 ## Execute this contract
 

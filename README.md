@@ -14,7 +14,7 @@ skills/agrimap-agent-skills/       routing-only skill + shared resources/scripts
               ├── Claude plugin skills (/agrimap-agent-skills:agm-*)
               └── Gemini extension commands (/agm-*) + routing skill
 
-project/.agrimap-agent/            tracked tasks, per-task memory/logs, knowledge, decisions
+project/.agrimap-agent/            execution memory, daily logs, tracked tasks, raw prompts, reports
 project/.agrimap-agent/runtime/    ignored per-session identity + active tasks + hook refresh state
 ```
 
@@ -104,7 +104,7 @@ Gemini may show its native consent prompt when activating a skill or fingerprint
 
 ## Workflow depth and first tracked use
 
-Each operation declares default and allowed workflow depths in `config/operations.json`. Every depth persists requester attribution plus concise task, memory, and log evidence. `light` handles help, history/read-only queries, and bounded work without delegation or separate QA. Direct `agm-fe|agm-be|agm-sql` create/edit/test actions are light-only; when work needs delegation, separate QA, or more than three product artifacts, use `agm-create-prompt` instead. Artifacts follow phases: start writes brief + checklist, QA later writes `qa.md` only when required, and the Leader writes `result.md` last at closure. The selector and phase rules live in [`lifecycle-core.md`](skills/agrimap-agent-skills/references/lifecycle-core.md).
+Each operation declares default and allowed workflow depths in `config/operations.json`. Every started execution persists requester attribution plus concise current/recent memory and daily JSONL audit evidence. `light` creates **no `tasks/**` artifacts**. `standard|regulated` use `tasks/YYYY-MM/<ddHHmmss>/` and complete exactly `brief.md`, `analysis.md`, `checklists.md`, `qa.md`, and `result.md` by phase. The selector and lifecycle rules live in [`lifecycle-core.md`](skills/agrimap-agent-skills/references/lifecycle-core.md).
 
 On the first `standard` or `regulated` interaction, the Leader resolves who is requesting the work. In a multi-person project there is no shared `owner.json`.
 
@@ -112,9 +112,9 @@ Requester identity and decision authority are separate. Every `standard`/`regula
 
 - ignored live identity: `.agrimap-agent/runtime/sessions/<session-id>.json`, confirmed for a bounded window (24 hours by default)
 - ignored active task: `.agrimap-agent/runtime/active/<session-id>.json`
-- tracked attribution: who requested what in the task brief and versioned task-scoped JSONL events with exact UTC timestamps
+- tracked attribution: who requested what in tracked briefs (when applicable) and versioned daily JSONL events with exact UTC timestamps
 - execution attribution: actual `model`, optional configurable `modelLabel`, `role`, `agent`, and `provider` are separate; `requestedBy` remains the human
-- change context: schema-v3 events record workflow depth and canonical milestones in addition to explicit `gitHead`/`gitDirty`; `changed` milestones require at least one claimed affected file
+- change context: schema-v4 daily events use snake_case, separate `execution_id` from nullable light `task_id`, and record workflow depth, log type, canonical milestones, and Git snapshot fields
 
 This is workflow attribution, not proof of the physical editor or commit author. Use `$agm-history` for requester/executor/task chronology and Git log/blame separately for actual commit authorship. `recordedFiles` contains only valid versioned non-terminal claims; any `legacyClaimedFiles` are diagnostic and are not promoted into that attribution. Check `auditStorage` before relying on the result across machines: ignored or untracked logs are local-only. JSONL is not cryptographically tamper-evident; use an external immutable audit system if that threat model applies.
 
@@ -126,15 +126,17 @@ Manual bootstrap or diagnostics:
 node <installed-package>\skills\agrimap-agent-skills\scripts\agm-workspace.mjs init --cwd .
 node <installed-package>\skills\agrimap-agent-skills\scripts\agm-workspace.mjs identify --cwd . --session <session-id> --requested-by "Billy" --model-label "GPT-5.6-sol" --model "<host-reported-model>" --role leader --agent primary --provider codex
 node <installed-package>\skills\agrimap-agent-skills\scripts\agm-workspace.mjs start --cwd . --session <session-id> --depth regulated --operation create-prompt --title "Prepare shared-table feature contract" --requester-authority owner --decision-owner "Billy" --authority-evidence "confirmed in this session"
-node <installed-package>\skills\agrimap-agent-skills\scripts\agm-workspace.mjs checkpoint --cwd . --session <session-id> --task <task-id> --milestone acceptance-slice --summary "Shared table slice completed" --files "src/a.ts,src/b.ts" --verification "typecheck passed"
+node <installed-package>\skills\agrimap-agent-skills\scripts\agm-workspace.mjs checkpoint --cwd . --session <session-id> --execution <ddHHmmss> --milestone acceptance-slice --summary "Shared table slice completed" --files "src/a.ts,src/b.ts" --verification "typecheck passed"
 ```
 
-Commit `.agrimap-agent/tasks`, `memory/project.md`, task-scoped `memory/current|recent`, `knowledge`, `decisions`, `prompts`, and task-scoped `logs`. Do not commit `.agrimap-agent/runtime` or `.agrimap-agent/cache`.
+Project policy decides which durable `.agrimap-agent/` evidence is tracked. `prompts/` contains raw requester input only; generated instructions live in `instructions/`. Never commit `.agrimap-agent/runtime` or `.agrimap-agent/cache`.
 
 ## Operations
 
 | Alias | Purpose |
 | --- | --- |
+| `agm-analyze` | cross-discipline evidence-led analysis |
+| `agm-design` | unified FE/BE/SQL/architecture design, product-read-only |
 | `agm-fe` | frontend analyze/design/create/edit/test actions |
 | `agm-be` | backend analyze/design/create/edit/test actions |
 | `agm-sql` | SQL analyze/design/create/edit/explain actions |
@@ -146,10 +148,10 @@ Commit `.agrimap-agent/tasks`, `memory/project.md`, task-scoped `memory/current|
 | `agm-review` | evidence-backed findings |
 | `agm-history` | read-only requester/task history by person, date, task, or event |
 | `agm-qa` | product-read-only QA; direct `light` by default, tracked only when regulated |
-| `agm-create-prompt` | tracked feature brief, acceptance checklist, and provider/model-aware prompts |
+| `agm-create-prompt` | tracked brief, acceptance checklists, and provider/model-aware generated instructions |
 | `agm-exec` | execute one decision-owner-approved prompt under task/QA rails |
 
-Legacy `agm-analyze`, `agm-design`, `agm-create-feature`, `agm-create-unit-test`, and `agm-refactor-fe|be|sql` aliases remain callable for compatibility but are omitted from primary help.
+Removed aliases `agm-create-feature`, `agm-create-unit-test`, and `agm-refactor-fe|be|sql` are not distributed. Use `agm-fe|agm-be|agm-sql`, `agm-refactor target=fe|be|sql`, and the passive unit-test decision policy. Historical log/task strings remain readable.
 
 Audit examples:
 
@@ -221,7 +223,7 @@ A decision-owner-approved generated prompt is the execution SoT for exactly one 
 
 `agm-qa` defaults to direct `depth=light qa_mode=light`. Tracked regulated work uses a separate verifier and `qa.md`; `standard` completion uses proportional writer verification and records QA as not applicable. Full QA is selected only by the exact triggers in [`qa-and-done.md`](skills/agrimap-agent-skills/references/qa-and-done.md), never merely by provider/model, target kind, data-related code, or diff size.
 
-Both tracked depths remain schema-validated. `regulated` requires QA evidence/identity; `standard` omits `qa.md`. Commit/publish/release boundaries require regulated depth and full QA.
+Both tracked depths remain schema-validated. `regulated` requires QA evidence/identity; `standard` writes `qa.md` as `not-applicable` with its proportional verification reason. Commit/publish/release boundaries require regulated depth and full QA.
 
 QA never connects to LocalDB/dbserver/SQL Server or runs product test utilities. Executable validation is limited to AgriMap skill scripts, a necessary `dotnet build` for an existing BE project, and—only at full FE QA when startup evidence is explicitly necessary—`npm run start:agrimap:development`.
 
@@ -231,15 +233,17 @@ The task-artifact contract below is generated from `skills/agrimap-agent-skills/
 <!-- Generated by npm run sync from skills/agrimap-agent-skills/assets/task-artifact-schema.json. -->
 | Artifact | Write phase / owner | Required depths | Template | Purpose | Required fields | Required sections |
 | --- | --- | --- | --- | --- | --- | --- |
-| `brief.md` | `contract`<br>agm-create-prompt or the leader of a non-feature tracked operation | `light`<br>`standard`<br>`regulated` | `task-brief.md` | Requester, authority, execution identity, objective, scope, ownership, and decisions. | `Task ID`<br>`Requested by`<br>`Identity source`<br>`Requester authority`<br>`Decision owner`<br>`Authority evidence`<br>`Model label`<br>`Actual model`<br>`Role`<br>`Agent`<br>`Provider`<br>`Operation`<br>`Workflow depth`<br>`Objective`<br>`Scope`<br>`Non-goals` | `File and logical-contract ownership`<br>`Inputs`<br>`Authorized decisions and trade-offs`<br>`Service ownership references`<br>`Concerns` |
-| `checklist.md` | `contract`<br>agm-create-prompt initializes acceptance items; executor and leader update status | `light`<br>`standard`<br>`regulated` | `checklist.md` | Checked completion ledger derived from the task contract. | — | — |
-| `qa.md` | `verification`<br>agm-qa after implementation evidence exists | `regulated` | `qa.md` | Tracked QA evidence under the canonical product-read-only verifier contract. | `Status`<br>`QA mode`<br>`QA mode reason`<br>`Coverage key`<br>`Light sequence`<br>`Patterns`<br>`Requested by`<br>`Decision owner`<br>`QA model label`<br>`QA actual model`<br>`QA role`<br>`QA agent`<br>`QA provider`<br>`Product artifacts modified`<br>`Workflow artifacts written`<br>`Implementation model label`<br>`Implementation actual model`<br>`Implementation role`<br>`Implementation agent`<br>`Implementation provider` | `Requirement evidence`<br>`Commands and observed results`<br>`Limitations` |
-| `result.md` | `closure`<br>leader after implementation, verification, and applicable QA | `light`<br>`standard`<br>`regulated` | `result.md` | Leader closure result, QA boundary, verification, memory, and outstanding work. | `Outcome`<br>`Requested by`<br>`Decision owner`<br>`Leader model label`<br>`Leader actual model`<br>`Leader role`<br>`Leader agent`<br>`Leader provider`<br>`Workflow depth`<br>`QA status`<br>`QA mode`<br>`Delivery boundary` | `Authorized decisions`<br>`Changes and verification`<br>`Checklist and memory`<br>`Concerns and commit boundary`<br>`Outstanding items` |
+| `brief.md` | `contract`<br>agm-create-prompt or the leader of a non-feature tracked operation | `standard`<br>`regulated` | `task-brief.md` | Requester, authority, execution identity, objective, scope, ownership, and decisions. | `Task ID`<br>`Requested by`<br>`Identity source`<br>`Requester authority`<br>`Decision owner`<br>`Authority evidence`<br>`Model label`<br>`Actual model`<br>`Role`<br>`Agent`<br>`Provider`<br>`Operation`<br>`Workflow depth`<br>`Objective`<br>`Scope`<br>`Non-goals` | `File and logical-contract ownership`<br>`Inputs`<br>`Authorized decisions and trade-offs`<br>`Service ownership references`<br>`Concerns` |
+| `analysis.md` | `contract`<br>leader or executor after target inspection and before implementation completion | `standard`<br>`regulated` | `analysis.md` | Evidence-backed current state, findings, impact, and approved approach for tracked work. | — | `Current State`<br>`Findings`<br>`Proposed Approach` |
+| `checklists.md` | `contract`<br>agm-create-prompt initializes acceptance items; executor and leader update status | `standard`<br>`regulated` | `checklists.md` | Checked completion ledger derived from the task contract. | — | — |
+| `qa.md` | `verification`<br>agm-qa after implementation evidence exists | `standard`<br>`regulated` | `qa.md` | Tracked QA evidence under the canonical product-read-only verifier contract. | `Status`<br>`QA mode`<br>`QA mode reason`<br>`Coverage key`<br>`Light sequence`<br>`Patterns`<br>`Requested by`<br>`Decision owner`<br>`QA model label`<br>`QA actual model`<br>`QA role`<br>`QA agent`<br>`QA provider`<br>`Product artifacts modified`<br>`Workflow artifacts written`<br>`Implementation model label`<br>`Implementation actual model`<br>`Implementation role`<br>`Implementation agent`<br>`Implementation provider` | `Requirement evidence`<br>`Commands and observed results`<br>`Limitations` |
+| `result.md` | `closure`<br>leader after implementation, verification, and applicable QA | `standard`<br>`regulated` | `result.md` | Leader closure result, QA boundary, verification, memory, and outstanding work. | `Outcome`<br>`Requested by`<br>`Decision owner`<br>`Leader model label`<br>`Leader actual model`<br>`Leader role`<br>`Leader agent`<br>`Leader provider`<br>`Workflow depth`<br>`QA status`<br>`QA mode`<br>`Delivery boundary` | `Authorized decisions`<br>`Changes and verification`<br>`Checklist and memory`<br>`Concerns and commit boundary`<br>`Outstanding items` |
 
 Completion cross-artifact gates:
 
-- Start scaffolds only `brief.md`<br>`checklist.md`; `qa.md` is verification-phase and `result.md` is closure-only.
-- Standard completion omits `qa.md` and records result QA status/mode as `not-applicable`.
+- Depths `light` create no task directory or task artifacts.
+- Tracked start scaffolds only `brief.md`<br>`checklists.md`; `analysis.md`, `qa.md`, and `result.md` are phase-owned completion artifacts.
+- Standard completion writes `qa.md` with status `not-applicable` and records result QA status/mode as `not-applicable`.
 - Regulated accepted QA statuses: `passed`<br>`not-applicable`.
 - At regulated depth, `Requested by` and `Decision owner` match across brief, QA, and result.
 - Regulated QA identity (`QA actual model`<br>`QA agent`<br>`QA provider`) must differ from implementation identity (`Implementation actual model`<br>`Implementation agent`<br>`Implementation provider`).
@@ -258,7 +262,7 @@ Full QA is mandatory when any schema trigger applies:
 
 The global installation is stateless. On real work, both logs and memory are written to the project currently being changed: `<target-project>/.agrimap-agent/`. The Skill/plugin installation directory is never a state destination.
 
-This repository is the Skill's development source, so its entire `.agrimap-agent/` is local-only and ignored by Git. It will not be published to GitHub. In an ordinary target project, the generated `.agrimap-agent/.gitignore` ignores only `runtime/` and `cache/`; project memory, knowledge, task results, prompts, and concise logs remain available to the project team.
+This repository is the Skill's development source, so its entire `.agrimap-agent/` is local-only and ignored by Git. Its separate repository-local `AGENTS.md` raw-prompt history rule is not exported to target projects. In a target project, runtime is ignored; raw prompts, generated instructions, task results, reports, memory, and concise logs retain distinct directories and ownership.
 
 AI Gateway storage is not part of v1.
 

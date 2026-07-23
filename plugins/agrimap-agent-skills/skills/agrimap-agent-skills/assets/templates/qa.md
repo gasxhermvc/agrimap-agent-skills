@@ -1,7 +1,7 @@
 # QA
 
 - Status: `passed|failed|blocked|not-applicable`
-- QA mode: `light|full`
+- QA mode: `not-applicable|light|full`
 - QA mode reason: {{qa_mode_reason}}
 - Coverage key: {{qa_coverage_key}}
 - Light sequence: `{{light_sequence_0_1_or_2}}`

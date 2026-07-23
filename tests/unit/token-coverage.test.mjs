@@ -53,7 +53,7 @@ test("CLI reports a selected scenario with three progressive-disclosure stages",
   assert.equal(report.summary.budgetIssues, 0);
   assert.equal(report.scenarios[0].files.filter((file) => file.group === "direct").length, 3);
   assert.ok(report.scenarios[0].stages.direct.words < report.scenarios[0].stages.required.words);
-  assert.deepEqual(report.scenarios[0].stages.required, report.scenarios[0].stages.scenario);
+  assert.ok(report.scenarios[0].stages.required.words < report.scenarios[0].stages.scenario.words);
 });
 
 test("router scenario excludes lifecycle and operation execution contracts", () => {

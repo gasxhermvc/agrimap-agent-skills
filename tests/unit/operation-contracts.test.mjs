@@ -16,7 +16,6 @@ const frontendPattern = await read("skills/agrimap-agent-skills/references/patte
 const frontendDiscipline = await read("skills/agrimap-agent-skills/references/frontend-engineer.md");
 const promptPolicy = await read("skills/agrimap-agent-skills/references/create-prompt.md");
 const delegationPolicy = await read("skills/agrimap-agent-skills/references/subagents-and-branches.md");
-const createFeatureEntrypoint = await read("skills/agrimap-agent-skills/references/operations/create-feature.md");
 const passiveCapabilities = await read("skills/agrimap-agent-skills/references/passive-capabilities.md");
 const lifecycle = await read("skills/agrimap-agent-skills/references/lifecycle-core.md");
 
@@ -29,11 +28,10 @@ const modes = [
 ];
 
 test("SQL refactor exposes all five modes instead of a recommendation-only extra turn", () => {
-  const operation = operations.operations.find((item) => item.operation === "refactor-sql");
+  const operation = operations.operations.find((item) => item.operation === "refactor");
   const contract = [operation.requiredInputs.join("\n"), operation.instructions.join("\n"), elicitation, refactorModes].join("\n");
   for (const mode of modes) assert.match(contract, new RegExp(mode));
-  assert.match(operation.instructions.join("\n"), /show all five enums/i);
-  assert.match(operation.instructions.join("\n"), /never return a recommendation alone/i);
+  assert.match(operation.instructions.join("\n"), /show all five modes with one recommendation/i);
   assert.match(elicitation, /ตอบเลขหรือ enum/);
 });
 
@@ -48,9 +46,9 @@ test("domain façades resolve one action and keep passive capabilities read-only
       assert.equal(action.mode, "product-read-only");
     }
   }
-  assert.match(lifecycle, /Passive activation never grants write authority/);
+  assert.match(lifecycle, /Passive capability activation never grants write authority/);
   assert.match(passiveCapabilities, /never grant product-write authority/);
-  assert.match(passiveCapabilities, /Do not create tests from passive activation/);
+  assert.match(passiveCapabilities, /product-read-only action may classify\/recommend tests but never create them/);
   assert.match(passiveCapabilities, /Explicit `action=test`/);
 });
 
@@ -63,13 +61,13 @@ test("SQL explain is evidence-labelled and cannot execute or edit", () => {
     assert.ok(passiveCapabilities.includes(marker), `SQL explain marker missing: ${marker}`);
 });
 
-test("one public refactor routes FE, BE, and SQL while legacy aliases stay compatibility-only", () => {
+test("one public refactor routes FE, BE, and SQL while split aliases are absent", () => {
   const refactor = operations.operations.find((item) => item.operation === "refactor");
   assert.deepEqual(refactor.requiredInputs.slice(0, 1), ["target=fe|be|sql"]);
   for (const target of ["fe", "be", "sql"])
     assert.ok(refactor.conditionalReferences.some((item) => item.when === `target=${target}`));
   for (const name of ["agm-refactor-fe", "agm-refactor-be", "agm-refactor-sql"])
-    assert.equal(operations.operations.find((item) => item.name === name).visibility, "compatibility");
+    assert.equal(operations.operations.some((item) => item.name === name), false);
 });
 
 test("light analysis is CLI-readable and database conclusions fail soft on missing project evidence", () => {
@@ -82,7 +80,7 @@ test("light analysis is CLI-readable and database conclusions fail soft on missi
   assert.match(contract, /db-schema/i);
   assert.match(contract, /representative examples|representative local examples/i);
   assert.match(contract, /preliminary/i);
-  assert.match(analysis, /At `light`.*mandatory brief, checklist, current memory, logs, and closure result/);
+  assert.match(analysis, /At `light`.*current\/recent memory plus daily audit evidence.*never create `tasks\/\*\*`/);
   assert.doesNotMatch(analysis, /A chat answer alone is not a closed deliverable/);
 });
 
@@ -105,10 +103,9 @@ test("SQL writers install lazily only on command-not-found and fail closed when 
   assert.doesNotMatch(sqlPolicy, /--ignore\s+parsing|finalize-sql-artifacts|sqlfluff fix|--force|\.sqlfluff/);
 });
 
-test("create-feature SQL loads the complete command owner and proves format coverage", () => {
-  const operation = operations.operations.find((item) => item.operation === "create-feature");
-  assert.ok(operation.conditionalReferences.some((item) => item.when === "target is SQL" && item.path === "patterns/sql.md"));
-  assert.match(createFeatureEntrypoint, /When target is SQL: \[patterns\/sql\.md\]/);
+test("unified SQL refactor loads the complete command owner and proves format coverage", () => {
+  const operation = operations.operations.find((item) => item.operation === "refactor");
+  assert.ok(operation.conditionalReferences.some((item) => item.when === "target=sql" && item.path === "patterns/sql.md"));
   for (const marker of [
     "sql-contract-preflight.mjs --target-kind sql-table|sql-procedure --object <OBJECT>",
     'sqlfluff format --exclude-rules "CP02, LT01, RF06" --dialect tsql <FILE>.sql',
@@ -124,8 +121,6 @@ test("create-feature SQL loads the complete command owner and proves format cove
 
 test("compact pattern references keep their canonical owners co-loaded", () => {
   const pairs = [
-    ["refactor-be", ["backend-engineer.md", "patterns/backend.md"]],
-    ["refactor-fe", ["frontend-engineer.md", "patterns/frontend.md"]],
     ["create-prompt", ["create-prompt.md", "subagents-and-branches.md"]],
     ["execute", ["create-prompt.md", "subagents-and-branches.md"]],
   ];
@@ -133,6 +128,11 @@ test("compact pattern references keep their canonical owners co-loaded", () => {
     const operation = operations.operations.find((item) => item.operation === name);
     const routed = operation.references.map((item) => item.path);
     for (const path of required) assert.ok(routed.includes(path), `${name} must load ${path}`);
+  }
+
+  const refactor = operations.operations.find((item) => item.operation === "refactor");
+  for (const required of ["backend-engineer.md", "patterns/backend.md", "frontend-engineer.md", "patterns/frontend.md"]) {
+    assert.ok(refactor.conditionalReferences.some((item) => item.path === required), `refactor must route ${required}`);
   }
 
   assert.match(backendPattern, /Apply \[backend-engineer\.md\].*unchanged/);

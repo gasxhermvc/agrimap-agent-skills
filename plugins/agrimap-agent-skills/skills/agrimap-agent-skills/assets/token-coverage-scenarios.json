@@ -136,19 +136,33 @@
     {
       "id": "refactor-fe-main-light",
       "description": "Normal frontend refactor before golden evidence",
-      "operation": "refactor-fe",
+      "operation": "refactor",
       "depth": "light",
+      "activate": [
+        "frontend-engineer.md",
+        "patterns/frontend.md"
+      ],
       "mustLoad": [
         "refactor-modes.md",
         "frontend-engineer.md",
         "patterns/frontend.md"
-      ]
+      ],
+      "budgets": {
+        "direct": {
+          "maxWords": 1000,
+          "maxEstimatedTokensHigh": 2800
+        }
+      }
     },
     {
       "id": "refactor-fe-main-golden-light",
       "description": "Frontend refactor using one selected current golden architecture entry",
-      "operation": "refactor-fe",
+      "operation": "refactor",
       "depth": "light",
+      "activate": [
+        "frontend-engineer.md",
+        "patterns/frontend.md"
+      ],
       "select": [
         "patterns/golden/frontend-main/manifest.json",
         "patterns/conflict-resolution.md",
@@ -161,43 +175,45 @@
         "patterns/golden/frontend-main/manifest.json",
         "patterns/conflict-resolution.md",
         "patterns/golden/frontend-main/002-2-architecture-rules.md"
-      ]
+      ],
+      "budgets": {
+        "direct": {
+          "maxWords": 1000,
+          "maxEstimatedTokensHigh": 2800
+        }
+      }
     },
     {
-      "id": "create-unit-test-fe-library-light",
-      "description": "Frontend library unit-test creation with FE discipline",
-      "operation": "create-unit-test",
+      "id": "passive-unit-test-fe-library-light",
+      "description": "Frontend passive unit-test decision through the FE discipline",
+      "operation": "fe",
       "depth": "light",
-      "activate": [
-        "frontend-engineer.md"
-      ],
       "mustLoad": [
+        "passive-capabilities.md",
         "elicitation.md",
-        "frontend-engineer.md"
+        "frontend-engineer.md",
+        "patterns/frontend.md"
       ]
     },
     {
-      "id": "create-feature-fe-main-light",
-      "description": "Frontend feature creation before selected golden evidence",
-      "operation": "create-feature",
+      "id": "fe-create-main-light",
+      "description": "Frontend creation through the unified FE façade",
+      "operation": "fe",
       "depth": "light",
-      "activate": [
-        "frontend-engineer.md"
-      ],
       "mustLoad": [
+        "passive-capabilities.md",
         "elicitation.md",
-        "frontend-engineer.md"
+        "frontend-engineer.md",
+        "patterns/frontend.md"
       ]
     },
     {
-      "id": "create-feature-sql-golden-light",
-      "description": "Direct SQL feature activation loads the SQL contract, then routes persisted scope before product inspection or golden selection",
-      "operation": "create-feature",
+      "id": "sql-create-golden-light",
+      "description": "Direct SQL creation loads the SQL contract through the unified SQL façade",
+      "operation": "sql",
       "depth": "light",
-      "activate": [
-        "patterns/sql.md"
-      ],
       "mustLoad": [
+        "passive-capabilities.md",
         "elicitation.md",
         "patterns/sql.md"
       ]
@@ -287,9 +303,11 @@
     {
       "id": "refactor-be-request-normalize-light",
       "description": "Backend refactor that consolidates scattered request-value extraction",
-      "operation": "refactor-be",
+      "operation": "refactor",
       "depth": "light",
       "activate": [
+        "backend-engineer.md",
+        "patterns/backend.md",
         "patterns/csharp.md",
         "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md"
       ],

@@ -211,11 +211,9 @@ for (const forbidden of ["## Start every task", "## Owner reference library", "#
 
 const lifecycleCorePath = path.join(root, "skills", "agrimap-agent-skills", "references", "lifecycle-core.md");
 const lifecycleCoreReference = await readFile(lifecycleCorePath, "utf8");
-for (const marker of ["Select one depth", "`light`", "`standard`", "`regulated`", "Help and history are always `light`", "read-only query remains `light`", "start with `--depth standard`", "start with `--depth regulated`", "Milestone checkpoints", "behaviorally complete acceptance slice", "not a file/tool/atomic subtask", "Common boundaries"])
+for (const marker of ["Select `workflow_depth`", "`light`", "`standard`", "`regulated`", "Help and history remain light diagnostics", "Persistence by depth", "Only `standard|regulated` write", "Terminal lifecycle", "Milestone checkpoints", "behaviorally complete acceptance slice", "Boundaries"])
   if (!lifecycleCoreReference.includes(marker)) errors.push(`Lifecycle core missing marker: ${marker}`);
-for (const marker of ["`agm-create-feature` is a special bounded-write operation and is always `light`", "full artifact set is a completion set, not a start scaffold", "Never pre-create empty QA or result files"])
-  if (!lifecycleCoreReference.includes(marker)) errors.push(`Feature lifecycle boundary missing marker: ${marker}`);
-for (const marker of ["`action-routed` domain operation", "resolve exactly one action before target inspection", "Passive activation never grants write authority", "Direct domain writes are `light`"])
+for (const marker of ["For `action-routed` operations", "resolve one action before target inspection", "Passive capability activation never grants write authority", "must not create anything under `tasks/**`"])
   if (!lifecycleCoreReference.includes(marker)) errors.push(`Domain action boundary missing marker: ${marker}`);
 if (lifecycleCoreReference.split(/\r?\n/).length > 70) errors.push("Lifecycle core exceeds its 70-line budget.");
 const runtimeCoreReference = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "runtime-core.md"), "utf8");
@@ -245,11 +243,11 @@ for (const marker of [
 }
 
 const memoryAndLogsReference = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "memory-and-logs.md"), "utf8");
-const documentedLogEvents = memoryAndLogsReference.match(/"event":\s*"([^"]+)"/)?.[1]?.split("|") || [];
+const documentedLogEvents = memoryAndLogsReference.match(/Canonical events:\s*`([^`]+)`/)?.[1]?.split("|") || [];
 if (JSON.stringify(documentedLogEvents) !== JSON.stringify(LOG_EVENTS)) {
   errors.push(`Documented log event enum differs from scripts/log-events.mjs: ${documentedLogEvents.join("|") || "missing"}`);
 }
-const documentedMilestones = memoryAndLogsReference.match(/"milestone":\s*"([^"]+)"/)?.[1]?.split("|") || [];
+const documentedMilestones = memoryAndLogsReference.match(/Canonical milestones:\s*`([^`]+)`/)?.[1]?.split("|") || [];
 if (JSON.stringify(documentedMilestones) !== JSON.stringify(MILESTONE_TYPES)) {
   errors.push(`Documented milestone enum differs from scripts/log-events.mjs: ${documentedMilestones.join("|") || "missing"}`);
 }
@@ -269,7 +267,7 @@ for (const hardcodedTemplate of ['renderAssetTemplate("task-brief.md"', 'renderA
 if (taskArtifactSchema) {
   for (const issue of taskArtifactSchemaIssues(taskArtifactSchema)) errors.push(`Task artifact schema: ${issue}`);
   if (JSON.stringify(taskArtifactSchema.workflowDepths) !== JSON.stringify(["light", "standard", "regulated"])) errors.push("Task artifact schema workflowDepths must be light|standard|regulated.");
-  if (JSON.stringify(taskArtifactSchema.artifacts?.["qa.md"]?.requiredForDepths) !== JSON.stringify(["regulated"])) errors.push("qa.md must be required only at regulated depth.");
+  if (JSON.stringify(taskArtifactSchema.artifacts?.["qa.md"]?.requiredForDepths) !== JSON.stringify(["standard", "regulated"])) errors.push("qa.md must be required for both tracked depths.");
   for (const [artifact, definition] of Object.entries(taskArtifactSchema.artifacts || {})) {
     const templatePath = path.join(root, "skills", "agrimap-agent-skills", "assets", "templates", definition.template || "");
     if (!(await exists(templatePath))) {
@@ -357,13 +355,6 @@ for (const marker of ["execution source of truth", "deviation_from_prompt", "ser
 for (const marker of ["Artifact ownership and phase order", "agm-exec` owns implementation", "Leader writes `result.md` only as the final closure record", "non-terminal `scope-decision` checkpoint"])
   if (!promptReference.includes(marker)) errors.push(`create-prompt phase ownership missing marker: ${marker}`);
 
-const createFeatureOperation = operations?.operations?.find((item) => item.operation === "create-feature");
-if (JSON.stringify(createFeatureOperation?.depth) !== JSON.stringify({ default: "light", allowed: ["light"] })) errors.push("create-feature must be light-only.");
-for (const marker of ["start concise tracked task state", "route the work to agm-create-prompt", "Return the result only after product writes and verification finish"])
-  if (!createFeatureOperation?.instructions?.join("\n").includes(marker)) errors.push(`create-feature direct boundary missing marker: ${marker}`);
-for (const marker of ["invoke separate QA", "delegate/spawn/wait", "persisted-data decision", "bounded slice within the three-artifact limit", "sql-contract-preflight.mjs", "Never use a database, ScriptDom"])
-  if (!createFeatureOperation?.instructions?.join("\n").includes(marker)) errors.push(`create-feature fail-closed boundary missing marker: ${marker}`);
-
 for (const marker of ["PREMATURE_RESULT_ARTIFACT", "PREMATURE_QA_ARTIFACT", "CHECKPOINT_FIELD_BUDGETS"])
   if (!workspaceScriptReference.includes(marker)) errors.push(`Workspace phase/budget guard missing marker: ${marker}`);
 
@@ -389,7 +380,7 @@ for (const [sourceName, content] of compactPolicySources) {
 if (delegationReference.split(/\r?\n/).length > 80) errors.push("Delegation reference exceeds its 80-line budget.");
 
 const hookContextReference = await readFile(path.join(root, "skills", "agrimap-agent-skills", "scripts", "hook-context.mjs"), "utf8");
-for (const marker of ["every depth persists concise task, memory, and log evidence", "Every depth writes concise task artifacts, memory, and logs", "Reopen project memory on demand", "lifecycle-core.md"])
+for (const marker of ["light creates no tasks/** artifacts", "every depth requires memory and audit attribution", "Reopen project memory on demand", "lifecycle-core.md", "Raw requester prompts belong only under"])
   if (!hookContextReference.includes(marker)) errors.push(`Hook lifecycle guidance missing marker: ${marker}`);
 
 const frontendDiscipline = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "frontend-engineer.md"), "utf8");
@@ -403,7 +394,7 @@ if (backendDiscipline.includes("Require `change_kind`")) errors.push("Backend di
 for (const marker of ["## HTTP request-value normalization", "013-1-extensions-request-value-normalize.md", "both `be-main` and `be-library`", "direct `Request.Headers`", "require no DI registration", "Do not mass-replace mechanically"])
   if (!backendDiscipline.includes(marker)) errors.push(`Backend request normalization discipline missing marker: ${marker}`);
 const requestValueReference = "patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md";
-for (const operation of ["analyze", "diagnose", "be", "refactor-be", "qa"]) {
+for (const operation of ["analyze", "diagnose", "be", "refactor", "qa"]) {
   const item = operations?.operations?.find((candidate) => candidate.operation === operation);
   const routedReferences = [...(item?.references || []), ...(item?.conditionalReferences || [])];
   if (!routedReferences.some((reference) => reference.path === requestValueReference)) errors.push(`${operation} does not route to the backend request-value normalization contract.`);
@@ -478,8 +469,10 @@ if (operations) {
   }
   const publicRefactor = operations.operations.find((item) => item.name === "agm-refactor");
   if (!publicRefactor?.requiredInputs?.includes("target=fe|be|sql")) errors.push("agm-refactor must route target=fe|be|sql.");
-  for (const oldName of ["agm-analyze", "agm-design", "agm-create-feature", "agm-create-unit-test", "agm-refactor-fe", "agm-refactor-be", "agm-refactor-sql"])
-    if (operations.operations.find((item) => item.name === oldName)?.visibility !== "compatibility") errors.push(`${oldName} must remain a compatibility alias.`);
+  for (const keptName of ["agm-analyze", "agm-design"])
+    if (!operations.operations.some((item) => item.name === keptName && item.visibility !== "compatibility")) errors.push(`${keptName} must remain a primary operation.`);
+  for (const removedName of ["agm-create-feature", "agm-create-unit-test", "agm-refactor-fe", "agm-refactor-be", "agm-refactor-sql"])
+    if (operations.operations.some((item) => item.name === removedName)) errors.push(`${removedName} must be absent from the distributed operation surface.`);
   for (const name of names) {
     for (const target of [
       path.join(root, "commands", `${name}.toml`),

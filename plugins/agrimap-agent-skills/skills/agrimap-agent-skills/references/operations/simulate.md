@@ -6,7 +6,7 @@
 - Workflow depth: default `light`; allowed `light`, `standard`, `regulated`
 - Mode: `product-read-only`
 - Purpose: Simulate scenarios, risks, and observable outcomes.
-- Deliverable: direct simulation at light; tracked simulation artifact only at standard/regulated
+- Deliverable: direct simulation at light; tracked analysis.md only at standard/regulated
 
 ## Inputs and help
 

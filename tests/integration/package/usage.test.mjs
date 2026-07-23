@@ -67,10 +67,12 @@ test("published aliases use operation-specific progressive-disclosure entrypoint
   assert.deepEqual(commands.sort(), operations.map((item) => `${item.name}.toml`).sort());
   assert.equal(operations.some((item) => item.name === "agm-fe-engineer"), false);
   assert.deepEqual(publicOperations.filter((item) => item.mode === "action-routed").map((item) => item.name).sort(), ["agm-be", "agm-fe", "agm-sql"]);
-  assert.deepEqual(compatibilityOperations.map((item) => item.name).sort(), ["agm-analyze", "agm-create-feature", "agm-create-unit-test", "agm-design", "agm-refactor-be", "agm-refactor-fe", "agm-refactor-sql"]);
+  assert.deepEqual(compatibilityOperations.map((item) => item.name).sort(), []);
+  assert.ok(publicOperations.some((item) => item.name === "agm-analyze"));
+  assert.ok(publicOperations.some((item) => item.name === "agm-design"));
   assert.deepEqual(operations.find((item) => item.operation === "history").depth.allowed, ["light"]);
   assert.match(operationIndex, /not an execution contract/);
-  assert.match(operationIndex, /Deprecated compatibility aliases.*omitted/i);
+  assert.doesNotMatch(operationIndex, /Deprecated compatibility aliases/i);
 });
 
 test("plugin routing skill and shared resources mirror the canonical source", async () => {
@@ -116,7 +118,8 @@ test("usage documentation separates routing from operation activation and help",
   assert.ok(rgIgnore.split(/\r?\n/).includes("/plugins/agrimap-agent-skills/skills/agrimap-agent-skills/**"));
   assert.match(usage, /ไม่เขียนทุก step\/tool call/);
   assert.match(usage, /light\|standard\|regulated/);
-  assert.match(usage, /พร้อม brief\/checklist\/memory\/log\/result แบบกระชับ/);
+  assert.match(usage, /light.*ไม่สร้าง `tasks\//s);
+  assert.match(usage, /standard.*regulated.*brief\.md.*analysis\.md.*checklists\.md.*qa\.md.*result\.md/s);
   assert.equal(await read("plugins/agrimap-agent-skills/docs/USAGE.md"), usage);
 });
 
@@ -133,10 +136,7 @@ test("C# and request-value contracts route through every backend operation", asy
     "review",
     "be",
     "refactor",
-    "refactor-be",
     "qa",
-    "create-unit-test",
-    "create-feature",
     "create-prompt",
     "execute",
   ];

@@ -20,7 +20,7 @@ Generate prompts that an executor can run without reconstructing the Leader's re
 
 ## Artifact ownership and phase order
 
-For a tracked feature, write `brief.md`, derive acceptance `checklist.md`, and generate draft prompts. The brief fixes scope, authority, and ownership across handoffs; direct `agm-create-feature` needs none.
+For tracked work, write `brief.md`, derive acceptance `checklists.md`, and generate draft instructions. The brief fixes scope, authority, and ownership across handoffs. Light work has no task folder.
 
 End with a non-terminal `scope-decision` checkpoint. `agm-exec` owns implementation, `agm-qa` owns QA evidence, and the Leader writes `result.md` only as the final closure record. Prompt generation does none of those phases.
 
@@ -36,11 +36,11 @@ Run the stages in order. Skip B–D only when the requester explicitly requests 
 
 Authority gates in this contract are real stops. A completed stage output is never permission to advance past a gate without the required requester's confirmation or decision owner's approval.
 
-## Prompt file naming and lifecycle
+## Generated instruction naming and lifecycle
 
-Write prompt files as `.agrimap-agent/prompts/<task-id>/<role>.prompt.md`, for example `leader.prompt.md`, `executor.prompt.md`, `executor-fe.prompt.md`, and `qa.prompt.md`. The `.prompt.md` suffix is required so editor tooling recognizes the files; do not rename them to encode status — `prompt_status` in the manifest is the single status source.
+Write generated instruction files as `.agrimap-agent/instructions/YYYY-MM/<task-id>/<role>.prompt.md`, for example `leader.prompt.md`, `executor.prompt.md`, `executor-fe.prompt.md`, and `qa.prompt.md`. The `.prompt.md` suffix is required so editor tooling recognizes the files; do not rename them to encode status — `prompt_status` in the manifest is the single status source.
 
-When the task closes, `agm-workspace.mjs complete|close` moves the whole task prompt folder to `.agrimap-agent/prompts/complete/<task-id>/` automatically. Never move or rename prompt files by hand, and never execute a prompt found under `complete/`.
+Generated instructions remain durable evidence at their original path when the task closes. Never place them under `prompts/`, which is reserved for verbatim requester submissions, and never move raw prompts during completion.
 
 ## Required input variables
 
@@ -101,7 +101,7 @@ Allow the decision owner to override `model_label` in the generated prompt file.
 8. Verify the real workspace mode. Do not assume sandbox commits, branches, worktrees, or uncommitted parent changes are visible to the Leader.
 9. Build a file/logical-contract ownership map. One writer model owns a file or contract per integration wave; combine or sequence overlapping tasks.
 10. Apply the workspace visibility and uncommitted-state fallbacks in [subagents-and-branches.md](subagents-and-branches.md); name branches/worktrees only when supported.
-11. Write the required role prompts under `.agrimap-agent/prompts/<task-id>/`. A QA prompt imports [qa-and-done.md](qa-and-done.md) as its complete boundary; do not duplicate that policy here or in generated Leader/executor prompts.
+11. Write the required role prompts under `.agrimap-agent/instructions/YYYY-MM/<task-id>/`. A QA prompt imports [qa-and-done.md](qa-and-done.md) as its complete boundary; do not duplicate that policy here or in generated Leader/executor prompts.
 12. Add the exact skill/reference files the executor must load.
 13. For cross-service or ownership-sensitive work, point to exact `service_id` entries in `.agrimap-agent/knowledge/service-ownership.yaml`; never paste a second ownership map into the prompt.
 14. Validate that each prompt contains the fields below.

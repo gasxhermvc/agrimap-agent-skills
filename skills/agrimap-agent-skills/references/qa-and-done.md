@@ -4,7 +4,7 @@ This file is the single policy source for direct `light` QA, tracked `regulated`
 
 ## Verifier boundary
 
-Product artifacts are read-only. At `light`, record concise task, memory, and log evidence without creating `qa.md` or a separate verifier context. At `regulated`, use a verifier context that did not write the product change; it may write only `qa.md`, checkpoint/log evidence, and an explicitly declared progress fallback. QA never fixes findings, deploys, mutates data, installs, publishes, regenerates, changes Git, or changes product files/configuration.
+Product artifacts are read-only. At `light`, record concise memory/log evidence without creating `tasks/**`, `qa.md`, or a separate verifier context. Standard tracked work writes `qa.md` as `not-applicable` with its proportional writer-verification reason. At `regulated`, use a verifier context that did not write the product change; it may write only `qa.md`, checkpoint/log evidence, and an explicitly declared progress fallback. QA never fixes findings, deploys, mutates data, installs, publishes, regenerates, changes Git, or changes product files/configuration.
 
 Treat the implementation Result Package as testimony: reopen actual files and diffs. A stronger model or provider does not receive broader tools or permission.
 
@@ -19,7 +19,7 @@ Start every QA request at `depth=light` and `qa_mode=light` unless one of these 
 
 SQL/BE/FE scope, database-related code, public/data behavior, diff size, regulated implementation depth, provider, and model capability never select `full` by themselves. Record the selected mode and exact trigger; if none applies, the mode is `light`.
 
-Workflow depth and QA mode are separate. A direct explicit full request may remain `depth=light qa_mode=full`; tracked task QA is `depth=regulated`, and commit/publish/release, correction re-QA, or the third passed-light tracked closure requires `depth=regulated qa_mode=full`.
+Workflow depth and QA mode are separate. A direct explicit full review may remain `depth=light qa_mode=full` without task artifacts; tracked separate QA is `depth=regulated`, and commit/publish/release, correction re-QA, or the third passed-light regulated closure requires `depth=regulated qa_mode=full`.
 
 ## Verification tool allowlist
 

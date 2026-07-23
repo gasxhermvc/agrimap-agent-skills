@@ -5,21 +5,19 @@
 - Operation: `design`
 - Workflow depth: default `light`; allowed `light`, `standard`, `regulated`
 - Mode: `product-read-only`
-- Purpose: Design a user flow, behavior, and acceptance criteria.
-- Deliverable: direct design at light; tracked design artifact only at standard/regulated
-- Compatibility: deprecated; use agm-fe|agm-be|agm-sql action=design, or passive design in agm-create-prompt. Preserve this operation name only for existing prompts, audit, and automation.
-
+- Purpose: Design FE, BE, SQL, or architecture behavior and acceptance through one product-read-only discipline.
+- Deliverable: direct design at light; tracked analysis.md only at standard/regulated
 
 ## Inputs and help
 
-- Required: objective.
-- Conditional: target_kind when FE/BE placement remains ambiguous; phase for FE/BE work when repository evidence cannot resolve it.
-- Minimal example: `$agm-design depth=light target_kind=fe-main objective="Design empty/loading/error states"`
+- Required: objective; target=fe|be|sql|architecture.
+- Conditional: target_kind and phase for FE/BE; backend_profile for be-main; decision-owner choice when architecture alternatives are material.
+- Minimal example: `$agm-design depth=light target=architecture objective="Design ownership and migration for order status"`
 
 ## Execute this contract
 
-1. Define actors, entry points, states, transitions, validation, failure/recovery, accessibility, and measurable acceptance.
-2. Use the target discipline selected by the conditional routing below; do not implement.
+1. Resolve exactly one target discipline before inspection, then define actors, boundaries, data/contract flow, states, transitions, validation, failure/recovery, migration, and measurable acceptance as applicable.
+2. Use only the matching FE, BE, SQL, or architecture references below; remain product-read-only and do not implement.
 
 ## Load now
 
@@ -28,9 +26,11 @@
 
 ## Load only when the condition matches
 
-- When target_kind is fe-main or fe-library: [frontend-engineer.md](../frontend-engineer.md) — frontend design discipline
-- When target_kind is be-main or be-library: [backend-engineer.md](../backend-engineer.md) — backend boundary discipline
+- When target=fe: [frontend-engineer.md](../frontend-engineer.md) — frontend design discipline
+- When target=be: [backend-engineer.md](../backend-engineer.md) — backend boundary discipline
 - When the backend design contains C#: [patterns/csharp.md](../patterns/csharp.md) — project-wide C# contract and boundary examples
 - When the backend design includes cookie, header, query, form, JSON body, or device-ID resolution: [patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md](../patterns/golden/backend-libraries/013-1-extensions-request-value-normalize.md) — request-value resolution contract
+- When target=sql: [patterns/sql.md](../patterns/sql.md) — SQL schema, result, transaction, and deployment design discipline
+- When target=architecture: [service-ownership.md](../service-ownership.md) — canonical service/data ownership and architecture boundaries
 
 Do not read the router `SKILL.md` during operation execution. If this generated entrypoint is missing or corrupt, stop with `PACKAGE_ENTRYPOINT_MISSING` and ask for package sync/reinstallation; never broaden into the router.

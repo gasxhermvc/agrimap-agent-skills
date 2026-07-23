@@ -6,7 +6,7 @@
 - Workflow depth: default `light`; allowed `light`, `standard`, `regulated`
 - Mode: `product-read-only`
 - Purpose: Diagnose a problem to a proven root cause.
-- Deliverable: concise tracked diagnosis task at light; expanded diagnosis artifact at standard/regulated
+- Deliverable: direct diagnosis response at light; tracked analysis.md only at standard/regulated
 
 ## Inputs and help
 

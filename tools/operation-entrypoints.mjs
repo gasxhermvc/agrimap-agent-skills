@@ -17,8 +17,6 @@ export function renderOperationIndex(config) {
     "| --- | --- | --- | --- | --- |",
     ...publicOperations.map((item) => `| \`${item.name}\` | \`${item.operation}\` | ${item.description} | \`${item.mode}\` | default \`${item.depth.default}\`; allowed ${item.depth.allowed.map((depth) => `\`${depth}\``).join(", ")} |`),
     "",
-    "Deprecated compatibility aliases remain callable for existing prompts and automation, but are intentionally omitted from this primary routing index.",
-    "",
     "After selecting one row, hand off to that skill and stop the router. Never combine multiple operation skills implicitly.",
     "",
   ].join("\n");

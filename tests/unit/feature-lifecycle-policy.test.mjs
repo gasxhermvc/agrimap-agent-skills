@@ -7,46 +7,43 @@ import { projectRoot } from "../helpers/harness.mjs";
 const read = (relative) => readFile(path.join(projectRoot, ...relative.split("/")), "utf8");
 const operations = JSON.parse(await read("config/operations.json"));
 const lifecycle = await read("skills/agrimap-agent-skills/references/lifecycle-core.md");
-const promptWorkflow = await read("skills/agrimap-agent-skills/references/create-prompt.md");
 const memoryPolicy = await read("skills/agrimap-agent-skills/references/memory-and-logs.md");
+const passive = await read("skills/agrimap-agent-skills/references/passive-capabilities.md");
 const workspaceScript = await read("skills/agrimap-agent-skills/scripts/agm-workspace.mjs");
 const schema = JSON.parse(await read("skills/agrimap-agent-skills/assets/task-artifact-schema.json"));
 
-test("create-feature stays light while every feature writes concise durable state", () => {
-  const createFeature = operations.operations.find((item) => item.operation === "create-feature");
-  const createPrompt = operations.operations.find((item) => item.operation === "create-prompt");
-
-  assert.deepEqual(createFeature.depth, { default: "light", allowed: ["light"] });
-  assert.match(createFeature.instructions.join("\n"), /start concise tracked task state/i);
-  assert.match(createFeature.instructions.join("\n"), /route the work to agm-create-prompt/i);
-  assert.match(createFeature.instructions.join("\n"), /Return the result only after product writes and verification finish/i);
-  assert.match(createFeature.instructions.join("\n"), /never invoke separate QA, select qa_mode, delegate\/spawn\/wait/i);
-  assert.match(createFeature.instructions.join("\n"), /unresolved or material persisted-data decision/i);
-  assert.match(createFeature.instructions.join("\n"), /bounded slice within the three-artifact limit.*remains direct/i);
-  assert.match(createFeature.instructions.join("\n"), /sql-contract-preflight\.mjs/i);
-  assert.match(createFeature.instructions.join("\n"), /Do not hand-tune cosmetic layout/i);
-  assert.match(createFeature.instructions.join("\n"), /format every declared changed \.sql path/i);
-  assert.match(createFeature.instructions.join("\n"), /validate the same complete set/i);
-  assert.match(createFeature.instructions.join("\n"), /formatted N\/N/i);
-  assert.match(createFeature.instructions.join("\n"), /never use a database, ScriptDom/i);
-
-  assert.match(createPrompt.deliverable, /brief\.md and acceptance checklist\.md/i);
-  assert.match(createPrompt.instructions.join("\n"), /never execute the generated prompt, create qa\.md, create result\.md/i);
-  assert.match(lifecycle, /full artifact set is a completion set, not a start scaffold/i);
-  assert.match(promptWorkflow, /agm-exec` owns implementation/i);
-  assert.match(promptWorkflow, /Leader writes `result\.md` only as the final closure record/i);
-
-  assert.deepEqual(schema.scaffoldOrder, ["brief.md", "checklist.md"]);
-  assert.equal(schema.artifacts["qa.md"].writePhase, "verification");
-  assert.equal(schema.artifacts["result.md"].writePhase, "closure");
-  assert.match(workspaceScript, /TRACKED_WORKFLOW_DEPTHS/);
+test("light is artifactless while tracked depths complete the canonical five files", () => {
+  assert.deepEqual(schema.artifactlessDepths, ["light"]);
+  assert.deepEqual(schema.scaffoldOrder, ["brief.md", "checklists.md"]);
+  assert.deepEqual(Object.keys(schema.artifacts), ["brief.md", "analysis.md", "checklists.md", "qa.md", "result.md"]);
+  for (const definition of Object.values(schema.artifacts)) {
+    assert.deepEqual(definition.requiredForDepths, ["standard", "regulated"]);
+  }
+  assert.match(lifecycle, /must not create anything under `tasks\/\*\*`/);
+  assert.match(lifecycle, /tasks\/complete\/YYYY-MM/);
+  assert.match(lifecycle, /tasks\/cancelled\/YYYY-MM/);
+  assert.match(workspaceScript, /const taskId = TASK_WORKFLOW_DEPTHS\.has\(workflowDepth\) \? executionId : null/);
   assert.match(workspaceScript, /PREMATURE_RESULT_ARTIFACT/);
 });
 
-test("checkpoint memory and logs use the same compact budget for every provider", () => {
+test("removed aliases stay absent and unit tests are a passive deterministic decision", () => {
+  const names = operations.operations.map((item) => item.name);
+  for (const removed of ["agm-create-feature", "agm-create-unit-test", "agm-refactor-fe", "agm-refactor-be", "agm-refactor-sql"]) {
+    assert.equal(names.includes(removed), false);
+  }
+  for (const kept of ["agm-analyze", "agm-design", "agm-fe", "agm-be", "agm-sql", "agm-refactor"]) {
+    assert.equal(names.includes(kept), true);
+  }
+  assert.match(passive, /`required`, `recommended`, or `not_applicable`/);
+  assert.match(passive, /Passive activation never grants write authority/);
+  assert.match(passive, /product-read-only action may classify\/recommend tests but never create them/);
+});
+
+test("checkpoint memory and logs use provider-neutral compact budgets", () => {
   for (const marker of ["summary: 240", "reason: 400", "concerns: 400", "verificationItems: 8", "verificationItem: 300"]) {
     assert.match(workspaceScript, new RegExp(marker));
   }
-  assert.match(memoryPolicy, /Claude\/Fable, Codex\/GPT, and Gemini use the same milestone count and compact field budgets/);
-  assert.match(memoryPolicy, /Every activated operation, including direct\/light work and `agm-create-feature`, writes concise task, memory, and log state/);
+  assert.match(memoryPolicy, /This transition is mechanical, not model discretion/);
+  assert.match(memoryPolicy, /Logs are concise machine chronology/);
+  assert.match(memoryPolicy, /Schema v1-v3 remains readable/);
 });

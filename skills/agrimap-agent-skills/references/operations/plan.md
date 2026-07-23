@@ -6,7 +6,7 @@
 - Workflow depth: default `light`; allowed `light`, `standard`, `regulated`
 - Mode: `product-read-only`
 - Purpose: Create a reverse-engineered execution plan.
-- Deliverable: direct plan at light; tracked plan artifact only at standard/regulated
+- Deliverable: direct plan at light; tracked analysis.md only at standard/regulated
 
 ## Inputs and help
 

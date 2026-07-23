@@ -34,6 +34,10 @@ export function taskArtifactSchemaIssues(schema) {
   if (!Array.isArray(workflowDepths) || workflowDepths.length === 0 || workflowDepths.some((depth) => !["light", "standard", "regulated"].includes(depth))) {
     issues.push("workflowDepths must contain only light|standard|regulated");
   }
+  const artifactlessDepths = schema.artifactlessDepths || [];
+  if (JSON.stringify(artifactlessDepths) !== JSON.stringify(["light"])) {
+    issues.push("artifactlessDepths must be exactly light");
+  }
   const phaseOrder = schema.phaseOrder || [];
   if (JSON.stringify(phaseOrder) !== JSON.stringify(["contract", "verification", "closure"])) {
     issues.push("phaseOrder must be contract|verification|closure");
@@ -83,8 +87,9 @@ export function renderTaskArtifactSchemaDocs(schema) {
   const triggers = (schema.qaFullTriggers || []).map((trigger, index) => `${index + 1}. ${trigger}`);
   const rules = schema.crossArtifactRules || {};
   const completionRules = [
-    `Start scaffolds only ${tableCell(schema.scaffoldOrder || [])}; \`qa.md\` is verification-phase and \`result.md\` is closure-only.`,
-    `Standard completion omits \`qa.md\` and records result QA status/mode as \`not-applicable\`.`,
+    `Depths ${tableCell(schema.artifactlessDepths || [])} create no task directory or task artifacts.`,
+    `Tracked start scaffolds only ${tableCell(schema.scaffoldOrder || [])}; \`analysis.md\`, \`qa.md\`, and \`result.md\` are phase-owned completion artifacts.`,
+    `Standard completion writes \`qa.md\` with status \`not-applicable\` and records result QA status/mode as \`not-applicable\`.`,
     `Regulated accepted QA statuses: ${tableCell(rules.acceptedQaStatuses || [])}.`,
     `At regulated depth, \`${rules.requesterField}\` and \`${rules.decisionOwnerField}\` match across brief, QA, and result.`,
     `Regulated QA identity (${tableCell(rules.qaIdentityFields || [])}) must differ from implementation identity (${tableCell(rules.implementationIdentityFields || [])}).`,

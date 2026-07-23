@@ -1,11 +1,12 @@
 {
-  "schemaVersion": 4,
+  "schemaVersion": 5,
   "description": "Canonical phase ownership, scaffold, and completion contract for AgriMap task artifacts.",
   "workflowDepths": ["light", "standard", "regulated"],
+  "artifactlessDepths": ["light"],
   "phaseOrder": ["contract", "verification", "closure"],
   "scaffoldOrder": [
     "brief.md",
-    "checklist.md"
+    "checklists.md"
   ],
   "artifacts": {
     "brief.md": {
@@ -15,7 +16,7 @@
       "writer": "agm-create-prompt or the leader of a non-feature tracked operation",
       "scaffoldAtStart": true,
       "requiredForCompletion": true,
-      "requiredForDepths": ["light", "standard", "regulated"],
+      "requiredForDepths": ["standard", "regulated"],
       "requiredFields": [
         { "label": "Task ID" },
         { "label": "Requested by" },
@@ -42,14 +43,28 @@
         "Concerns"
       ]
     },
-    "checklist.md": {
-      "template": "checklist.md",
+    "analysis.md": {
+      "template": "analysis.md",
+      "purpose": "Evidence-backed current state, findings, impact, and approved approach for tracked work.",
+      "writePhase": "contract",
+      "writer": "leader or executor after target inspection and before implementation completion",
+      "scaffoldAtStart": false,
+      "requiredForCompletion": true,
+      "requiredForDepths": ["standard", "regulated"],
+      "requiredSections": [
+        "Current State",
+        "Findings",
+        "Proposed Approach"
+      ]
+    },
+    "checklists.md": {
+      "template": "checklists.md",
       "purpose": "Checked completion ledger derived from the task contract.",
       "writePhase": "contract",
       "writer": "agm-create-prompt initializes acceptance items; executor and leader update status",
       "scaffoldAtStart": true,
       "requiredForCompletion": true,
-      "requiredForDepths": ["light", "standard", "regulated"],
+      "requiredForDepths": ["standard", "regulated"],
       "kind": "checklist",
       "minimumItems": 1,
       "requireAllChecked": true
@@ -61,10 +76,10 @@
       "writer": "agm-qa after implementation evidence exists",
       "scaffoldAtStart": false,
       "requiredForCompletion": true,
-      "requiredForDepths": ["regulated"],
+      "requiredForDepths": ["standard", "regulated"],
       "requiredFields": [
         { "label": "Status", "enum": ["passed", "failed", "blocked", "not-applicable"] },
-        { "label": "QA mode", "enum": ["light", "full"] },
+        { "label": "QA mode", "enum": ["not-applicable", "light", "full"] },
         { "label": "QA mode reason" },
         { "label": "Coverage key" },
         { "label": "Light sequence", "enum": ["0", "1", "2"] },
@@ -98,7 +113,7 @@
       "writer": "leader after implementation, verification, and applicable QA",
       "scaffoldAtStart": false,
       "requiredForCompletion": true,
-      "requiredForDepths": ["light", "standard", "regulated"],
+      "requiredForDepths": ["standard", "regulated"],
       "requiredFields": [
         { "label": "Outcome", "const": "completed" },
         { "label": "Requested by" },

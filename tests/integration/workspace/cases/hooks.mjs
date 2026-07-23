@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 export async function hooks(harness) {
@@ -68,7 +68,7 @@ export async function hooks(harness) {
     hook_event_name: "UserPromptSubmit",
     prompt: "AGRIMAP_EXPLICIT_ALIAS=agm-analyze\n\nRun only AgriMap operation analyze",
   });
-  assert.match(expandedAdapter.hookSpecificOutput.additionalContext, /task, memory, and log attribution/);
+  assert.match(expandedAdapter.hookSpecificOutput.additionalContext, /memory and audit attribution/);
 
   for (const [provider, prompt] of [
     ["codex", "/agm-analyze must not use Gemini syntax"],
@@ -99,7 +99,7 @@ export async function hooks(harness) {
     session_id: "external-active-task",
     hook_event_name: "SessionStart",
   });
-  assert.match(activeTaskContinuation.hookSpecificOutput.additionalContext, /Active task: external-task/);
+  assert.match(activeTaskContinuation.hookSpecificOutput.additionalContext, /Active execution: external-task; task external-task/);
   const stateDirectoryAlone = run(hookScript, ["--provider", "codex", "--mode", "session"], {
     cwd: externalProject,
     session_id: "state-directory-alone",
@@ -239,7 +239,7 @@ export async function hooks(harness) {
   });
   assert.doesNotMatch(claudeSessionB.hookSpecificOutput.additionalContext, /Current project memory:/);
   assert.match(claudeSessionB.hookSpecificOutput.additionalContext, /Current tracked-task memory:/);
-  assert.match(claudeSessionB.hookSpecificOutput.additionalContext, /Every depth writes concise task artifacts, memory, and logs/);
+  assert.match(claudeSessionB.hookSpecificOutput.additionalContext, /Light writes memory\/logs without tasks\/\*\*/);
 
   const unchangedClaudePrompt = run(hookScript, ["--provider", "claude", "--mode", "task"], {
     cwd: temp,
@@ -249,15 +249,20 @@ export async function hooks(harness) {
   });
   assert.equal(unchangedClaudePrompt.hookSpecificOutput, undefined);
 
-  run(workspaceScript, ["checkpoint", "--cwd", temp, "--session", "session-b", "--task", "task-b", "--summary", "Task B context changed", "--event", "verified"]);
+  run(workspaceScript, ["checkpoint", "--cwd", temp, "--session", "session-b", "--execution", "01010004", "--summary", "Task B context changed", "--event", "verified"]);
   const refreshedClaudePrompt = run(hookScript, ["--provider", "claude", "--mode", "task"], {
     cwd: temp,
     session_id: "session-b",
     hook_event_name: "UserPromptSubmit",
+    context_id: "continue-after-checkpoint",
     prompt: "Continue after the checkpoint",
   });
   assert.match(refreshedClaudePrompt.hookSpecificOutput.additionalContext, /task\/project memory changed on disk since the last refresh/);
   assert.doesNotMatch(refreshedClaudePrompt.hookSpecificOutput.additionalContext, /Task B context changed/);
+  const promptPeriods = await readdir(path.join(temp, ".agrimap-agent", "prompts"));
+  const rawPrompt = await readFile(path.join(temp, ".agrimap-agent", "prompts", promptPeriods.sort().at(-1), "session-b", "continue-after-checkpoint.md"), "utf8");
+  assert.match(rawPrompt, /^\d{4}-\d{2}-\d{2}T.*Z\nCommand: Continue after the checkpoint/m);
+  assert.doesNotMatch(rawPrompt, /Task B context changed|tool output|reasoning/i);
 
   const repeatedClaudePrompt = run(hookScript, ["--provider", "claude", "--mode", "task"], {
     cwd: temp,

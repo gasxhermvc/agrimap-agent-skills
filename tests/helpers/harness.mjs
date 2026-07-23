@@ -1,5 +1,5 @@
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -14,6 +14,16 @@ export const scripts = Object.freeze({
   reuse: path.join(projectRoot, "skills", "agrimap-agent-skills", "scripts", "frontend-reuse-index.mjs"),
   workspace: path.join(projectRoot, "skills", "agrimap-agent-skills", "scripts", "agm-workspace.mjs"),
 });
+
+async function filesUnder(directory) {
+  const result = [];
+  for (const entry of await readdir(directory, { withFileTypes: true }).catch(() => [])) {
+    const target = path.join(directory, entry.name);
+    if (entry.isDirectory()) result.push(...await filesUnder(target));
+    else result.push(target);
+  }
+  return result;
+}
 
 export async function createHarness(prefix = "agrimap-agent-skills-") {
   const temp = await mkdtemp(path.join(os.tmpdir(), prefix));
@@ -39,11 +49,19 @@ export async function createHarness(prefix = "agrimap-agent-skills-") {
       });
     },
     async readTaskLog(taskId) {
-      const content = await readFile(
-        path.join(temp, ".agrimap-agent", "logs", new Date().toISOString().slice(0, 7), `${taskId}.jsonl`),
-        "utf8",
-      );
-      return content.trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
+      const entries = [];
+      for (const file of (await filesUnder(path.join(temp, ".agrimap-agent", "logs"))).filter((item) => item.endsWith(".jsonl"))) {
+        const content = await readFile(file, "utf8");
+        for (const line of content.split(/\r?\n/).filter(Boolean)) {
+          try {
+            const entry = JSON.parse(line);
+            if (entry.execution_id === taskId || entry.task_id === taskId || entry.executionId === taskId || entry.taskId === taskId) entries.push(entry);
+          } catch {
+            // Shared daily logs may contain malformed compatibility fixtures for history tests.
+          }
+        }
+      }
+      return entries.sort((left, right) => Date.parse(left.timestamp) - Date.parse(right.timestamp));
     },
     async cleanup() {
       await rm(temp, { recursive: true, force: true });

@@ -1,0 +1,366 @@
+### [2026-07-22 23:11:44]
+วิเคราะห์หน่อยทำไมยังเจอเรื่องแบบนี้อยู่
+
+1. งานระดับ light หลาย ๆ อัน เช่น `agm-analyze`, `agm-review`, `agm-diagnose`, `agm-be`, `agm-fe`, `agm-sql`, `agm-refactor` ยังถูกบังคับเขียน `tasks/**/*.md` ทั้งที่จริงควรจะข้าม และบังคับแค่งานที่น้ำหนัก full
+
+2. การบันทึก Memory มีแค่ระดับ recent นาน ๆ บันทึก current และนาน ๆ บันทึก `project.md` ไม่รู้ model ใช้เกณฑ์อะไรในการวิเคราะห์เพื่อบันทึก ส่วนมากบันทึก recent เต็มไปหมด แล้วไม่มีส่วนของการตัดสินใจว่างานเรียบร้อยรึยัง ย้ายไป หรือลบทิ้งได้รึเปล่า หรือจังหวะไหนอัปเดต `project.md` เรื่องนี้สำคัญมากและแก้ไม่หายสักที วิเคราะห์โดยละเอียด
+
+3. การบันทึกชื่อไฟล์ลงใน folder: [`memory/**/*.md`, `logs/**/*.md`, `tasks/**/*.md`] ไม่มีมาตรฐานตายตัวเลย ตอนนี้แตกแนวเป็น `xxxx.md` บางอันเป็น `yyyyMMddHHmmss-xxxx.md`
+
+   รบกวนทำแบบนี้แทน
+
+   3.1 `memory/recent` -> สร้าง folder `memory/recent/<year>-<month>/<ddHHmmss>-<slug>.md`
+   ตัวอย่าง: `memory/recent/2026-07/22204120-design-dashboard-source-uniqueness-validation.md`
+
+   3.2 `memory/current` -> สร้าง folder `memory/current/<year>-<month>/<ddHHmmss>-<slug>.md`
+   ตัวอย่าง: `memory/current/2026-07/22204120-design-dashboard-source-uniqueness-validation.md`
+
+   3.3 `memory/project.md`
+
+   หมายเหตุ: recent จะเขียนไว้เสมอเหมือนเป็น log ความคิด และ current คืองานที่กำลังดำเนินการ หากค้างถือเป็นงานที่ต้องทำ หากดำเนินการงานส่วนนี้เสร็จจะต้องลบออกจาก current ด้วย ขอให้มันเป็นงานที่ดำเนินการอยู่ในปัจจุบัน เมื่อดำเนินการเสร็จจะอัปเดตสรุปสั้น ๆ ลง `project.md` เพื่อให้รู้ว่าเคยดำเนินการเรื่องอะไรไป วันไหน สั้น ๆ เหมือนเป็น project note สำหรับให้ model ทำความเข้าใจแบบไม่ลืมว่าเคยมีงานประมาณนี้ และทำไปแล้ว
+
+4. การเขียน tasks ให้กำหนด format แบบนี้คือ `tasks/<year>-<month>/<task_id>/*.md` ประกอบด้วย [`brief.md`, `analysis.md`, `checklists.md`, `qa.md`, `result.md`] โดย `<task_id>` ให้ใช้ `ddHHmmss` ในการสร้างแทน
+
+   - เพิ่ม folder `tasks/complete` สำหรับย้าย folder tasks ที่มีการทำงานแล้วเสร็จไปเก็บไว้ด้วย โดยใช้มาตรฐาน format ดังนี้ `tasks/complete/<year>-<month>/<task_id>/*.md`
+   ตัวอย่าง: `tasks/2026-07/22204120/result.md` → `tasks/complete/2026-07/22204120/brief.md`
+
+5. การเขียน logs ให้กำหนด format แบบนี้คือ `logs/<year>-<month>/<yyyy-MM-dd>.jsonl` โดยเนื้อหาเป็น format json ประกอบด้วย
+
+   - `timestamp`: วันที่ `yyyy-MM-dd HH:mm:ss`
+   - `task_id` (ถ้ามี เพราะงาน light ไม่ต้องเขียน tasks / งาน full เขียน)
+   - `work_flow_depth` (light/full)
+   - `requester` เช่น `006006`
+   - `identity_source` เช่น `manual-confirm` / `model-auto`
+   - `model` เช่น `gpt-5.6-sol`
+   - `role`
+   - `provider`
+   - `event` เช่น `created`, `completed`
+   - `log_type` เช่น `request` / `result` / `action` บลา ๆ
+   - `message`: xxxx
+
+   ตัวอย่าง:
+
+   ```json
+   { "timestamp": "2026-07-21T04:46:07.171Z", "task_id": "-", "work_flow_depth": "light", "requester": "006006", ..., "log_type": "request", "message": "Generate SQL context for content, dd_dashboard, um" }
+   ```
+
+6. ส่วน folder prompts จะใช้บันทึกชุดคำสั่งที่ owner/requester พิมพ์และ submit เข้ามาหา Model โดยใช้รูปแบบจัดเก็บไฟล์ดังนี้ `prompts/<year>-<month>/<session_id|context_id|room_id>/<context>.md`
+
+   - การบันทึกข้อมูลจะเก็บแค่เนื้อหาการพิมพ์ Prompt Submit เข้ามา เช่น
+
+   ```
+   <timestamp>
+   <prompt command>
+   ```
+
+   ตัวอย่าง:
+
+   ```
+   2026-07-21T04:46:07.171Z
+   Command: A root/direct source persists SOURCE_LAYER_ID = NULL. A parent-backed child persists its integer layer while SOURCE_CONTENT_ID remains the parent. xxxxx......, and existing root sources continue to work.
+   ...
+   ...
+   ```
+
+7. เพิ่ม `reports/<year>-<month>/<ddHHmmss>-context.md` สำหรับสรุปผลดำเนินงานทั้งหมดอีกทีโดยใช้ template แบบนี้
+
+---
+
+# Execution Log — <TASK_TITLE>
+
+<!--
+  FILE LOCATION (this log):
+    tasks/<year>-<month>/<task_id>/execution_log.md
+    → on completion, the whole folder moves to:
+    tasks/complete/<year>-<month>/<task_id>/
+
+  ID RULES:
+    - <task_id> = ddHHmmss
+    - If continuing work already tracked in memory → REUSE the existing id from the memory filename.
+    - If creating a NEW id → always derive from the CURRENT timestamp at task start.
+      Example: start 22:10:30 on day 31 → task_id = 31221030
+-->
+
+## Metadata
+
+| Field         | Value                                                        |
+|---------------|--------------------------------------------------------------|
+| Session ID    | <session_id \| context_id \| room_id>                        |
+| Task ID       | <ddHHmmss>                                                   |
+| Provider      | <codex \| claude \| copilot \| ...>                          |
+| Model         | <fable \| sonnet5 \| gpt-5.6-sol \| ...>                     |
+| Mode          | <PLAN_REASON_ANALYZE_AND_SIMULATE → CONVERT_SIMULATE_TO_GENERATE \| ...> |
+| Started At    | YYYY-MM-DD HH:mm:ss                                          |
+| Finished At   | YYYY-MM-DD HH:mm:ss                                          |
+| Duration      | ~N minutes                                                   |
+| Final Status  | ⏳ IN_PROGRESS \| ✅ COMPLETED \| ⚠️ PARTIAL \| ❌ FAILED       |
+
+---
+
+## Linked Artifacts
+
+| Artifact              | Path                                                                    |
+|-----------------------|-------------------------------------------------------------------------|
+| Memory (recent)       | `memory/recent/<year>-<month>/<ddHHmmss>-<slug>.md`                     |
+| Task Folder           | `tasks/<year>-<month>/<task_id>/`                                       |
+| Prompt (source)       | `prompts/<year>-<month>/<session_id>/<context>.md`                      |
+| Simulation/Reasoning  | `agents/simulation/<session_id>/<year>-<month>/<context>.prompt/reasoning_<timestamp>.md` |
+| Execution Log (this)  | `tasks/<year>-<month>/<task_id>/execution_log.md`                       |
+
+> ทุก log ต้องอ้างอิง memory file ล่าสุดที่เกี่ยวข้องเสมอ เพื่อให้ agent ตัวถัดไป trace บริบทย้อนหลังได้
+> Every log must reference the latest related memory file so the next agent can trace context backwards.
+
+---
+
+## Objectives
+
+1. <objective 1 — action + target + constraint (e.g. "preserve logic", "no breaking change")>
+2. <objective 2>
+3. <objective 3>
+
+---
+
+## Files Read (Analysis Phase)
+
+| File | Purpose |
+|------|---------|
+| `<path>` | <why it was read> |
+| `.agm/*.instructions.md` (×N) | Load mandatory governance rules |
+
+---
+
+## Files Generated (NEW)
+
+| File | Description |
+|------|-------------|
+| `<path>` | <what it contains / responsibility> |
+
+---
+
+## Files Modified
+
+<!-- Repeat this block per modified file. Keep change granularity: REMOVED / ADDED / REPLACED (×count) -->
+
+### `<path/to/File.cs>`
+
+| Change Type | Detail |
+|-------------|--------|
+| REMOVED     | <what was removed and why> |
+| ADDED       | <what was added> |
+| REPLACED (×N) | `<old pattern>` → `<new pattern>` |
+
+---
+
+## Issues Found & Resolved
+
+| Severity | File | Issue | Resolution |
+|----------|------|-------|------------|
+| HIGH     | `<file>` | <issue> | <resolution> |
+| MEDIUM   | `<file>` | <issue> | <resolution> |
+| LOW      | `<file>` | <issue> | <resolution> |
+
+---
+
+## Task Files Status
+
+| File | Status | Note |
+|------|--------|------|
+| `brief.md`      | ✅ / ⏳ / ➖ | <one-liner> |
+| `analysis.md`   | ✅ / ⏳ / ➖ | <one-liner> |
+| `checklists.md` | ✅ / ⏳ / ➖ | <one-liner> |
+| `qa.md`         | ✅ / ⏳ / ➖ | <one-liner> |
+| `result.md`     | ✅ / ⏳ / ➖ | <one-liner> |
+
+---
+
+## Summary
+
+<3–5 sentences: what was completed, what was verified clean, what was skipped and why, confirmation that logic-change policy was respected.>
+
+**Final Status: ✅ COMPLETED**
+
+---
+
+## Completion Checklist (run before closing the task)
+
+- [ ] `result.md` written and reviewed
+- [ ] Memory file created/updated at `memory/recent/<year>-<month>/<ddHHmmss>-<slug>.md`
+- [ ] Prompt archived at `prompts/<year>-<month>/<session_id>/<context>.md`
+- [ ] Folder moved: `tasks/<year>-<month>/<task_id>/` → `tasks/complete/<year>-<month>/<task_id>/`
+
+---
+---
+
+# Appendix — Task File Mini-Templates
+
+## `brief.md`
+
+```markdown
+# Brief — <task_id>
+- **Requested by:** <owner/requester>
+- **Prompt ref:** prompts/<year>-<month>/<session_id>/<context>.md
+- **Goal:** <1–2 sentences>
+- **Scope:** <in-scope>
+- **Out of scope:** <explicitly excluded>
+- **Constraints:** <e.g. LOGIC_CHANGE_NOT_ALLOWED, no new dependencies>
+```
+
+## `analysis.md`
+
+```markdown
+# Analysis — <task_id>
+## Current State
+<what exists today, files inspected>
+## Findings
+| # | Finding | Severity | Impact |
+|---|---------|----------|--------|
+## Proposed Approach
+<minimal-change plan, alternatives considered + why rejected>
+```
+
+## `checklists.md`
+
+```markdown
+# Checklists — <task_id>
+## Pre-execution
+- [ ] Governance rules loaded (.agm)
+- [ ] Memory context loaded
+## Execution
+- [ ] <step 1>
+- [ ] <step 2>
+## Post-execution
+- [ ] Build passes
+- [ ] No unused usings/vars introduced
+```
+
+## `qa.md`
+
+```markdown
+# QA — <task_id>
+| # | Check | Method | Result |
+|---|-------|--------|--------|
+| 1 | Logic preserved | diff review / tests | ✅/❌ |
+| 2 | Build succeeds  | dotnet build        | ✅/❌ |
+| 3 | Governance compliance | .agm rules audit | ✅/❌ |
+```
+
+## `result.md`
+
+```markdown
+# Result — <task_id>
+- **Status:** ✅ COMPLETED
+- **Summary:** <what changed, 3–5 bullets>
+- **Files touched:** <count generated / modified>
+- **Follow-ups:** <deferred items, or "none">
+- **Memory updated:** memory/recent/<year>-<month>/<ddHHmmss>-<slug>.md
+```
+
+---
+
+ฉันอยากกำหนด Boundary สำคัญของกฎเกณฑ์เหล่านี้ด้วยคือ
+
+## Boundary ที่สำคัญ
+
+### Memory ไม่ควรเก็บ
+
+- Transcript การคุยทั้งหมด
+- Tool output ดิบ
+- Prompt ทุก invocation
+- รายละเอียด step-by-step ทุกอย่างที่ Agent ทำ
+- Hidden chain-of-thought
+- ข้อมูลที่ไม่มี source หรือไม่รู้ว่ายัง valid อยู่หรือไม่
+
+### Tasks ไม่ควรเก็บ
+
+- Permanent knowledge ที่ถูกใช้ข้ามหลายงานโดยไม่มีการ promote
+- Raw telemetry
+- Prompt template ที่ copy มาจากที่อื่น
+- Changelog ของระบบทั้งโครงการ
+
+### Logs ไม่ควรเป็น
+
+- Project documentation
+- Memory ที่ Agent โหลดทุกครั้ง
+- พื้นที่เก็บ prompt template
+- พื้นที่เก็บผลลัพธ์แบบที่มนุษย์ต้องไล่อ่านเอง
+
+---
+
+8. ยังมี skill `agm-create-feature` / `agm-create-unit-test` / `agm-refactor-fe` / `agm-refactor-be` / `agm-refactor-sql` ต้องเอาออกไหม เพราะมีทำ `agm-fe` / `agm-be` / `agm-sql` ไว้แทน `agm-create-feature` แล้ว ส่วน unit-test จะเป็น passive skill ที่ model ประเมินแล้วหากงานยากทำให้เลย แต่หากไม่ยากจะ recommendation ให้ผู้ใช้งานตัดสินใจสร้าง และ `agm-refactor` ครอบคลุมการป้อนว่าจะเป็น fe, be, sql มันจะต้องหายไปจาก list skill
+
+---
+
+ทั้ง 8 ข้อนี้มีความสำคัญต่อฉันมาก ๆ ได้โปรดทำการวิเคราะห์อย่างละเอียด ก่อนแตก task สำหรับปรับแก้ไข
+
+---
+---
+
+# หมายเหตุการตรวจสอบ — จุดที่ยังขัดแย้งกันเอง (ต้องตัดสินใจก่อนส่งให้ model)
+
+> ส่วนนี้เป็นบันทึกการตรวจ ไม่ใช่เนื้อหาของ spec — ลบทิ้งได้เมื่อเคลียร์ครบแล้ว
+
+## ⚠️ ต้องเลือกอย่างใดอย่างหนึ่ง (ไม่ได้แก้ให้ เพราะจะเปลี่ยนความหมาย)
+
+1. **ตำแหน่งของ execution log ขัดกัน** — ข้อ 7 บอกให้เก็บที่ `reports/<year>-<month>/<ddHHmmss>-context.md` แต่ตัว template เองระบุ `tasks/<year>-<month>/<task_id>/execution_log.md` ถึง 3 จุด (FILE LOCATION, Linked Artifacts, Completion Checklist) → ต้องระบุว่าเป็นไฟล์เดียวกันที่อยู่ที่ไหน หรือเป็นคนละไฟล์ (log อยู่ใน task / report เป็นสรุปรวม)
+
+2. **format ของ `timestamp` ในข้อ 5 ขัดกัน** — spec เขียน `yyyy-MM-dd HH:mm:ss` แต่ตัวอย่าง JSON ใช้ ISO-8601 UTC `2026-07-21T04:46:07.171Z` → ต้องเลือกหนึ่งแบบ (ข้อ 6 ก็ใช้แบบ ISO-8601 เช่นกัน)
+
+3. **ข้อ 4 ไม่ได้ระบุ `execution_log.md`** ในรายการไฟล์ของ task folder แต่ template อ้างถึงว่าอยู่ใน folder นั้น → ถ้าเก็บใน task folder ต้องเพิ่มเข้าไปในลิสต์ข้อ 4
+
+4. **path `agents/simulation/...` ใน Linked Artifacts** เป็น folder ที่ไม่ได้นิยามไว้ในข้อ 3–7 เลย และลำดับ segment กลับด้านจากที่อื่น (`<session_id>/<year>-<month>` แทนที่จะเป็น `<year>-<month>/<session_id>`) → ต้องนิยามเพิ่ม หรือปรับลำดับให้ตรงมาตรฐาน
+
+5. **ข้อ 6 spec เขียนว่าเก็บ `<prompt command>` เฉย ๆ แต่ตัวอย่างขึ้นต้นด้วย `Command:`** → ระบุให้ชัดว่ามี prefix นี้เสมอหรือไม่
+
+6. **Completion Checklist ไม่ครบตามหมายเหตุข้อ 3** — ขาด 2 ขั้นตอนคือ "ลบไฟล์ออกจาก `memory/current/`" และ "อัปเดตสรุปสั้น ๆ ลง `memory/project.md`" ซึ่งเป็นหัวใจของข้อ 2 ที่บอกว่าแก้ไม่หายสักที
+
+7. **ข้อ 6 อนุญาต `<session_id|context_id|room_id>` แต่ template เขียนแค่ `<session_id>`** → ควรใช้สัญลักษณ์เดียวกันทั้งเอกสาร
+
+8. **ข้อ 5 มี field `role`, `requester`, `identity_source` แต่ Metadata ของ template ไม่มีแถวเหล่านี้** → ถ้าต้องการให้ trace กันได้ ควรเพิ่มใน Metadata ด้วย (และ `role` ยังไม่มีค่าตัวอย่าง)
+
+## ✅ จุดที่แก้ให้แล้ว (typo / notation ไม่กระทบความหมาย)
+
+| จุด | เดิม | แก้เป็น |
+|-----|------|---------|
+| ข้อ 8 | `amg-create-feature`, `amg-refactor-sql` | `agm-create-feature`, `agm-refactor-sql` |
+| ข้อ 8 | `modl` | `model` |
+| ข้อ 5 (ตัวอย่าง) | `"log_typ"`, `"reqeust"` | `"log_type"`, `"request"` |
+| ข้อ 3 | `memory/**/.md` | `memory/**/*.md` |
+| ข้อ 3 | `yyyyMMddhhmmss-xxxx.md` | `yyyyMMddHHmmss-xxxx.md` |
+| ทุกจุด | `ddhhmmss` (hh = 12 ชม./ชนกับ MM ของเดือน) | `ddHHmmss` ให้ตรงกับข้อ 7 ที่เขียน `ddHHmmss` อยู่แล้ว |
+| ข้อ 4 | `<tasks_id>` | `<task_id>` |
+| ข้อ 4 (ตัวอย่าง) | `tasks/22204120/result.md`, `tasks/complete/22204120/brief.md` | เติม `<year>-<month>` ที่หายไป → `tasks/2026-07/...`, `tasks/complete/2026-07/...` |
+| ข้อ 3.1 / 3.2 (ตัวอย่าง) | `2026-07/22204120-...` | เติม prefix `memory/recent/`, `memory/current/` |
+| template + checklist + `result.md` | `memory/<year>-<month>/...` | `memory/recent/<year>-<month>/...` ตามข้อ 3.1 |
+| ข้อ 4 | `[brief, analysis, checklists,qa,result]` | เติมนามสกุล `.md` + เว้นวรรค |
+| ข้อ 3.1 | ชื่อไฟล์ตัวอย่างถูกตัดบรรทัดกลางคำ | รวมเป็นบรรทัดเดียว |
+| ข้อ 8 | `passive skills ที่ modl ประเมิน` | `passive skill ที่ model ประเมิน` |
+
+## ℹ️ ข้อสังเกตเชิงโครงสร้าง
+
+- บล็อก "Boundary ที่สำคัญ" ถูกวางแทรกอยู่ระหว่าง Appendix ของข้อ 7 กับข้อ 8 ทำให้อ่านแล้วเหมือนเป็นส่วนหนึ่งของ template → แนะนำย้ายไปไว้ท้ายเอกสารเป็นหัวข้อแยก (ยังไม่ย้ายให้ เพราะจะเปลี่ยนโครงเอกสาร)
+- ข้อ 3 พูดถึงแค่ `memory` / `logs` / `tasks` แต่ข้อ 6–7 เพิ่ม `prompts` / `reports` เข้ามา → ถ้าจะให้ครบ ควรระบุ 5 folder ตั้งแต่ข้อ 3
+
+### [2026-07-22 23:11:45]
+006006
+
+### [2026-07-22 23:31:03]
+ข้อ 7 prompts แค่ raw prompt นะไม่ใช้ task ย้ายไป prompt
+
+ส่วน option เก็บ light|standard|regulated
+
+  - ใช้ light|full และแยก qa_mode/assurance: ชัดที่สุดและตรง requirement
+  - แก้เฉพาะไม่ให้ start scaffold task: patch เล็ก แต่ checkpoint/validate/complete/history จะยังพังหรือสร้าง task ทางอ้อม
+ดำเนินการ
+
+----
+- .agrimap-agent/
+- tasks/cancelled (แต่ไม่น่ามี)
+- workflow_depth
+- agm-analyze / agm-design คงไว้ << แต่ agm-design ให้รวบทุกศาสตร์ เช่น fe/be/sql/architecture
+
+Raw Prompt ตาม AGENTS.md ทำงานแค่ท่ แค่ที่ project นี้รึเปล่าอย่าสับสน เพราะ AGENTS.md ไม่ได้เขียนแบบนี้บน project ปลายทางที่เอา skills ไปใช้งาน
+
+ดำเนินการปรับแก้ไขได้หากเข้าใจไม่มีคำถาม
+
+### [2026-07-22 23:31:04]
+ฉันจะไปนอนแล้วหวังว่า นายจะทำงานได้ครบทุกข้อนะ ทำเสร็จสรุป coverage martrix ออกมาเลย ข้อไหนตามสรุปมะกี้ทำไปแล้วบ้าง

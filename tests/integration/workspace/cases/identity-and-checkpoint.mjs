@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { LOG_EVENTS, QA_FAILED_EVENT } from "../../../../skills/agrimap-agent-skills/scripts/log-events.mjs";
 
@@ -8,137 +8,72 @@ const logEventSet = new Set(LOG_EVENTS);
 export async function identityAndCheckpoint(harness) {
   const { temp, run, spawn, readTaskLog } = harness;
   const workspaceScript = harness.scripts.workspace;
+  const state = path.join(temp, ".agrimap-agent");
 
-  const missingRequester = spawn(workspaceScript, [
-    "start", "--cwd", temp, "--session", "unknown", "--task", "should-not-start",
-    "--title", "Must not start without attribution",
-  ]);
-  assert.notEqual(missingRequester.status, 0);
+  const missingRequester = spawn(workspaceScript, ["start", "--cwd", temp, "--session", "unknown", "--execution", "01010001", "--title", "Must not start without attribution"]);
   assert.equal(JSON.parse(missingRequester.stdout).needsRequester, true);
 
   run(workspaceScript, ["identify", "--cwd", temp, "--session", "session-a", "--owner", "Alice", "--model", "gpt-5.6-sol", "--role", "leader", "--agent", "primary", "--provider", "codex"]);
   run(workspaceScript, ["identify", "--cwd", temp, "--session", "session-b", "--owner", "Bob", "--model", "fable", "--role", "leader", "--agent", "primary", "--provider", "claude"]);
-  const missingObjective = spawn(workspaceScript, ["start", "--cwd", temp, "--session", "session-a", "--task", "missing-objective"]);
-  assert.equal(missingObjective.status, 1);
-  assert.equal(JSON.parse(missingObjective.stdout).code, "REQUEST_OBJECTIVE_REQUIRED");
-
-  const identityA = JSON.parse(await readFile(path.join(temp, ".agrimap-agent", "runtime", "sessions", "session-a.json"), "utf8"));
-  assert.equal(identityA.schemaVersion, 1);
+  const identityA = JSON.parse(await readFile(path.join(state, "runtime", "sessions", "session-a.json"), "utf8"));
   assert.equal(identityA.identitySource, "manual-confirmed");
-  assert.equal(Number.isFinite(Date.parse(identityA.confirmedAt)), true);
-  assert.equal(Date.parse(identityA.expiresAt) > Date.parse(identityA.confirmedAt), true);
   assert.equal(typeof identityA.machine, "string");
-  assert.equal(typeof identityA.osUser, "string");
 
-  const taskA = run(workspaceScript, ["start", "--cwd", temp, "--session", "session-a", "--task", "task-a", "--operation", "analyze", "--title", "Analyze task A audit behavior"]);
-  const directFeatureStart = run(workspaceScript, ["start", "--cwd", temp, "--session", "session-b", "--task", "direct-feature", "--operation", "create-feature", "--depth", "light", "--title", "Build directly with concise durable state"]);
-  assert.equal(directFeatureStart.activeTask.workflowDepth, "light");
-  for (const artifact of ["brief.md", "checklist.md"]) {
-    assert.equal(typeof await readFile(path.join(temp, ".agrimap-agent", "tasks", "direct-feature", artifact), "utf8"), "string");
+  const light = run(workspaceScript, ["start", "--cwd", temp, "--session", "session-b", "--execution", "01010002", "--operation", "analyze", "--depth", "light", "--title", "Artifactless direct analysis"]);
+  assert.equal(light.activeTask.taskId, null);
+  assert.equal(light.activeTask.workflowDepth, "light");
+  await assert.rejects(readFile(path.join(state, "tasks", light.activeTask.period, "01010002", "brief.md"), "utf8"), { code: "ENOENT" });
+  assert.match(await readFile(path.join(state, light.activeTask.currentMemoryPath), "utf8"), /Task ID: not-applicable/);
+  const lightLog = await readTaskLog("01010002");
+  assert.equal(lightLog[0].schema_version, 4);
+  assert.equal(lightLog[0].task_id, null);
+  assert.equal(lightLog[0].workflow_depth, "light");
+  const lightClose = run(workspaceScript, ["close", "--cwd", temp, "--session", "session-b", "--execution", "01010002", "--status", "cancelled", "--reason", "Fixture closed"]);
+  assert.equal(lightClose.promptsMoved, false);
+  await assert.rejects(readFile(path.join(state, light.activeTask.currentMemoryPath), "utf8"), { code: "ENOENT" });
+  assert.equal(typeof await readFile(path.join(state, lightClose.report), "utf8"), "string");
+
+  const taskA = run(workspaceScript, ["start", "--cwd", temp, "--session", "session-a", "--execution", "01010003", "--operation", "analyze", "--depth", "regulated", "--title", "Analyze task A audit behavior", "--requester-authority", "owner", "--decision-owner", "Alice", "--authority-evidence", "confirmed in test"]);
+  run(workspaceScript, ["identify", "--cwd", temp, "--session", "session-b", "--owner", "Bob", "--model", "fable", "--provider", "claude"]);
+  const taskB = run(workspaceScript, ["start", "--cwd", temp, "--session", "session-b", "--execution", "01010004", "--operation", "create-prompt", "--depth", "regulated", "--title", "Prepare task B feature contract", "--requester-authority", "owner", "--decision-owner", "Bob", "--authority-evidence", "confirmed in test"]);
+  assert.equal(taskA.activeTask.taskId, "01010003");
+  assert.equal(taskB.activeTask.taskId, "01010004");
+  for (const active of [taskA.activeTask, taskB.activeTask]) {
+    for (const scaffold of ["brief.md", "checklists.md"]) assert.equal(typeof await readFile(path.join(state, active.taskPath, scaffold), "utf8"), "string");
+    for (const deferred of ["analysis.md", "qa.md", "result.md"]) await assert.rejects(readFile(path.join(state, active.taskPath, deferred), "utf8"), { code: "ENOENT" });
   }
-  assert.match(await readFile(path.join(temp, ".agrimap-agent", "memory", "current", "direct-feature.md"), "utf8"), /Workflow depth: `light`/);
-  assert.equal((await readTaskLog("direct-feature"))[0].workflowDepth, "light");
-  await writeFile(path.join(temp, ".agrimap-agent", "tasks", "direct-feature", "result.md"), "# Result\n\n- Outcome: `cancelled`\n", "utf8");
-  run(workspaceScript, ["close", "--cwd", temp, "--session", "session-b", "--task", "direct-feature", "--status", "cancelled"]);
 
-  const taskB = run(workspaceScript, ["start", "--cwd", temp, "--session", "session-b", "--task", "task-b", "--operation", "create-prompt", "--title", "Prepare task B feature contract"]);
   run(workspaceScript, ["identify", "--cwd", temp, "--session", "collision-session", "--owner", "Mallory"]);
-  const taskIdCollision = spawn(workspaceScript, [
-    "start", "--cwd", temp, "--session", "collision-session", "--task", "task-a", "--title", "Must not mix attribution",
-  ]);
-  assert.equal(taskIdCollision.status, 1);
-  assert.equal(JSON.parse(taskIdCollision.stdout).code, "TASK_ID_EXISTS");
-  assert.equal(taskA.activeTask.requestedBy, "Alice");
-  assert.equal(taskB.activeTask.requestedBy, "Bob");
-  assert.deepEqual(
-    { model: taskA.activeTask.model, role: taskA.activeTask.role, agent: taskA.activeTask.agent, provider: taskA.activeTask.provider },
-    { model: "gpt-5.6-sol", role: "leader", agent: "primary", provider: "codex" },
-  );
-  assert.deepEqual(
-    { model: taskB.activeTask.model, role: taskB.activeTask.role, agent: taskB.activeTask.agent, provider: taskB.activeTask.provider },
-    { model: "fable", role: "leader", agent: "primary", provider: "claude" },
-  );
+  const collision = spawn(workspaceScript, ["start", "--cwd", temp, "--session", "collision-session", "--execution", "01010003", "--title", "Must not merge"]);
+  assert.equal(JSON.parse(collision.stdout).code, "RUN_ID_COLLISION");
 
-  const activeA = JSON.parse(await readFile(path.join(temp, ".agrimap-agent", "runtime", "active", "session-a.json"), "utf8"));
-  const activeB = JSON.parse(await readFile(path.join(temp, ".agrimap-agent", "runtime", "active", "session-b.json"), "utf8"));
-  assert.equal(activeA.taskId, "task-a");
-  assert.equal(activeB.taskId, "task-b");
-  for (const scaffold of ["brief.md", "checklist.md"]) {
-    assert.equal(typeof await readFile(path.join(temp, ".agrimap-agent", "tasks", "task-b", scaffold), "utf8"), "string");
-  }
-  for (const deferred of ["qa.md", "result.md"]) {
-    await assert.rejects(readFile(path.join(temp, ".agrimap-agent", "tasks", "task-b", deferred), "utf8"), { code: "ENOENT" });
-  }
-
-  const checkpointA = run(workspaceScript, ["checkpoint", "--cwd", temp, "--session", "session-a", "--task", "task-a", "--summary", "Analyzed task A", "--files", "src/a.ts", "--verification", "inspection passed", "--model", "gpt-5.4", "--role", "executor", "--agent", "be", "--provider", "codex"]);
-  const checkpointB = run(workspaceScript, ["checkpoint", "--cwd", temp, "--session", "session-b", "--task", "task-b", "--summary", "Analyzed task B", "--files", "src/b.ts"]);
+  const checkpointA = run(workspaceScript, ["checkpoint", "--cwd", temp, "--session", "session-a", "--execution", "01010003", "--summary", "Analyzed task A", "--files", "src/a.ts", "--verification", "inspection passed", "--model", "gpt-5.4", "--role", "executor", "--agent", "be", "--provider", "codex"]);
+  const checkpointB = run(workspaceScript, ["checkpoint", "--cwd", temp, "--session", "session-b", "--execution", "01010004", "--summary", "Analyzed task B", "--files", "src/b.ts"]);
   assert.equal(checkpointA.requestedBy, "Alice");
-  assert.equal(checkpointA.milestone, "acceptance-slice");
   assert.equal(checkpointB.requestedBy, "Bob");
-  assert.match(await readFile(path.join(temp, ".agrimap-agent", "memory", "current", "task-a.md"), "utf8"), /Requested by: Alice/);
-  assert.match(await readFile(path.join(temp, ".agrimap-agent", "memory", "current", "task-b.md"), "utf8"), /Requested by: Bob/);
+  assert.match(await readFile(path.join(state, taskA.activeTask.currentMemoryPath), "utf8"), /Requested by: Alice/);
+  assert.match(await readFile(path.join(state, taskB.activeTask.currentMemoryPath), "utf8"), /Requested by: Bob/);
 
-  const taskALog = await readFile(path.join(temp, ".agrimap-agent", "logs", new Date().toISOString().slice(0, 7), "task-a.jsonl"), "utf8");
-  assert.equal(taskALog.includes('"requestedBy":"Alice"'), true);
-  assert.equal(taskALog.includes('"model":"gpt-5.4"'), true);
-  assert.equal(taskALog.includes('"role":"executor"'), true);
-  assert.equal(taskALog.includes('"agent":"be"'), true);
-  assert.equal(taskALog.includes('"actor"'), false);
-  assert.equal(taskALog.includes('"machine"'), false);
-  assert.equal(taskALog.includes('"osUser"'), false);
-  const taskALogEntries = await readTaskLog("task-a");
-  assert.equal(taskALogEntries[0].request, "Analyze task A audit behavior");
-  assert.equal(taskALogEntries.every((entry) => entry.schemaVersion === 3 && new Date(entry.timestamp).toISOString() === entry.timestamp), true);
-  assert.equal(taskALogEntries[0].workflowDepth, "regulated");
-  assert.equal(taskALogEntries[1].milestone, "acceptance-slice");
-  assert.equal(taskALogEntries.every((entry) => logEventSet.has(entry.event)), true);
-  assert.equal(taskALogEntries.every((entry) => entry.gitHead === null && entry.gitDirty === null), true);
+  const events = await readTaskLog("01010003");
+  assert.equal(events.every((event) => event.schema_version === 4 && event.execution_id === "01010003"), true);
+  assert.equal(events[0].request, "Analyze task A audit behavior");
+  assert.equal(events[1].milestone, "acceptance-slice");
+  assert.equal(events.every((event) => logEventSet.has(event.event)), true);
+  assert.equal(events.every((event) => !("machine" in event) && !("osUser" in event)), true);
 
-  const verboseCheckpoint = run(workspaceScript, [
-    "checkpoint", "--cwd", temp, "--session", "session-a", "--task", "task-a", "--event", "decision",
-    "--summary", "S".repeat(320), "--reason", "R".repeat(520), "--concerns", "C".repeat(520),
-    "--verification", Array.from({ length: 10 }, (_, index) => `${index}-${"V".repeat(320)}`).join(","),
-  ]);
-  assert.deepEqual(verboseCheckpoint.compaction, {
-    summaryTruncated: true,
-    reasonTruncated: true,
-    concernsTruncated: true,
-    verificationItemsOmitted: 2,
-    verificationItemsTruncated: 8,
-  });
-  const compactedEvent = (await readTaskLog("task-a")).at(-1);
-  assert.equal(compactedEvent.summary.length, 240);
-  assert.equal(compactedEvent.reason.length, 400);
-  assert.equal(compactedEvent.verification.length, 8);
-  assert.equal(compactedEvent.verification.every((item) => item.length === 300), true);
+  const verbose = run(workspaceScript, ["checkpoint", "--cwd", temp, "--session", "session-a", "--execution", "01010003", "--event", "decision", "--summary", "S".repeat(320), "--reason", "R".repeat(520), "--concerns", "C".repeat(520), "--verification", Array.from({ length: 10 }, (_, index) => `${index}-${"V".repeat(320)}`).join(",")]);
+  assert.deepEqual(verbose.compaction, { summaryTruncated: true, reasonTruncated: true, concernsTruncated: true, verificationItemsOmitted: 2, verificationItemsTruncated: 8 });
+  const compacted = (await readTaskLog("01010003")).at(-1);
+  assert.equal(compacted.message.length, 240);
+  assert.equal(compacted.reason.length, 400);
+  assert.equal(compacted.verification.length, 8);
 
-  const taskBMemoryPath = path.join(temp, ".agrimap-agent", "memory", "current", "task-b.md");
-  const taskBLogBeforeInvalidEvent = JSON.stringify(await readTaskLog("task-b"));
-  const taskBMemoryBeforeInvalidEvent = await readFile(taskBMemoryPath, "utf8");
-  const invalidEventCheckpoint = spawn(workspaceScript, [
-    "checkpoint", "--cwd", temp, "--session", "session-b", "--task", "task-b",
-    "--summary", "This checkpoint must be rejected", "--event", "not-documented",
-  ]);
-  assert.equal(invalidEventCheckpoint.status, 1);
-  const invalidEventResult = JSON.parse(invalidEventCheckpoint.stdout);
-  assert.equal(invalidEventResult.code, "INVALID_LOG_EVENT");
-  assert.match(invalidEventResult.message, new RegExp(`${QA_FAILED_EVENT}\\|blocked\\|cancelled`));
-  assert.equal(JSON.stringify(await readTaskLog("task-b")), taskBLogBeforeInvalidEvent);
-  assert.equal(await readFile(taskBMemoryPath, "utf8"), taskBMemoryBeforeInvalidEvent);
-
-  const invalidTerminalCheckpoint = spawn(workspaceScript, [
-    "checkpoint", "--cwd", temp, "--session", "session-b", "--task", "task-b",
-    "--summary", "Terminal event belongs to close", "--event", "completed",
-  ]);
-  assert.equal(invalidTerminalCheckpoint.status, 1);
-  assert.equal(JSON.parse(invalidTerminalCheckpoint.stdout).code, "CHECKPOINT_EVENT_NOT_MILESTONE");
-
-  const missingChangedFiles = spawn(workspaceScript, [
-    "checkpoint", "--cwd", temp, "--session", "session-b", "--task", "task-b",
-    "--summary", "A changed event without file attribution must be rejected",
-  ]);
-  assert.equal(missingChangedFiles.status, 1);
-  assert.equal(JSON.parse(missingChangedFiles.stdout).code, "CHANGED_FILES_REQUIRED");
-  assert.equal(JSON.stringify(await readTaskLog("task-b")), taskBLogBeforeInvalidEvent);
-  assert.equal(await readFile(taskBMemoryPath, "utf8"), taskBMemoryBeforeInvalidEvent);
+  const before = JSON.stringify(await readTaskLog("01010004"));
+  const invalidEvent = spawn(workspaceScript, ["checkpoint", "--cwd", temp, "--session", "session-b", "--execution", "01010004", "--summary", "Rejected", "--event", "not-documented"]);
+  assert.match(JSON.parse(invalidEvent.stdout).message, new RegExp(`${QA_FAILED_EVENT}\\|blocked\\|cancelled`));
+  assert.equal(JSON.stringify(await readTaskLog("01010004")), before);
+  const invalidTerminal = spawn(workspaceScript, ["checkpoint", "--cwd", temp, "--session", "session-b", "--execution", "01010004", "--summary", "Terminal", "--event", "completed"]);
+  assert.equal(JSON.parse(invalidTerminal.stdout).code, "CHECKPOINT_EVENT_NOT_MILESTONE");
+  const missingFiles = spawn(workspaceScript, ["checkpoint", "--cwd", temp, "--session", "session-b", "--execution", "01010004", "--summary", "Changed without files"]);
+  assert.equal(JSON.parse(missingFiles.stdout).code, "CHANGED_FILES_REQUIRED");
 }

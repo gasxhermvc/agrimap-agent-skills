@@ -6,7 +6,7 @@
 - Workflow depth: default `light`; allowed `light`, `standard`, `regulated`
 - Mode: `product-read-only`
 - Purpose: Review code or artifacts with evidence-backed findings.
-- Deliverable: direct findings at light; tracked review artifact only at standard/regulated
+- Deliverable: direct findings at light; tracked analysis.md only at standard/regulated
 
 ## Inputs and help
 

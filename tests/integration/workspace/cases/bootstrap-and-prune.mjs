@@ -67,7 +67,7 @@ export async function bootstrapAndPrune(harness) {
   const lowerBoundPrune = run(workspaceScript, ["prune", "--cwd", temp]);
   assert.equal(lowerBoundPrune.pruned, true);
   assert.equal(lowerBoundPrune.retentionDays, 10);
-  assert.equal(lowerBoundPrune.removed.includes("prune-old.md"), true);
+  assert.equal(lowerBoundPrune.removed.includes("memory/recent/prune-old.md"), true);
   await assert.rejects(readFile(oldRecentPath, "utf8"), { code: "ENOENT" });
   for (const filePath of protectedPrunePaths) {
     assert.equal(await readFile(filePath, "utf8"), "protected prune fixture\n");
