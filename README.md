@@ -153,9 +153,9 @@ Project policy decides which durable `.agrimap-agent/` evidence is tracked. Raw 
 | `agm-prompt` | light/artifactless immutable Prompt Result V1→VN with explicit Main/Subagent ownership |
 | `agm-exec` | execute one decision-owner-approved prompt under task/QA rails |
 
-Removed aliases `agm-create-feature`, `agm-create-unit-test`, `agm-create-prompt`, `agm-refactor`, and `agm-refactor-fe|be|sql` are not distributed. Use `agm-prompt`, domain `action=refactor`, and the passive unit-test decision policy. Historical log/task operation strings remain readable.
+Removed aliases `agm-create-feature`, `agm-create-unit-test`, `agm-create-prompt`, `agm-refactor`, and `agm-refactor-fe|be|sql` are not distributed. Use `agm-prompt`, domain `action=refactor`, and the embedded unit-test decision capability. Historical log/task operation strings remain readable.
 
-The mandatory passive Goal Rules—Think Before Coding, Simplicity First, Surgical Changes, and Goal-Driven Execution—apply to all reasoning/implementation/QA/prompt operations without granting write authority. Passive routing is machine-readable in [`passive-skill-map.json`](skills/agrimap-agent-skills/assets/passive-skill-map.json). FE/BE work involving domain concatenation, redirects, or callbacks must select exact values from the authoritative [`application-url-matrix.md`](skills/agrimap-agent-skills/references/application-url-matrix.md), never generic fallback concatenation.
+Passive capabilities are embedded supporting skills that automatically contribute knowledge, disciplines, checks, and decision criteria to the active operation/action. They support both product-read-only and already-authorized product-write work; they do not replace the active context or independently create write intent. The mandatory Goal Rules—Think Before Coding, Simplicity First, Surgical Changes, and Goal-Driven Execution—are one such capability. Routing is machine-readable in [`passive-skill-map.json`](skills/agrimap-agent-skills/assets/passive-skill-map.json). FE/BE work involving domain concatenation, redirects, or callbacks must select exact values from the authoritative [`application-url-matrix.md`](skills/agrimap-agent-skills/references/application-url-matrix.md), never generic fallback concatenation.
 
 Audit examples:
 
@@ -170,7 +170,7 @@ For backend creation/testing, use `target_kind=be-main` with required `backend_p
 
 ## Front-end Engineer discipline
 
-The passive discipline is automatically composed with every FE analysis, design, architecture, feature, refactor, review, test, QA, and prompt task. It has no separate command. Every FE task classifies `fe-main` or `fe-library` and one phase:
+The embedded supporting discipline is automatically composed with every FE analysis, design, architecture, feature, refactor, review, test, QA, and prompt task. It augments the selected action and has no separate command. Every FE task classifies `fe-main` or `fe-library` and one phase:
 
 - `foundation`: structure, tokens, config, development infrastructure, Core/CodeBase/SharedComponent;
 - `active-development`: reuse discovery, consistency, consumer impact, technical-debt containment for multi-developer delivery;
@@ -189,7 +189,7 @@ Scanner results start as `discovered`. The Leader inspects suitability and promo
 
 ## Back-end Engineer discipline
 
-The passive discipline is automatically composed with every BE task and has no separate command. It requires:
+The embedded supporting discipline is automatically composed with every BE task, augments the selected action, and has no separate command. It requires:
 
 - `target_kind=be-main|be-library`;
 - `backend_profile=agmws|agmbo` only for `be-main`;

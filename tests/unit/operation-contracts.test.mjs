@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
+import { operationConfigIssues } from "../../tools/operation-entrypoints.mjs";
 import { projectRoot } from "../helpers/harness.mjs";
 
 const read = (relative) => readFile(path.join(projectRoot, ...relative.split("/")), "utf8");
@@ -35,20 +36,28 @@ test("SQL refactor exposes all five modes instead of a recommendation-only extra
   assert.match(elicitation, /ตอบเลขหรือ enum/);
 });
 
-test("domain façades resolve one action and keep passive capabilities read-only", async () => {
+test("domain façades separate safe action defaults from embedded capabilities", async () => {
+  let safeDefaultActions = 0;
   for (const name of ["fe", "be", "sql"]) {
     const operation = operations.operations.find((item) => item.operation === name);
     assert.equal(operation.mode, "action-routed");
     assert.match(operation.instructions.join("\n"), /Resolve exactly one action before inspection/i);
     const entrypoint = await read(`skills/agrimap-agent-skills/references/operations/${name}.md`);
     assert.match(entrypoint, /Resolve exactly one action.*before target inspection or product writes/i);
-    for (const action of operation.actions.filter((item) => item.activation === "explicit-or-passive")) {
+    assert.match(entrypoint, /fallback is action routing, not a passive capability/i);
+    for (const action of operation.actions.filter((item) => item.activation === "explicit-or-safe-default")) {
       assert.equal(action.mode, "product-read-only");
+      safeDefaultActions += 1;
     }
   }
-  assert.match(lifecycle, /Passive capability activation never grants write authority/);
-  assert.match(passiveCapabilities, /never grant product-write authority/);
-  assert.match(passiveCapabilities, /product-read-only action may classify\/recommend tests but never create them/);
+  assert.ok(safeDefaultActions > 0);
+  const unsafe = structuredClone(operations);
+  unsafe.operations.find((item) => item.operation === "fe").actions.find((item) => item.activation === "explicit-or-safe-default").mode = "product-write";
+  assert.ok(operationConfigIssues(unsafe).some((issue) => /safe-default activation must be product-read-only/.test(issue)));
+  assert.match(lifecycle, /Embedded passive capabilities support the selected read or authorized write action/);
+  assert.match(passiveCapabilities, /embedded supporting skill/i);
+  assert.match(passiveCapabilities, /both product-read-only and already-authorized product-write work/);
+  assert.match(passiveCapabilities, /In read-only actions it may classify or recommend tests but never write them/);
   assert.match(passiveCapabilities, /Explicit `action=test`/);
 });
 
@@ -56,7 +65,7 @@ test("SQL explain is evidence-labelled and cannot execute or edit", () => {
   const sql = operations.operations.find((item) => item.operation === "sql");
   const explain = sql.actions.find((item) => item.name === "explain");
   assert.equal(explain.mode, "product-read-only");
-  assert.equal(explain.activation, "explicit-or-passive");
+  assert.equal(explain.activation, "explicit-or-safe-default");
   for (const marker of ["FACT", "INFERENCE", "UNKNOWN", "do not execute SQL", "connect to a database", "never edits"])
     assert.ok(passiveCapabilities.includes(marker), `SQL explain marker missing: ${marker}`);
 });

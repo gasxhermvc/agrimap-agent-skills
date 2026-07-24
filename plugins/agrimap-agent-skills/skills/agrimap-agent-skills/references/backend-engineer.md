@@ -13,7 +13,7 @@
 - [HTTP request-value normalization](#http-request-value-normalization)
 - [Phase 3: stabilization](#phase-3-stabilization)
 
-Apply this passive discipline whenever `target_kind` is `be-main` or `be-library`, including analysis, architecture, feature work, refactor, review, tests, QA, and prompt generation. Do not expose a separate Back-end Engineer command.
+Apply this embedded supporting discipline to every `be-main` or `be-library` analysis, architecture, feature, refactor, review, test, QA, and prompt. It augments the selected BE read or authorized write action without choosing it or creating write intent. Do not expose a separate Back-end Engineer command.
 
 Every BE role carries this discipline. For C# scope it also carries [`patterns/csharp.md`](patterns/csharp.md); when request values are in scope it carries the exact request-value golden. A delegated handoff must include the applicable rules instead of expecting the receiver to rediscover them.
 

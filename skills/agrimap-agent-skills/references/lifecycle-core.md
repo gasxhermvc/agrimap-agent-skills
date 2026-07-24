@@ -12,7 +12,7 @@ Help and history remain light diagnostics and do not start a new lifecycle merel
 
 `workflow_depth` and `qa_mode` are separate. Use `qa_mode=not-applicable|light|full`; regulated work selects light or full assurance according to [qa-and-done.md](qa-and-done.md).
 
-For `action-routed` operations, resolve one action before target inspection. `analyze`, `design`, and SQL `explain` are product-read-only. `create`, `edit`, and explicit FE/BE `test` are product-write. Passive capability activation never grants write authority.
+For `action-routed` operations, resolve one action before target inspection. `analyze`, `design`, and SQL `explain` are product-read-only. `create`, `edit`, and explicit FE/BE `test` are product-write. Embedded passive capabilities support the selected read or authorized write action without selecting it or creating write intent.
 
 ## Persistence by depth
 

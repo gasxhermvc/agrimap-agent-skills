@@ -10,21 +10,21 @@
 
 ## Action gate
 
-Resolve exactly one action from an explicit `action=<name>` or unambiguous natural-language intent before target inspection or product writes. Passive activation supplies analysis only and never grants product-write authority.
+Resolve exactly one action before target inspection or product writes. Safe defaults are read-only; fallback is action routing, not a passive capability. Capabilities support the chosen read or authorized write but cannot choose it or create write intent.
 
 | Action | Mode | Activation | Allowed depth | Purpose |
 | --- | --- | --- | --- | --- |
-| `analyze` | `product-read-only` | `explicit-or-passive` | `light`, `standard`, `regulated` | Inspect frontend scope, behavior, callers, risks, and trade-offs without editing |
-| `design` | `product-read-only` | `explicit-or-passive` | `light`, `standard`, `regulated` | Define frontend flow, states, accessibility, validation, and acceptance without editing |
+| `analyze` | `product-read-only` | `explicit-or-safe-default` | `light`, `standard`, `regulated` | Inspect frontend scope, behavior, callers, risks, and trade-offs without editing |
+| `design` | `product-read-only` | `explicit-or-safe-default` | `light`, `standard`, `regulated` | Define frontend flow, states, accessibility, validation, and acceptance without editing |
 | `create` | `product-write` | `explicit` | `light` | Create a bounded new frontend slice |
 | `edit` | `product-write` | `explicit` | `light` | Modify a bounded existing frontend slice |
 | `refactor` | `product-write` | `explicit` | `light`, `standard`, `regulated` | Refactor frontend code under exactly one behavior mode and a proven preservation boundary |
-| `test` | `product-write` | `explicit` | `light` | Create explicitly requested or selected frontend tests after passive test advice |
+| `test` | `product-write` | `explicit` | `light` | Create explicitly requested or selected frontend tests after embedded test-decision advice |
 
 ## Inputs and help
 
 - Required: one action or unambiguous natural-language intent; an objective or pointed frontend target.
-- Conditional: phase and target_kind when repository evidence cannot resolve them; requester selection when passive test advice finds unspecified coverage.
+- Conditional: phase and target_kind when repository evidence cannot resolve them; requester selection when embedded test-decision advice finds unspecified coverage.
 - Minimal example: `$agm-fe action=edit target_files=src/order.component.ts objective="Handle the empty state"`
 
 ## Execute this contract
@@ -32,12 +32,12 @@ Resolve exactly one action from an explicit `action=<name>` or unambiguous natur
 1. Resolve exactly one action before inspection. Explicit action= wins; otherwise infer only from unambiguous verbs and report the resolved action. Ask one short question when create, edit, refactor, or read versus write remains ambiguous.
 2. For analyze/design, never edit product files. For create/edit/test, show the bounded slice, stay within light limits, and route broader work to agm-prompt before any product write.
 3. For action=refactor, require exactly one mode before editing, preserve the declared logic boundary, and stop with all five modes plus one recommendation when ambiguous.
-4. Run the passive test advisor during analyze, design, create, edit, and refactor. Suggest prioritized coverage but never create tests unless action=test, the requester explicitly asked, or required regression coverage is already inside authorized product-write scope.
+4. Apply the embedded test-decision capability during analyze, design, create, edit, and refactor. Classify required, recommended, or not_applicable; write tests only for action=test, a clear test request, or required coverage inside authorized implementation.
 
 ## Load now
 
 - [goal-rules.md](../goal-rules.md) — mandatory Think/Simplicity/Surgical/Goal-Driven discipline
-- [passive-capabilities.md](../passive-capabilities.md) — passive design and test-advisor boundaries
+- [passive-capabilities.md](../passive-capabilities.md) — embedded design/test-decision boundaries
 - [elicitation.md](../elicitation.md) — action, scope, and propose-first resolution
 - [frontend-engineer.md](../frontend-engineer.md) — frontend phase discipline
 - [patterns/frontend.md](../patterns/frontend.md) — current frontend contract

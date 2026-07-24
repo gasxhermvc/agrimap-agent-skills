@@ -252,7 +252,7 @@ const lifecycleCorePath = path.join(root, "skills", "agrimap-agent-skills", "ref
 const lifecycleCoreReference = await readFile(lifecycleCorePath, "utf8");
 for (const marker of ["Select `workflow_depth`", "`light`", "`standard`", "`regulated`", "Help and history remain light diagnostics", "Persistence by depth", "Only `standard|regulated` write", "Terminal lifecycle", "Milestone checkpoints", "behaviorally complete acceptance slice", "Boundaries"])
   if (!lifecycleCoreReference.includes(marker)) errors.push(`Lifecycle core missing marker: ${marker}`);
-for (const marker of ["For `action-routed` operations", "resolve one action before target inspection", "Passive capability activation never grants write authority", "must not create anything under `tasks/**`"])
+for (const marker of ["For `action-routed` operations", "resolve one action before target inspection", "Embedded passive capabilities support the selected read or authorized write action", "creating write intent", "must not create anything under `tasks/**`"])
   if (!lifecycleCoreReference.includes(marker)) errors.push(`Domain action boundary missing marker: ${marker}`);
 if (lifecycleCoreReference.split(/\r?\n/).length > 70) errors.push("Lifecycle core exceeds its 70-line budget.");
 const runtimeCoreReference = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "runtime-core.md"), "utf8");
@@ -452,11 +452,11 @@ for (const marker of ["light creates no tasks/** artifacts", "every depth requir
   if (!hookContextReference.includes(marker)) errors.push(`Hook lifecycle guidance missing marker: ${marker}`);
 
 const frontendDiscipline = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "frontend-engineer.md"), "utf8");
-if (!frontendDiscipline.includes("discipline layer, not a standalone workflow")) errors.push("Frontend engineering is not defined as a composable discipline.");
+if (!frontendDiscipline.includes("embedded supporting discipline is not a standalone workflow/alias")) errors.push("Frontend engineering is not defined as a composable discipline.");
 if (frontendDiscipline.includes("`/agm-fe-engineer`")) errors.push("Frontend engineering still declares a standalone alias.");
 
 const backendDiscipline = await readFile(path.join(root, "skills", "agrimap-agent-skills", "references", "backend-engineer.md"), "utf8");
-for (const marker of ["passive discipline", "`be-main`", "`be-library`", "`agmws`", "`agmbo`", "`foundation`", "`active-development`", "`stabilization`", "Do not add Type A/B/C or a required `change_kind`"])
+for (const marker of ["embedded supporting discipline", "`be-main`", "`be-library`", "`agmws`", "`agmbo`", "`foundation`", "`active-development`", "`stabilization`", "Do not add Type A/B/C or a required `change_kind`"])
   if (!backendDiscipline.includes(marker)) errors.push(`Backend discipline missing marker: ${marker}`);
 if (backendDiscipline.includes("Require `change_kind`")) errors.push("Backend discipline incorrectly requires change_kind.");
 for (const marker of ["## HTTP request-value normalization", "013-1-extensions-request-value-normalize.md", "both `be-main` and `be-library`", "direct `Request.Headers`", "require no DI registration", "Do not mass-replace mechanically"])

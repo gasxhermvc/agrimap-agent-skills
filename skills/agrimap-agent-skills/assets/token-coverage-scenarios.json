@@ -33,7 +33,7 @@
     },
     {
       "id": "analyze-fe-main-light",
-      "description": "Frontend analysis must receive the passive FE fundamentals",
+      "description": "Frontend analysis must receive the embedded supporting FE fundamentals",
       "operation": "analyze",
       "depth": "light",
       "activate": [
@@ -61,7 +61,7 @@
     },
     {
       "id": "diagnose-fe-main-light",
-      "description": "Frontend diagnosis must receive the passive FE fundamentals",
+      "description": "Frontend diagnosis must receive the embedded supporting FE fundamentals",
       "operation": "diagnose",
       "depth": "light",
       "activate": [
@@ -133,7 +133,7 @@
     },
     {
       "id": "review-fe-main-light",
-      "description": "Frontend review selects status plus the passive FE discipline",
+      "description": "Frontend review selects status plus the embedded supporting FE discipline",
       "operation": "review",
       "depth": "light",
       "activate": [
@@ -208,7 +208,7 @@
     },
     {
       "id": "passive-unit-test-fe-library-light",
-      "description": "Frontend passive unit-test decision through the FE discipline",
+      "description": "Frontend embedded unit-test decision through the FE discipline",
       "operation": "fe",
       "depth": "light",
       "mustLoad": [

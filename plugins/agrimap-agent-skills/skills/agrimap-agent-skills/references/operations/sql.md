@@ -10,16 +10,16 @@
 
 ## Action gate
 
-Resolve exactly one action from an explicit `action=<name>` or unambiguous natural-language intent before target inspection or product writes. Passive activation supplies analysis only and never grants product-write authority.
+Resolve exactly one action before target inspection or product writes. Safe defaults are read-only; fallback is action routing, not a passive capability. Capabilities support the chosen read or authorized write but cannot choose it or create write intent.
 
 | Action | Mode | Activation | Allowed depth | Purpose |
 | --- | --- | --- | --- | --- |
-| `analyze` | `product-read-only` | `explicit-or-passive` | `light`, `standard`, `regulated` | Inspect SQL scope, schema, callers, contracts, risks, and trade-offs without editing |
-| `design` | `product-read-only` | `explicit-or-passive` | `light`, `standard`, `regulated` | Define SQL objects, data flow, result and error contracts, deployment, and acceptance without editing |
+| `analyze` | `product-read-only` | `explicit-or-safe-default` | `light`, `standard`, `regulated` | Inspect SQL scope, schema, callers, contracts, risks, and trade-offs without editing |
+| `design` | `product-read-only` | `explicit-or-safe-default` | `light`, `standard`, `regulated` | Define SQL objects, data flow, result and error contracts, deployment, and acceptance without editing |
 | `create` | `product-write` | `explicit` | `light` | Create a bounded new SQL object or slice |
 | `edit` | `product-write` | `explicit` | `light` | Modify a bounded existing SQL object or slice |
 | `refactor` | `product-write` | `explicit` | `light`, `standard`, `regulated` | Refactor SQL under exactly one behavior mode while preserving declared results, transactions, side effects, errors, and deployment behavior |
-| `explain` | `product-read-only` | `explicit-or-passive` | `light`, `standard`, `regulated` | Explain SQL purpose, contracts, reads/writes, flow, transactions, errors, assumptions, and risks without execution or edits |
+| `explain` | `product-read-only` | `explicit-or-safe-default` | `light`, `standard`, `regulated` | Explain SQL purpose, contracts, reads/writes, flow, transactions, errors, assumptions, and risks without execution or edits |
 
 ## Inputs and help
 
@@ -40,7 +40,7 @@ Resolve exactly one action from an explicit `action=<name>` or unambiguous natur
 ## Load now
 
 - [goal-rules.md](../goal-rules.md) — mandatory Think/Simplicity/Surgical/Goal-Driven discipline
-- [passive-capabilities.md](../passive-capabilities.md) — passive design and SQL explain boundaries
+- [passive-capabilities.md](../passive-capabilities.md) — embedded design/explanation boundaries
 - [elicitation.md](../elicitation.md) — action and scope resolution
 - [patterns/sql.md](../patterns/sql.md) — current SQL contract, formatting, and validation
 

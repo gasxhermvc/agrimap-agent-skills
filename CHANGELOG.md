@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 2.0.0 - 2026-07-24
+
+- Redefined passive capabilities as embedded supporting skills that contribute relevant knowledge, understanding, criteria, and decisions to both read-only and already-authorized write work without selecting the operation, granting write authority, or expanding scope.
+- Renamed implicit action fallback from `explicit-or-passive` to `explicit-or-safe-default`, constrained every safe-default action to `product-read-only`, and added generator validation plus regression coverage for that boundary.
+- Clarified that Main is the primary writer, integration owner, and accountability point for a coupled assignment rather than a global prohibition on bounded Subagents or independent QA verification.
+
 ## 0.1.8 - 2026-07-24
 
 - Made concise task artifacts, current memory, and append-only audit logs mandatory for every activated operation at `light`, `standard`, and `regulated` depth; depth now controls coordination and QA rather than persistence.

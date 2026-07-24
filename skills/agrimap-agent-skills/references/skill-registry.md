@@ -18,8 +18,8 @@
 | `agm:elicitation` | `elicitation.md` | resolve parameter ที่ขาด |
 | `agm:input-and-scope` | `input-and-scope.md` | normalize inputs/attachments |
 | `agm:goal-rules` | `goal-rules.md` | mandatory Think/Simplicity/Surgical/Goal-Driven discipline |
-| `agm:passive-map` | `assets/passive-skill-map.json` | canonical passive capability routing and authority effects |
-| `agm:passive-capabilities` | `passive-capabilities.md` | passive design/test/refactor/SQL disciplines |
+| `agm:passive-map` | `assets/passive-skill-map.json` | canonical routing for embedded supporting capabilities and their non-authorizing effects |
+| `agm:passive-capabilities` | `passive-capabilities.md` | embedded design/test/refactor/SQL supporting disciplines |
 | `agm:refactor-modes` | `refactor-modes.md` | เลือกโหมด refactor |
 | `agm:memory-and-logs` | `memory-and-logs.md` | schema ของ memory/log |
 | `agm:subagents` | `subagents-and-branches.md` | delegation / workspace mode |

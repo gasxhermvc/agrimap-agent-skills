@@ -14,7 +14,7 @@
 
 Frontend code is usually broad rather than algorithmically difficult. Control technical debt by making reuse visible, keeping project patterns searchable, and changing the quality emphasis by delivery phase.
 
-This is a passive discipline layer, not a standalone workflow or alias. Apply it automatically whenever `target_kind` is `fe-main` or `fe-library`, including analysis, design, architecture, feature work, refactor, review, unit tests, QA, and prompt generation.
+This embedded supporting discipline is not a standalone workflow/alias. Apply it to every `fe-main` or `fe-library` analysis, design, architecture, feature, refactor, review, test, QA, and prompt. It supports the selected read or authorized write action without choosing it or creating write intent.
 
 **Every role carries the FE fundamentals.** No role — Leader, analyst, executor, reviewer, QA, or prompt generator — may act on FE scope without the agm-frontend fundamentals: the target detection result and selected golden collection, the Facade + Signal structure rules for `fe-main` (or service-first + public-API rules for `fe-library`), and the generated-API boundary ([patterns/gencode-api.md](patterns/gencode-api.md)). When work is delegated, the handoff prompt must inline these fundamentals (detection result, collection name, and the specific structural rules in scope) so the subagent holds them without re-reading the whole reference tree; a subagent that received an FE assignment without them must request the corrected handoff instead of improvising.
 

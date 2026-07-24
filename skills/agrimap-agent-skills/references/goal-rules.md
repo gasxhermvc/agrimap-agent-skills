@@ -1,6 +1,6 @@
-# Goal Rules — mandatory passive execution discipline
+# Goal Rules — mandatory embedded supporting discipline
 
-Load this reference for every operation listed in `assets/passive-skill-map.json` under capability `goal-rules`. These rules constrain reasoning and execution but never select a product-write action, expand scope, or grant write authority.
+`assets/passive-skill-map.json` maps this embedded discipline to operations. It supports read or authorized write reasoning without choosing actions, expanding scope, or creating write intent.
 
 ## GR-1 — Think Before Coding
 
@@ -27,7 +27,7 @@ Load this reference for every operation listed in `assets/passive-skill-map.json
 - Define observable acceptance and verification before product writes, then iterate until they pass or a genuine blocker is recorded.
 - For a reproducible behavior defect with an existing harness, capture a failing regression test before the fix.
 - Product-read-only, documentation-only, and non-executable work uses measurable evidence and may classify tests `not_applicable`.
-- Passive activation never creates tests or product files.
+- Embedded capabilities create no write intent; only the selected action and requester scope authorize tests or product files.
 
 ## Pre-write gate
 

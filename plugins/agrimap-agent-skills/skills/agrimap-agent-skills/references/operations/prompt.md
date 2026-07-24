@@ -25,7 +25,7 @@
 
 - [goal-rules.md](../goal-rules.md) — mandatory Think/Simplicity/Surgical/Goal-Driven discipline
 - [prompt.md](../prompt.md) — immutable Prompt Result lifecycle, source resolution, and package sections
-- [passive-capabilities.md](../passive-capabilities.md) — passive design discipline used while shaping the approved brief and acceptance
+- [passive-capabilities.md](../passive-capabilities.md) — embedded design support for brief and acceptance
 - [model-capability-matrix.yaml](../model-capability-matrix.yaml) — capability-profile routing labels
 
 ## Load only when the condition matches

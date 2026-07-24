@@ -5,7 +5,7 @@ description: AgriMap-project-only operation. Invoke implicitly only in recognize
 
 Scope gate: before loading lifecycle or applying any AgriMap workflow instruction, continue only when this turn contains AgriMap hook activation context, the current requester message explicitly invokes `agm-sql` using the active provider's native syntax, or the generated command adapter contains `AGRIMAP_EXPLICIT_ALIAS=agm-sql`. If none is present, stop applying this skill and answer as an ordinary non-AgriMap request without reading AgriMap references or writing AgriMap state.
 
-Run only operation `sql`. Resolve exactly one action and its action-level mode before target inspection or product writes; passive activation never grants write authority. Before conditional discipline, read exactly:
+Run only operation `sql`. Resolve action before writes. Safe defaults are read-only; capabilities assist without choosing the action or creating write intent. Before conditional discipline, read exactly:
 
 1. `../agrimap-agent-skills/references/lifecycle-core.md`
 2. `../agrimap-agent-skills/references/operations/sql.md`

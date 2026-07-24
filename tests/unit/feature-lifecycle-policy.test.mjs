@@ -26,7 +26,7 @@ test("light is artifactless while tracked depths complete the canonical five fil
   assert.match(workspaceScript, /PREMATURE_RESULT_ARTIFACT/);
 });
 
-test("removed aliases stay absent and unit tests are a passive deterministic decision", () => {
+test("removed aliases stay absent and unit tests use an embedded deterministic decision", () => {
   const names = operations.operations.map((item) => item.name);
   for (const removed of ["agm-create-feature", "agm-create-unit-test", "agm-refactor", "agm-refactor-fe", "agm-refactor-be", "agm-refactor-sql", "agm-create-prompt"]) {
     assert.equal(names.includes(removed), false);
@@ -35,8 +35,10 @@ test("removed aliases stay absent and unit tests are a passive deterministic dec
     assert.equal(names.includes(kept), true);
   }
   assert.match(passive, /`required`, `recommended`, or `not_applicable`/);
-  assert.match(passive, /Passive activation never grants write authority/);
-  assert.match(passive, /product-read-only action may classify\/recommend tests but never create them/);
+  assert.match(passive, /embedded supporting skill/i);
+  assert.match(passive, /both product-read-only and already-authorized product-write work/);
+  assert.match(passive, /In read-only actions it may classify or recommend tests but never write them/);
+  assert.match(passive, /edit authority—not the capability—authorizes that write/);
 });
 
 test("checkpoint memory and logs use provider-neutral compact budgets", () => {

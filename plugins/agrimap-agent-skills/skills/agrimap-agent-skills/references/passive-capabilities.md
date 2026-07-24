@@ -1,6 +1,6 @@
-# Passive capability catalog
+# Passive capability catalog — embedded supporting skills
 
-`assets/passive-skill-map.json` is the machine-readable routing source. This file owns the human discipline details. Passive capabilities are not public aliases: they may constrain or advise an operation, but never grant product-write authority, select a write action, or create product files by themselves.
+`assets/passive-skill-map.json` routes embedded supporting skills: relevant knowledge and decisions applied to the active operation/action. They support both product-read-only and already-authorized product-write work but cannot choose/replace context, change mode/scope, or create write intent; action/requester contracts remain authoritative.
 
 ## Goal Rules
 
@@ -15,12 +15,12 @@ The mandatory `goal-rules` capability is owned by [goal-rules.md](goal-rules.md)
 
 ## Passive FE/BE/refactor test decision
 
-- During analyze, design, create, edit, and refactor, inspect the existing test framework, behavior branches, validation, failure paths, boundaries, and regression risks.
+- During analyze, design, create, edit, or refactor, inspect test framework, behavior branches, validation, failures, boundaries, and regression risk.
 - Record exactly one decision with evidence: `required`, `recommended`, or `not_applicable`.
-- Select `required` when the already-authorized implementation changes behavior, data semantics, a public contract, a bug regression, multiple/failure branches, concurrency/security behavior, or a shared component with an existing test harness. Required tests remain inside the existing product-write authority and completion scope.
+- Select `required` for authorized changes to behavior, data, public contracts, regressions, multiple/failure branches, concurrency/security, or shared components with a test harness. Required tests stay within product-write scope.
 - Select `recommended` for lower-risk testable work. Explain the behavior and value, then let the requester decide whether to expand scope.
 - Select `not_applicable` only with a concrete reason such as documentation-only work or no executable behavior boundary.
-- Passive activation never grants write authority. Analyze, review, diagnose, design, SQL explain, and any other product-read-only action may classify/recommend tests but never create them.
+- In read-only actions it may classify or recommend tests but never write them. In an authorized `edit`, it may require a regression test inside scope; edit authority—not the capability—authorizes that write.
 - Explicit `action=test`, an unambiguous request to create tests, or a `required` decision inside an already-authorized product-write implementation grants test write intent. If behaviors are already named, create only those; otherwise create the smallest risk-complete set.
 - Keep test naming, placement, framework, and public-contract expectations consistent with repository evidence.
 

@@ -7,6 +7,7 @@ import { projectRoot } from "../helpers/harness.mjs";
 const read = (relative) => readFile(path.join(projectRoot, relative), "utf8");
 const operations = JSON.parse(await read("config/operations.json")).operations;
 const passiveMap = JSON.parse(await read("skills/agrimap-agent-skills/assets/passive-skill-map.json"));
+const passiveCapabilities = await read("skills/agrimap-agent-skills/references/passive-capabilities.md");
 const urlMatrix = await read("skills/agrimap-agent-skills/references/application-url-matrix.md");
 const hook = await read("skills/agrimap-agent-skills/scripts/hook-context.mjs");
 
@@ -20,9 +21,13 @@ test("Goal Rules are mandatory across the approved operation matrix", () => {
   }
 });
 
-test("passive capabilities never grant product writes", () => {
+test("passive capabilities are embedded support and independently non-authorizing", () => {
   assert.deepEqual(passiveMap.capabilities.map((item) => item.id), ["goal-rules", "refactor-guard", "test-decision", "design-discipline", "sql-explain"]);
   for (const capability of passiveMap.capabilities) assert.equal(capability.grantsProductWrite, false, capability.id);
+  assert.match(passiveCapabilities, /embedded supporting skill/i);
+  assert.match(passiveCapabilities, /both product-read-only and already-authorized product-write work/);
+  assert.match(passiveCapabilities, /cannot choose\/replace context/);
+  assert.match(passiveMap.capabilities.find((item) => item.id === "test-decision").authorityEffect, /supports the selected action/);
 });
 
 test("domain refactor replaces every standalone refactor alias", () => {

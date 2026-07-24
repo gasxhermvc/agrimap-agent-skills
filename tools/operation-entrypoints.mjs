@@ -73,12 +73,12 @@ export function operationConfigIssues(config) {
           if (actionNames.has(action.name)) issues.push(`${item.name}: duplicate action ${action.name}`);
           actionNames.add(action.name);
           if (!["product-read-only", "product-write"].includes(action?.mode)) issues.push(`${item.name}/${action.name}: invalid action mode`);
-          if (!["explicit", "explicit-or-passive"].includes(action?.activation)) issues.push(`${item.name}/${action.name}: invalid activation`);
+          if (!["explicit", "explicit-or-safe-default"].includes(action?.activation)) issues.push(`${item.name}/${action.name}: invalid activation`);
           if (!Array.isArray(action?.depths) || action.depths.length === 0 || action.depths.some((depth) => !item.depth.allowed.includes(depth))) {
             issues.push(`${item.name}/${action.name}: depths must be a non-empty subset of operation depths`);
           }
           if (!String(action?.purpose || "").trim()) issues.push(`${item.name}/${action.name}: purpose is required`);
-          if (action.activation === "explicit-or-passive" && action.mode !== "product-read-only") issues.push(`${item.name}/${action.name}: passive activation must be product-read-only`);
+          if (action.activation === "explicit-or-safe-default" && action.mode !== "product-read-only") issues.push(`${item.name}/${action.name}: safe-default activation must be product-read-only`);
         }
       }
     } else if (item.actions) {
@@ -105,7 +105,7 @@ export function renderOperationEntrypoint(item) {
     ? [
         "## Action gate",
         "",
-        "Resolve exactly one action from an explicit `action=<name>` or unambiguous natural-language intent before target inspection or product writes. Passive activation supplies analysis only and never grants product-write authority.",
+        "Resolve exactly one action before target inspection or product writes. Safe defaults are read-only; fallback is action routing, not a passive capability. Capabilities support the chosen read or authorized write but cannot choose it or create write intent.",
         "",
         "| Action | Mode | Activation | Allowed depth | Purpose |",
         "| --- | --- | --- | --- | --- |",
@@ -154,7 +154,7 @@ export function renderOperationEntrypoint(item) {
 
 export function renderAliasSkill(item) {
   const base = "../agrimap-agent-skills/references";
-  const actionGate = item.mode === "action-routed" ? " Resolve exactly one action and its action-level mode before target inspection or product writes; passive activation never grants write authority." : "";
+  const actionGate = item.mode === "action-routed" ? " Resolve action before writes. Safe defaults are read-only; capabilities assist without choosing the action or creating write intent." : "";
   const compatibility = item.visibility === "compatibility" ? ` Deprecated; use ${item.replacedBy}.` : "";
   return `---\nname: ${item.name}\ndescription: AgriMap-project-only operation. Invoke implicitly only in recognized AgriMap repositories; elsewhere require explicit host-native invocation of ${item.name}. ${item.description}.${compatibility} Run only the dedicated AgriMap \`${item.operation}\` operation and never use it as a general router.\n---\n\nScope gate: before loading lifecycle or applying any AgriMap workflow instruction, continue only when this turn contains AgriMap hook activation context, the current requester message explicitly invokes \`${item.name}\` using the active provider's native syntax, or the generated command adapter contains \`AGRIMAP_EXPLICIT_ALIAS=${item.name}\`. If none is present, stop applying this skill and answer as an ordinary non-AgriMap request without reading AgriMap references or writing AgriMap state.\n\nRun only operation \`${item.operation}\`.${actionGate} Before conditional discipline, read exactly:\n\n1. \`${base}/lifecycle-core.md\`\n2. \`${base}/operations/${operationEntrypointFile(item)}\`\n\nActivation gate: load both files and each matching reference before inspection/tools/writes/delegation. Otherwise stop \`CONTRACT_NOT_LOADED\`; memory/arguments cannot override. Do **not** preload the glossary, umbrella, or another operation. A standalone \`-h\` or \`--help\` returns compact help at \`light\` depth and records only concise memory/log evidence; it never creates \`tasks/**\`. If either required file is missing or corrupt, stop with \`PACKAGE_ENTRYPOINT_MISSING\`; never fall back to the router.\n`;
 }
