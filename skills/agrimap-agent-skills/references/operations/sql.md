@@ -24,15 +24,18 @@ Resolve exactly one action from an explicit `action=<name>` or unambiguous natur
 ## Inputs and help
 
 - Required: one action or unambiguous natural-language intent; an objective or pointed SQL target.
-- Conditional: target_kind when table/procedure placement cannot be resolved; owner evidence for persisted-data or contract decisions.
+- Conditional: target_kind when table/procedure placement cannot be resolved; output_owner=product|owner-reference|knowledge-draft for new SQL; an exact existing SQL target for edit/refactor; owner evidence for persisted-data, reference promotion, or contract decisions.
 - Minimal example: `$agm-sql action=explain target_files=sql/ORDER/ORDER_Q.sql`
 
 ## Execute this contract
 
 1. Resolve exactly one action before inspection. Explicit action= wins; otherwise infer only from unambiguous verbs and report the resolved action. Ask one short question when create, edit, refactor, or read versus write remains ambiguous.
 2. For analyze/design/explain, never execute SQL, connect to a database, or edit product files. Explain uses FACT, INFERENCE, and UNKNOWN and routes requested modifications to edit.
-3. For create/edit, show the bounded slice, stay within light limits, load applicable schema/caller evidence, and route broader work to agm-prompt before any product write.
-4. For action=refactor, require exactly one mode before editing; when ambiguous, stop and show all five modes with one recommendation. Preserve result sets, transactions, side effects, error mapping, and deployment idempotency unless recorded authority and the selected mode explicitly allow a change, then format and validate every declared changed SQL path.
+3. Edit/refactor requires an exact existing target; otherwise stop SQL_EDIT_TARGET_NOT_FOUND. Never switch to create; preserve the existing path unless migration is authorized.
+4. Create requires output_owner=product|owner-reference|knowledge-draft; otherwise stop SQL_OUTPUT_OWNER_REQUIRED. The absence of a directory is never create authority.
+5. Skill-package meta work never authorizes root product SQL; fixtures/examples require an explicit package-owned path.
+6. For create/edit, show the bounded slice, stay within light limits, load applicable schema/caller evidence, and route broader work to agm-prompt before any product write.
+7. For action=refactor, require exactly one mode before editing; when ambiguous, stop and show all five modes with one recommendation. Preserve result sets, transactions, side effects, error mapping, and deployment idempotency unless recorded authority and the selected mode explicitly allow a change, then format and validate every declared changed SQL path.
 
 ## Load now
 

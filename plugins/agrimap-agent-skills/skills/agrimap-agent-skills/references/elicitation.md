@@ -27,7 +27,7 @@ Resolve each input in this order and stop at the first source that answers it:
 
 | Tier | Rule | Inputs |
 | --- | --- | --- |
-| 1 — never guess | No direct evidence → ask in one batch. Never default silently; a wrong value changes contracts, data, or behavior. | domain `action` when read/write or create/edit/refactor intent is ambiguous, `target_kind`, `backend_profile`, `refactor_mode`, explicit Prompt Result source when multiple families are credible, new project/artifact names, the objective of any creation work, and the destination of a new project scaffold |
+| 1 — never guess | No direct evidence → ask in one batch. Never default silently; a wrong value changes contracts, data, or behavior. | domain `action` when read/write or create/edit/refactor intent is ambiguous, SQL output owner for create or exact existing target for edit/refactor, `target_kind`, `backend_profile`, `refactor_mode`, explicit Prompt Result source when multiple families are credible, new project/artifact names, the objective of any creation work, and the destination of a new project scaffold |
 | 2 — infer and declare | Infer from evidence, state the inferred value in the activation receipt, and proceed; the requester corrects cheaply. | `phase`, review scope, inferred target files, objective refinements |
 | 3 — fixed default, never ask | The discipline supplies it. | analyze/diagnose/simulate/plan/design/architect/review/history/qa are product-read-only and never edit product artifacts; each may write only its assigned workflow artifacts. Implementation requires a write operation requested within recorded authority. |
 
@@ -63,7 +63,7 @@ Agent: สร้างด้วย company template — ยืนยันคำ
 Decision owner: approve
 ```
 
-New project scaffolds always exceed direct/light implementation scope. Route their contract through artifactless `agm-prompt`, place the exact company `dotnet new agmwa|agmws|agmbo` command and working directory in the Prompt Result, and run it only through `agm-exec` after decision-owner approval. For direct work inside an existing repository, the destination needs no question—every created or modified path is already visible in the confirmed slice plan.
+New project scaffolds always exceed direct/light implementation scope. Route their contract through artifactless `agm-prompt`, place the exact company `dotnet new agmwa|agmws|agmbo` command and working directory in the Prompt Result, and run it only through `agm-exec` after decision-owner approval. For direct work inside an existing repository, the destination needs no question only when every created or modified path is already visible in the confirmed slice plan. New SQL still needs an explicit owner; a missing edit target never becomes create.
 
 ## Do not rush
 
@@ -82,7 +82,7 @@ A generated analysis, plan, proposal list, or prompt is never permission to exec
 | `agm-review` | `@file` alone works | scope defaults to correctness → regressions → contracts/data → tests; free text narrows it (for example "ตรวจคำผิด") | no target |
 | `agm-history` | free text maps to filters ("ของ Billy 7 วันล่าสุด" → `--requester Billy --days 7`) | UTC boundaries from bare dates | person/time range stays ambiguous |
 | `agm-fe` / `agm-be` | explicit `action=analyze|design|create|edit|refactor|test` or a clear natural-language verb | target/profile/phase from path and repository evidence; passive test advice for every action; refactor mode only when exactly one intent match exists | read versus write, create/edit/refactor, target/profile, or refactor mode remains ambiguous |
-| `agm-sql` | explicit `action=analyze|design|create|edit|refactor|explain` or a clear natural-language verb | SQL object kind, schema, callers, and refactor mode from repository evidence plus unambiguous intent | read versus write, create/edit/refactor, mode, or object placement remains ambiguous |
+| `agm-sql` | explicit `action=analyze|design|create|edit|refactor|explain` or a clear natural-language verb | SQL object kind, schema, callers, and refactor mode from repository evidence plus unambiguous intent | read/write, action, placement, output owner, mode, or edit target remains unresolved |
 | `agm-qa` | bare works with an active task | `task_id` from the active task; product artifacts read-only and QA workflow writes are fixed | no active task and no `task_id` |
 | `agm-prompt` | needs objective/prompt text and conversation/context identity; creates no task artifacts | V0 from requester input; exactly one same-conversation/context family may continue implicitly | more than one credible family exists or the referenced source is invalid/uncertain (`PROMPT_SOURCE_CONFIRM_REQUIRED`) |
 | `agm-exec` | needs the prompt file or a resumable task id | resume point from task memory | the prompt path/task id is missing |

@@ -27,6 +27,11 @@ const EXPLICIT_SKILL_PATTERNS = Object.freeze({
   gemini: new RegExp(`(?:^|\\s)/(?:${EXPLICIT_SKILL_ALTERNATION})(?=$|\\s)`, "i"),
 });
 
+const SQL_META_INTENT_PATTERN = /\bagm-sql\b|\b(?:skill|plugin|package|hook|routing|router)s?\b|(?:สกิล|ปลั๊กอิน|แพ็กเกจ|ฮุก|ไม่ใช้\s*(?:skill|agm-sql))/iu;
+const SQL_ACTION_PATTERN = /\b(?:create|add|write|generate|edit|modify|update|change|fix|refactor|analy[sz]e|explain|review|inspect)\b|(?:สร้าง|เพิ่ม|เขียน|แก้ไข|แก้|ปรับ|รีแฟกเตอร์|วิเคราะห์|อธิบาย|ตรวจ)/iu;
+const SQL_TARGET_PATTERN = /(?:\.sql\b|\b(?:sql|t-?sql|stored\s+procedure|procedure|ddl|dml)\b|(?:เอสคิวแอล|สโตร์ดโปรซีเยอร์|โปรซีเยอร์))/iu;
+const SQL_DEFINITION_PATTERN = /\b(?:create|alter|drop)\s+(?:table|view|procedure|function|trigger|index)\b|(?:สร้าง|แก้ไข|ปรับ)\s*(?:ตาราง|วิว|โปรซีเยอร์)/iu;
+
 function escapeRegex(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -67,6 +72,13 @@ function explicitSkillInvocation(provider, prompt) {
   const pattern = EXPLICIT_SKILL_PATTERNS[provider];
   const adapterMarker = new RegExp(`(?:^|\\s)AGRIMAP_EXPLICIT_ALIAS=(?:${EXPLICIT_SKILL_ALTERNATION})(?=$|\\s)`, "i");
   return Boolean(value) && ((Boolean(pattern) && pattern.test(value)) || adapterMarker.test(value));
+}
+
+function primarySqlProductIntent(prompt) {
+  const value = String(prompt || "").trim();
+  if (!value || SQL_META_INTENT_PATTERN.test(value)) return false;
+  if (SQL_DEFINITION_PATTERN.test(value)) return true;
+  return SQL_ACTION_PATTERN.test(value) && SQL_TARGET_PATTERN.test(value);
 }
 
 function projectActivation(cwd, config) {
@@ -139,6 +151,17 @@ async function readText(filePath, limit = 7000) {
   } catch {
     return "";
   }
+}
+
+async function isSkillPackageRepository(cwd) {
+  const [manifest, operations, lifecycle] = await Promise.all([
+    readJson(path.join(cwd, "package.json")),
+    readJson(path.join(cwd, "config", "operations.json")),
+    readText(path.join(cwd, "skills", "agrimap-agent-skills", "references", "lifecycle-core.md"), 200),
+  ]);
+  return manifest?.name === "agrimap-agent-skills"
+    && Array.isArray(operations?.operations)
+    && lifecycle.startsWith("# Workflow lifecycle core");
 }
 
 function fingerprint(value) {
@@ -219,9 +242,10 @@ const activeTask = effectiveSessionId
   : null;
 const activationConfig = await readJson(path.join(stateRoot, "config.json"));
 const projectCandidate = projectActivation(cwd, activationConfig);
+const explicitInvocation = explicitSkillInvocation(provider, input.prompt);
 const activation = activeTask
   ? { active: true, reason: "active-task" }
-  : explicitSkillInvocation(provider, input.prompt)
+  : explicitInvocation
     ? { active: true, reason: "explicit-skill" }
     : projectCandidate;
 
@@ -243,6 +267,8 @@ const rawIdentity = effectiveSessionId
   ? await readJson(path.join(stateRoot, "runtime", "sessions", `${effectiveSessionId}.json`))
   : null;
 const identity = rawIdentity ? normalizeIdentity(rawIdentity, { defaultProvider: provider }) : null;
+const skillPackageRepository = await isSkillPackageRepository(cwd);
+const sqlProductRoutingRequired = !activeTask && !explicitInvocation && primarySqlProductIntent(input.prompt);
 const confirmedIdentity = identity && !identity.expired ? identity : null;
 const taskRequester = activeTask?.requestedBy || null;
 const execution = {
@@ -318,6 +344,18 @@ context.push(
   "- For audit/history questions, run agm-workspace.mjs history with person/date/task filters; inspect attributionSemantics, auditStorage, invalidLines, and returned brief/result/QA/memory paths. Distinguish requester, workflow executor, claimed files, and Git author; never answer from conversational recall alone.",
   "- Durable project memory is .agrimap-agent/memory/project.md; reopen it when context was compacted or current project facts are needed.",
 );
+}
+
+if (skillPackageRepository) {
+  context.push(
+    "- Workspace kind: `skill-package`. Requests about skills, operations, hooks, contracts, generators, documentation, or tests are package work; they do not create root FE/BE/SQL product artifacts unless the requester explicitly authorizes a fixture/example target and exact path.",
+  );
+}
+
+if (sqlProductRoutingRequired) {
+  context.push(
+    "- Operation routing gate: Primary SQL product intent detected. Invoke the dedicated `agm-sql` operation and resolve exactly one action before target inspection or product writes. This routing requirement grants no write authority.",
+  );
 }
 
 if (mode !== "task" && (activeTask?.executionId || activeTask?.taskId)) {

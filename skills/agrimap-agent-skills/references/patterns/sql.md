@@ -3,6 +3,7 @@
 ## สารบัญ
 
 - [Source priority](#source-priority)
+- [Output ownership gate](#output-ownership-gate)
 - [Output artifact contract](#output-artifact-contract)
 - [Do not invent](#do-not-invent)
 - [Table work](#table-work)
@@ -29,9 +30,20 @@ Report structural conflicts. Priority, including `legacy-compatible` evidence, n
 
 Every new table and procedure belongs to `[agrimap_app]`. `[dbo]` is permitted only as the owner in `CREATE SCHEMA [agrimap_app] AUTHORIZATION [dbo]`; never declare a feature object under `[dbo]` or without a schema.
 
+## Output ownership gate
+
+Resolve action and owner before placement:
+
+- Edit/refactor needs an exact existing file; otherwise stop `SQL_EDIT_TARGET_NOT_FOUND`. Never convert it to create; preserve the existing path unless migration is authorized.
+- Create needs `output_owner=product|owner-reference|knowledge-draft`; otherwise stop `SQL_OUTPUT_OWNER_REQUIRED`. The absence of a directory is never create authority.
+- Product uses the layout below. Owner evidence stays unchanged under `.agrimap-agent/knowledge/references/db-schema/`.
+- AI drafts go under `.agrimap-agent/knowledge/drafts/sql/`. AI-generated SQL never becomes schema `FACT` or deployable without owner-approved promotion.
+
+In a `skill-package`, meta work never authorizes root product SQL; fixtures need explicit paths.
+
 ## Output artifact contract
 
-Write every new SQL artifact under one domain directory. Treat `sql-table-and-procedure` as task scope, never as permission to bundle objects.
+For `output_owner=product`, write every new SQL artifact under one domain directory. Treat `sql-table-and-procedure` as task scope, never as permission to bundle objects.
 
 ```text
 sql/
@@ -48,9 +60,10 @@ sql/
 - Procedure: exactly one `CREATE|ALTER|CREATE OR ALTER PROCEDURE` at `sql/<GROUP_OR_DOMAIN>/procedure/<PROCEDURE>.sql`; uppercase stem equals object name.
 - Messages: idempotent inserts only at lowercase `sql/<GROUP_OR_DOMAIN>/messages.sql`.
 - Never bundle objects or put table/procedure definitions in `messages.sql`.
-- List every exact output path before writing. Preserve a modified legacy path unless migration is authorized; use this layout for new artifacts.
+- Knowledge drafts mirror this object-per-file layout and are labelled `tentative`; owner references preserve supplied evidence and never authorize generated implementation.
+- List exact paths and owners before writing. Preserve a modified existing path unless migration is authorized.
 - Draft parseable, contract-complete T-SQL. Do not hand-tune cosmetic indentation, alignment, wrapping, or whitespace; examples define semantics, not spacing. SQLFluff owns layout.
-- After writes, freeze `format_set`: every created/modified `.sql`, including `messages.sql`. Later edits make that path unformatted again.
+- Format product/draft writes; preserve owner-reference bytes.
 - For one file, run:
 
 ```powershell
@@ -350,7 +363,7 @@ Preserve the local `TRY/CATCH`, output, audit, and transaction pattern. Do not c
 
 ## Message collection gate
 
-Run this gate after creating or changing `sql-table`, `sql-procedure`, or `sql-table-and-procedure`, and after a no-logic-change SQL refactor. Use exactly `sql/<GROUP_OR_DOMAIN>/messages.sql` as the reviewable feature/deployment artifact. Store every generated message in `[agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR])`.
+Run this gate after creating/changing SQL objects or a no-logic-change refactor. Set `SQL_OUTPUT_ROOT` to `sql` for product output or `.agrimap-agent/knowledge/drafts/sql` for drafts; owner references never synthesize messages. Use `<SQL_OUTPUT_ROOT>/<GROUP_OR_DOMAIN>/messages.sql`. Store messages in `[agrimap_app].[LUT_APP_MESSAGES] ([ID], [DESCR])`.
 
 1. Locate or create the domain `messages.sql`. Do not create alternate `MESSAGE.sql`, `messages.txt`, per-procedure message files, or a project-specific dictionary shape.
 2. Inventory every user-facing code emitted, returned, mapped, or forwarded by the touched SQL and its in-scope BE caller. Include project-specific equivalents of `THROW 50001, '<error_code>', 1`; do not limit the scan to that syntax.

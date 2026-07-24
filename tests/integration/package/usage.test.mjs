@@ -120,6 +120,11 @@ test("usage documentation separates routing from operation activation and help",
   assert.match(usage, /light\|standard\|regulated/);
   assert.match(usage, /light.*ไม่สร้าง `tasks\//s);
   assert.match(usage, /standard.*regulated.*brief\.md.*analysis\.md.*checklists\.md.*qa\.md.*result\.md/s);
+  assert.match(usage, /Primary SQL product intent/);
+  assert.match(usage, /output_owner=product\|owner-reference\|knowledge-draft/);
+  assert.match(usage, /SQL_EDIT_TARGET_NOT_FOUND/);
+  assert.match(usage, /SQL_OUTPUT_OWNER_REQUIRED/);
+  assert.match(usage, /\.agrimap-agent\/knowledge\/drafts\/sql/);
   assert.equal(await read("plugins/agrimap-agent-skills/docs/USAGE.md"), usage);
 });
 

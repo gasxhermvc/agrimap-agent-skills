@@ -24,6 +24,17 @@ export async function bootstrapAndPrune(harness) {
     await readFile(path.join(temp, ".agrimap-agent", "knowledge", "service-ownership.yaml"), "utf8"),
     /source_of_trust: \.agrimap-agent\/knowledge\/service-ownership\.yaml/,
   );
+  const sqlDraftReadme = await readFile(
+    path.join(temp, ".agrimap-agent", "knowledge", "drafts", "sql", "README.md"),
+    "utf8",
+  );
+  assert.match(sqlDraftReadme, /AI-generated.*tentative/i);
+  assert.match(sqlDraftReadme, /never load.*schema `FACT`/i);
+  assert.match(sqlDraftReadme, /knowledge\/references\/db-schema/);
+  assert.match(
+    await readFile(path.join(temp, ".agrimap-agent", "knowledge", "references", "db-schema", "README.md"), "utf8"),
+    /Owner-provided database DDL/,
+  );
   assert.equal(await readFile(path.join(temp, ".agrimap-agent", ".gitignore"), "utf8"), "runtime/\ncache/\n");
   const stateConfig = JSON.parse(await readFile(path.join(temp, ".agrimap-agent", "config.json"), "utf8"));
   assert.equal(stateConfig.stateScope, "target-project");

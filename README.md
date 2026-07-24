@@ -25,6 +25,7 @@ project/.agrimap-agent/runtime/    ignored per-session identity + active tasks +
 - `.rgignore` excludes that byte-for-byte mirror from default repo-wide `rg` searches, so authored content appears once. Use `rg --no-ignore` only when explicitly auditing generated copies; validation still compares every mirrored byte.
 - `config/operations.json` owns each dedicated skill's compact inputs, mode, instructions, and reference route. `npm run sync` generates `references/operation-index.md`, `references/operations/*.md`, Codex/Claude operation skills, and Gemini commands from it.
 - `plugins/agrimap-agent-skills/skills/agm-*` read exactly `lifecycle-core.md` plus their one generated operation contract. The glossary and technical references load only when that contract/depth requires them.
+- This repository is detected as `skill-package` from its manifest, operation registry, and lifecycle source. Package/meta work edits canonical package surfaces and never creates root FE/BE/SQL product artifacts unless the requester explicitly authorizes an exact fixture/example path.
 - Run `npm run sync` after every canonical or operation change. Normal package tests and validation reject mirror drift.
 
 The package does not import legacy `.agm` governance and does not create an extra permission layer. Platform permissions remain authoritative. Preserved legacy code samples are compatibility evidence only and are hash-verified.
@@ -99,6 +100,8 @@ gemini extensions link .
 Provider identity is host-specific: Codex selects `plugins/agrimap-agent-skills/hooks/codex-hooks.json`, Claude selects `claude-hooks.json`, and Gemini alone uses the repository-root `hooks/hooks.json`. The shared Codex/Claude plugin root must not contain a default `hooks/hooks.json`, because both hosts can auto-discover it. Release `0.1.7` makes SQLFluff the cosmetic-layout owner and requires complete changed-file coverage; reinstall/sync it before retesting so hosts do not retain an older cached alias.
 
 The plugin hooks are installed globally but non-candidates inspect only activation inputs (Git root/origin name, activation config, explicit prompt syntax, and the session active-task marker); they inject no context, read no identity or memory, and write no state. Generated skill bodies apply the same boundary before loading AgriMap lifecycle references, covering implicit model selection as well as hooks. Activation requires the Git root/remote name to match an AgriMap project, the current prompt to explicitly invoke a registered alias using provider-native syntax, the session to have an active tracked task, or `.agrimap-agent/config.json` to set `activation.auto` to `true`. Recognized one-repository/one-project names are `agmwa-<letters-and-hyphens>-ng`, `agmws-<letters-and-hyphens>-netcore`, `agmbo-<letters-and-hyphens>-netcore`, `agrimap-<letters-and-hyphens>`, and `AgriMap.<dot-separated-letters>`. Digits, underscores, arbitrary `agm-*` text, and `.agrimap-agent` directory existence alone do not activate the hook.
+
+For an active candidate without an explicit alias or active task, narrow task-mode detection adds an operation gate only when Primary SQL product intent is present: an SQL action plus a strong SQL target such as a `.sql` path or stored procedure. It requires the dedicated `agm-sql` operation before inspection or writes but grants no write authority. Mentions of `agm-sql`, skills, hooks, plugins, packages, or routing are meta intent and do not trigger product SQL routing.
 
 Gemini may show its native consent prompt when activating a skill or fingerprinting a hook. The package does not add a second approval gate.
 
@@ -202,7 +205,10 @@ Foundation reuses `agrimap.platform` before creating Core infrastructure. Active
 
 For new SQL artifacts, the normalized AgriMap golden contract outranks a project's inconsistent folder, naming, type, and comment conventions. Existing deployed schema and caller behavior remain compatibility facts and must not be broken silently.
 
-- Write one SQL object per file under `sql/<GROUP_OR_DOMAIN>/table/<TABLE>.sql` or `sql/<GROUP_OR_DOMAIN>/procedure/<PROCEDURE>.sql`.
+- `action=edit|refactor` requires an exact existing target; a missing target stops `SQL_EDIT_TARGET_NOT_FOUND` and never becomes create.
+- Every new artifact requires `output_owner=product|owner-reference|knowledge-draft`; unresolved ownership stops `SQL_OUTPUT_OWNER_REQUIRED`, and a missing directory is not create authority.
+- With `output_owner=product`, write one SQL object per file under `sql/<GROUP_OR_DOMAIN>/table/<TABLE>.sql` or `sql/<GROUP_OR_DOMAIN>/procedure/<PROCEDURE>.sql`.
+- Owner-provided or explicitly approved DDL references belong under `.agrimap-agent/knowledge/references/db-schema/`. Tentative AI-generated SQL belongs under `.agrimap-agent/knowledge/drafts/sql/` and is never schema `FACT` or deployable output without separate promotion approval.
 - Write guarded message inserts only to `sql/<GROUP_OR_DOMAIN>/messages.sql`, targeting `LUT_APP_MESSAGES (ID, DESCR)` with `IF NOT EXISTS`.
 - Lookup tables use an `INT` key and `NAME NVARCHAR(255)`; general tables use a `NUMERIC(38,0)` key.
 - Stored procedures use `_I`, `_U`, `_D`, `_Q`, or `_CHECK_Q` according to their operation.

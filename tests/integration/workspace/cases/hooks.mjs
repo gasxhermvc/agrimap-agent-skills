@@ -153,6 +153,63 @@ export async function hooks(harness) {
     assert.equal(rejectedProject.hookSpecificOutput, undefined);
   }
 
+  const sqlRoutingProject = path.join(projectCandidatesRoot, "agrimap-routing");
+  await mkdir(sqlRoutingProject, { recursive: true });
+  for (const [sessionId, prompt] of [
+    ["sql-routing-th", "สร้าง stored procedure LOGIN_LDD_I.sql สำหรับ login"],
+    ["sql-routing-en", "Edit sql/AUTH/procedure/LOGIN_LDD_I.sql and preserve its result contract"],
+  ]) {
+    const routedSql = run(hookScript, ["--provider", "codex", "--mode", "task"], {
+      cwd: sqlRoutingProject,
+      session_id: sessionId,
+      hook_event_name: "UserPromptSubmit",
+      prompt,
+    });
+    assert.match(routedSql.hookSpecificOutput.additionalContext, /Primary SQL product intent detected/);
+    assert.match(routedSql.hookSpecificOutput.additionalContext, /dedicated `agm-sql` operation/);
+    assert.match(routedSql.hookSpecificOutput.additionalContext, /before target inspection or product writes/);
+  }
+
+  for (const [sessionId, prompt] of [
+    ["sql-meta-th", "วิเคราะห์ว่าทำไมการสร้าง SQL ไม่ใช้ skill agm-sql และไปสร้างไฟล์ผิดที่"],
+    ["sql-explicit-diagnose", "$agm-diagnose หาสาเหตุที่ SQL routing ไม่เรียก agm-sql"],
+  ]) {
+    const metaSql = run(hookScript, ["--provider", "codex", "--mode", "task"], {
+      cwd: sqlRoutingProject,
+      session_id: sessionId,
+      hook_event_name: "UserPromptSubmit",
+      prompt,
+    });
+    assert.doesNotMatch(metaSql.hookSpecificOutput.additionalContext, /Primary SQL product intent detected/);
+  }
+
+  const skillPackageProject = path.join(projectCandidatesRoot, "agrimap-agent-skills");
+  await mkdir(path.join(skillPackageProject, "config"), { recursive: true });
+  await mkdir(path.join(skillPackageProject, "skills", "agrimap-agent-skills", "references"), { recursive: true });
+  await writeFile(
+    path.join(skillPackageProject, "package.json"),
+    `${JSON.stringify({ name: "agrimap-agent-skills" }, null, 2)}\n`,
+    "utf8",
+  );
+  await writeFile(
+    path.join(skillPackageProject, "config", "operations.json"),
+    `${JSON.stringify({ operations: [{ name: "agm-sql", operation: "sql" }] }, null, 2)}\n`,
+    "utf8",
+  );
+  await writeFile(
+    path.join(skillPackageProject, "skills", "agrimap-agent-skills", "references", "lifecycle-core.md"),
+    "# Workflow lifecycle core\n",
+    "utf8",
+  );
+  const skillPackageHook = run(hookScript, ["--provider", "codex", "--mode", "session"], {
+    cwd: skillPackageProject,
+    session_id: "skill-package-boundary",
+    hook_event_name: "SessionStart",
+  });
+  assert.match(skillPackageHook.hookSpecificOutput.additionalContext, /Workspace kind: `skill-package`/);
+  assert.match(skillPackageHook.hookSpecificOutput.additionalContext, /do not create root FE\/BE\/SQL product artifacts/i);
+  await assert.rejects(readdir(path.join(skillPackageProject, "sql")), { code: "ENOENT" });
+
   const renamedCheckout = path.join(projectCandidatesRoot, "renamed-checkout");
   await mkdir(renamedCheckout, { recursive: true });
   execFileSync("git", ["init"], { cwd: renamedCheckout, stdio: "ignore" });

@@ -279,6 +279,7 @@ async function ensureLayout(root) {
   const directories = [
     "decisions",
     "knowledge",
+    "knowledge/drafts/sql",
     "logs",
     "memory/current",
     "memory/recent",
@@ -377,6 +378,14 @@ async function ensureLayout(root) {
     await mkdir(referencePath, { recursive: true });
     const readmePath = path.join(referencePath, "README.md");
     if (!(await exists(readmePath))) await writeFile(readmePath, readme, "utf8");
+  }
+  const sqlDraftReadmePath = path.join(state, "knowledge", "drafts", "sql", "README.md");
+  if (!(await exists(sqlDraftReadmePath))) {
+    await writeFile(
+      sqlDraftReadmePath,
+      "# SQL drafts\n\nAI-generated or exploratory SQL stored here is tentative, non-authoritative, and not a deployable product artifact. Organize drafts below one domain directory when an explicit `output_owner=knowledge-draft` decision authorizes the write.\n\nAgents must never load this directory as schema `FACT`, caller compatibility evidence, or deployed behavior. Promote content to `.agrimap-agent/knowledge/references/db-schema/` only after the decision owner explicitly approves it as a reference; preserve the approved evidence pointer.\n",
+      "utf8",
+    );
   }
   return state;
 }

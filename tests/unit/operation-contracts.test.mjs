@@ -61,6 +61,22 @@ test("SQL explain is evidence-labelled and cannot execute or edit", () => {
     assert.ok(passiveCapabilities.includes(marker), `SQL explain marker missing: ${marker}`);
 });
 
+test("SQL output ownership prevents edit-to-create drift and separates knowledge drafts from schema facts", () => {
+  const sql = operations.operations.find((item) => item.operation === "sql");
+  const contract = [sql.conditionalInputs.join("\n"), sql.instructions.join("\n"), elicitation, sqlPolicy].join("\n");
+  for (const marker of [
+    "output_owner=product|owner-reference|knowledge-draft",
+    "SQL_EDIT_TARGET_NOT_FOUND",
+    "SQL_OUTPUT_OWNER_REQUIRED",
+    ".agrimap-agent/knowledge/references/db-schema/",
+    ".agrimap-agent/knowledge/drafts/sql/",
+  ]) assert.ok(contract.includes(marker), `SQL ownership marker missing: ${marker}`);
+  assert.match(contract, /absence of a directory.*never.*create authority/i);
+  assert.match(contract, /AI-generated.*never.*schema `FACT`/i);
+  assert.match(contract, /skill-package.*root.*product SQL/i);
+  assert.match(contract, /preserve.*existing path.*migration/i);
+});
+
 test("domain refactor actions replace all standalone refactor aliases", () => {
   for (const target of ["fe", "be", "sql"]) {
     const operation = operations.operations.find((item) => item.operation === target);
