@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.1.8 - 2026-07-24
+
 - Made concise task artifacts, current memory, and append-only audit logs mandatory for every activated operation at `light`, `standard`, and `regulated` depth; depth now controls coordination and QA rather than persistence.
 - Added generated `AGRIMAP_EXPLICIT_ALIAS` markers so provider command expansion cannot hide a direct alias invocation from the activation gate.
 

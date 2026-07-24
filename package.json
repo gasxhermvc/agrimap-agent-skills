@@ -1,6 +1,6 @@
 {
   "name": "agrimap-agent-skills",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "private": true,
   "description": "Official cross-agent AgriMap engineering skill package",
   "author": "Billy (gasxhermvc)",
