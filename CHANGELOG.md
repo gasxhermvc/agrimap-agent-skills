@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 2.1.0 - 2026-07-24
+
+- Added a read-only stdio MCP server (`skills/agrimap-agent-skills/scripts/mcp-server.mjs`, declared in `gemini-extension.json` under `mcpServers.agrimap`) so Gemini can load bundled AgriMap contract and reference files that its workspace-sandboxed file tools cannot reach.
+- Regenerated the Gemini `/agm-*` commands to load `lifecycle-core.md`, their operation entrypoint, and conditional references through the `read_reference` MCP tool instead of an unreachable workspace-relative path; Codex and Claude activation paths are unchanged.
+- Wired the MCP server into package validation and added a unit test that exercises the initialize/list/call handshake, `../`-prefixed reference resolution, and traversal refusal.
+
 ## 2.0.0 - 2026-07-24
 
 - Redefined passive capabilities as embedded supporting skills that contribute relevant knowledge, understanding, criteria, and decisions to both read-only and already-authorized write work without selecting the operation, granting write authority, or expanding scope.

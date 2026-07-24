@@ -1,5 +1,14 @@
 {
   "name": "agrimap-agent-skills",
-  "version": "2.0.0",
-  "description": "Routing skill plus dedicated one-operation AgriMap engineering skills"
+  "version": "2.1.0",
+  "description": "Routing skill plus dedicated one-operation AgriMap engineering skills",
+  "mcpServers": {
+    "agrimap": {
+      "command": "node",
+      "args": [
+        "${extensionPath}${/}skills${/}agrimap-agent-skills${/}scripts${/}mcp-server.mjs"
+      ],
+      "cwd": "${extensionPath}"
+    }
+  }
 }

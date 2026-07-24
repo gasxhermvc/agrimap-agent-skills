@@ -95,6 +95,7 @@ for (const required of [
   "skills/agrimap-agent-skills/scripts/token-coverage.mjs",
   "skills/agrimap-agent-skills/scripts/sql-contract-preflight.mjs",
   "skills/agrimap-agent-skills/scripts/validate-sql-artifacts.mjs",
+  "skills/agrimap-agent-skills/scripts/mcp-server.mjs",
   "skills/agrimap-agent-skills/assets/task-artifact-schema.json",
   "skills/agrimap-agent-skills/assets/passive-skill-map.json",
   "skills/agrimap-agent-skills/assets/token-coverage-scenarios.json",
@@ -116,6 +117,7 @@ for (const required of [
   "tests/unit/sqlfluff-install.test.mjs",
   "tests/unit/task-artifact-schema.test.mjs",
   "tests/unit/verify-golden.test.mjs",
+  "tests/unit/mcp-server.test.mjs",
   "tests/integration/package/usage.test.mjs",
   "tests/integration/workspace/workspace.test.mjs",
   "tests/integration/workspace/cases/bootstrap-and-prune.mjs",
@@ -513,6 +515,19 @@ if (codexMarketplace?.plugins?.[0]?.source?.path !== "./plugins/agrimap-agent-sk
 if (claudeMarketplace?.plugins?.[0]?.source !== "./plugins/agrimap-agent-skills") errors.push("Claude marketplace source path is invalid.");
 if (claudeMarketplace?.plugins?.[0]?.version !== packageManifest?.version) errors.push(`Claude marketplace version differs from package version ${packageManifest?.version}.`);
 if (!geminiHooks?.hooks?.SessionStart || !geminiHooks?.hooks?.BeforeAgent) errors.push("Gemini context hooks are incomplete.");
+const geminiMcpServers = geminiExtension?.mcpServers;
+const geminiMcpNames = geminiMcpServers ? Object.keys(geminiMcpServers) : [];
+if (geminiMcpNames.length !== 1 || geminiMcpNames[0] !== "agrimap") {
+  errors.push("Gemini extension must declare exactly one MCP server named `agrimap` (no underscore) to serve bundled references.");
+} else {
+  const agrimapServer = geminiMcpServers.agrimap;
+  const mcpArgs = Array.isArray(agrimapServer?.args) ? agrimapServer.args.join(" ") : "";
+  if (agrimapServer?.command !== "node") errors.push("Gemini MCP server must launch with `node`.");
+  if (!mcpArgs.includes("${extensionPath}") || !mcpArgs.includes("scripts") || !mcpArgs.includes("mcp-server.mjs")) {
+    errors.push("Gemini MCP server args must resolve mcp-server.mjs through ${extensionPath}.");
+  }
+}
+if (packageManifest && !packageManifest?.scripts?.["test:unit"]?.includes("mcp-server.test.mjs")) errors.push("Gemini MCP server test is not wired into the automated unit suite.");
 if (codexPlugin?.hooks !== "./hooks/codex-hooks.json") errors.push("Codex manifest must select the Codex-specific hook file.");
 if (claudePlugin?.hooks !== "./hooks/claude-hooks.json") errors.push("Claude manifest must select the Claude-specific hook file.");
 if (await exists(path.join(root, "plugins", "agrimap-agent-skills", "hooks", "hooks.json"))) errors.push("Ambiguous default plugin hooks/hooks.json must not exist.");

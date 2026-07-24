@@ -30,6 +30,10 @@ $agm-be action=analyze requested_by=Billy target_files=src/app.cs objective="Fin
 
 การคัดลอกเฉพาะ routing skill จะเลือก operation ได้แต่ execute ไม่ได้ ต้องติดตั้ง alias folders เช่น `agm-be/` ด้วยก่อนใช้รูปแบบ `/<alias>`.
 
+### Gemini: การโหลด reference ผ่าน MCP
+
+Gemini จำกัด (sandbox) file tool ไว้ที่ workspace ของผู้ใช้ ดังนั้น extension ที่ติดตั้งแบบ global จึงให้ model อ่านไฟล์กฎที่ bundle มาโดยตรงไม่ได้. แพ็กเกจจึงมี read-only MCP server (`skills/agrimap-agent-skills/scripts/mcp-server.mjs`) ประกาศใน `gemini-extension.json` ที่ `mcpServers.agrimap`. Gemini spawn เป็น stdio subprocess ตอน startup โดยแทนค่า `${extensionPath}` เป็นโฟลเดอร์ที่ติดตั้ง แล้วแต่ละคำสั่ง `/agm-*` จะโหลด `lifecycle-core.md`, operation entrypoint และ conditional reference ผ่าน tool `read_reference` (`mcp_agrimap_read_reference`); ส่วนไฟล์โปรเจกต์ของผู้ใช้ยังอ่านด้วย file tool ปกติ. ต้องมี `node` ใน `PATH` (dependency เดียวกับ hooks เดิม). Server เป็น read-only, stateless และแยก subprocess ต่อ Gemini หนึ่ง instance (ใช้ stdio ไม่ผูก port) เปิดหลาย project พร้อมกันจึงไม่ชนกัน. Codex/Claude ไม่เกี่ยวข้อง เพราะโหลด reference ผ่าน plugin host ของตัวเอง.
+
 ### ขอบเขตการ activate อัตโนมัติ
 
 แม้ plugin/extension ถูกติดตั้งในระดับ global แต่ hook ของ non-candidate จะตรวจเฉพาะ activation inputs ได้แก่ชื่อ Git root/`origin`, activation config, explicit prompt syntax และ active-task marker จากนั้นจบโดยไม่ส่ง AgriMap context, ไม่อ่าน identity/memory และไม่เขียน workflow state. ตัว skill ที่ถูก model เลือกแบบ implicit ก็มี scope gate เดียวกันก่อนโหลด AgriMap lifecycle/reference. Hook/skill จะ active เฉพาะ candidate ต่อไปนี้:

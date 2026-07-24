@@ -209,6 +209,18 @@ await writeFile(
     name: "agrimap-agent-skills",
     version: packageVersion,
     description: "Routing skill plus dedicated one-operation AgriMap engineering skills",
+    // Gemini file tools are sandboxed to the workspace, so a globally installed
+    // extension's bundled references are unreachable by the model. This stdio MCP
+    // server (launched from the resolved ${extensionPath}) serves them on demand.
+    // The server name must not contain "_": Gemini exposes tools as
+    // mcp_{serverName}_{toolName} and splits on the first "_" after "mcp_".
+    mcpServers: {
+      agrimap: {
+        command: "node",
+        args: ["${extensionPath}${/}skills${/}agrimap-agent-skills${/}scripts${/}mcp-server.mjs"],
+        cwd: "${extensionPath}",
+      },
+    },
   }, null, 2)}\n`,
   "utf8",
 );

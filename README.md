@@ -95,6 +95,10 @@ Restart Gemini CLI after installation. Invoke `/agm-be action=create`, `/agm-pla
 gemini extensions link .
 ```
 
+### How Gemini loads bundled references
+
+Gemini sandboxes its file tools to the workspace root, so a globally installed extension cannot let the model read its own bundled contract and reference files. The extension therefore ships a read-only stdio MCP server (`skills/agrimap-agent-skills/scripts/mcp-server.mjs`) declared in `gemini-extension.json` under `mcpServers.agrimap`. Gemini launches it once at startup as a subprocess, resolving `${extensionPath}` to the install directory, and every generated `/agm-*` command loads its `lifecycle-core.md`, operation entrypoint, and conditional references by calling the `read_reference` tool (exposed as `mcp_agrimap_read_reference`). The model keeps reading your project files with its normal, workspace-scoped file tools. Requirements: `node` on `PATH` (the same dependency the hooks already use). The server is read-only, stateless, and runs as one isolated subprocess per Gemini instance — using stdio rather than a fixed port — so opening several projects at once never collides. Codex and Claude are unaffected: they resolve the same references through their own plugin host, not this server.
+
 ## Provider hook isolation
 
 Provider identity is host-specific: Codex selects `plugins/agrimap-agent-skills/hooks/codex-hooks.json`, Claude selects `claude-hooks.json`, and Gemini alone uses the repository-root `hooks/hooks.json`. The shared Codex/Claude plugin root must not contain a default `hooks/hooks.json`, because both hosts can auto-discover it. Release `0.1.7` makes SQLFluff the cosmetic-layout owner and requires complete changed-file coverage; reinstall/sync it before retesting so hosts do not retain an older cached alias.
